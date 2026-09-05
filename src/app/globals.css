@@ -1,0 +1,532 @@
+@import 'tailwindcss';
+
+/* =====================================================================
+   DESIGN TOKENS
+   Every colour, radius, shadow and motion value used by a component comes
+   from a token declared here. Themes override tokens; components never
+   hard-code a colour. Adding a fourth theme is 20 lines in this file.
+   ===================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Spacing / geometry */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --border-width: 1px;
+
+  /* Motion */
+  --motion-fast: 140ms;
+  --motion-base: 260ms;
+  --motion-slow: 620ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Themes scale this; reduced-motion drops it to 0. */
+  --motion-scale: 1;
+
+  /* Typography — families are self-hosted (see layout.tsx); each stack ends
+     in a real system fallback so text renders before the woff2 arrives. */
+  --font-inter: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-jetbrains: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, 'Cascadia Mono', Menlo, monospace;
+  --font-sora: 'Sora Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-fraunces: 'Fraunces Variable', ui-serif, Georgia, 'Times New Roman', serif;
+
+  --font-display: var(--font-inter);
+  --font-body: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+  --tracking-display: -0.022em;
+  --tracking-body: 0em;
+  --weight-display: 640;
+  --leading-display: 1.06;
+
+  /* Decorative background intensity */
+  --grid-opacity: 0.05;
+  --glow-opacity: 0.09;
+  --noise-opacity: 0;
+
+  /* Default palette = Enterprise light (overridden below) */
+  --bg-primary: #f7f8fa;
+  --bg-secondary: #eef1f6;
+  --surface: #ffffff;
+  --surface-elevated: #f2f5f9;
+  --text-primary: #0b1220;
+  --text-secondary: #47536b;
+  --text-muted: #5d687e;
+  --text-subtle: #616875;
+  --border: #dde3ea;
+  --border-subtle: #e8edf3;
+  --accent-primary: #1d4ed8;
+  --accent-secondary: #0f766e;
+  --accent-tertiary: #4f46e5;
+  --accent-contrast: #ffffff;
+  --accent-glow: rgba(29, 78, 216, 0.16);
+  --success: #0f6030;
+  --warning: #a94e08;
+  --error: #b91c1c;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(11, 18, 32, 0.08);
+  --glass-blur: 18px;
+  --shadow-sm: 0 1px 2px rgba(11, 18, 32, 0.06);
+  --shadow-md: 0 8px 24px -12px rgba(11, 18, 32, 0.18);
+  --shadow-lg: 0 24px 60px -28px rgba(11, 18, 32, 0.26);
+}
+
+/* --------------------------- ENTERPRISE ---------------------------- */
+[data-theme='enterprise'][data-mode='light'] {
+  color-scheme: light;
+  --grid-opacity: 0.045;
+  --glow-opacity: 0.09;
+  --motion-scale: 0.8;
+  --tracking-display: -0.022em;
+  --weight-display: 640;
+}
+
+[data-theme='enterprise'][data-mode='dark'] {
+  color-scheme: dark;
+  --bg-primary: #0b1017;
+  --bg-secondary: #10161f;
+  --surface: #141b25;
+  --surface-elevated: #1b2331;
+  --text-primary: #f1f5f9;
+  --text-secondary: #c3ccdb;
+  --text-muted: #96a1b4;
+  --text-subtle: #8992a2;
+  --border: #26303f;
+  --border-subtle: #1d2632;
+  --accent-primary: #7aa7ff;
+  --accent-secondary: #4fd3bd;
+  --accent-tertiary: #a5b4fc;
+  --accent-contrast: #08101c;
+  --accent-glow: rgba(122, 167, 255, 0.2);
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --glass-bg: rgba(20, 27, 37, 0.66);
+  --glass-border: rgba(203, 213, 225, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 30px -16px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 30px 70px -34px rgba(0, 0, 0, 0.8);
+  --grid-opacity: 0.06;
+  --glow-opacity: 0.12;
+  --motion-scale: 0.8;
+}
+
+/* -------------------------- ENGINEERING ---------------------------- */
+[data-theme='engineering'][data-mode='dark'] {
+  color-scheme: dark;
+  --bg-primary: #07111f;
+  --bg-secondary: #0b1728;
+  --surface: #102238;
+  --surface-elevated: #142b44;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-subtle: #8e9aaa;
+  --border: #1e3a56;
+  --border-subtle: #183149;
+  --accent-primary: #38bdf8;
+  --accent-secondary: #8b5cf6;
+  --accent-tertiary: #22d3ee;
+  --accent-contrast: #04101d;
+  --accent-glow: rgba(56, 189, 248, 0.26);
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #f36f6f;
+  --glass-bg: rgba(16, 34, 56, 0.58);
+  --glass-border: rgba(148, 163, 184, 0.14);
+  --shadow-sm: 0 1px 2px rgba(2, 8, 20, 0.5);
+  --shadow-md: 0 12px 34px -18px rgba(2, 8, 20, 0.85);
+  --shadow-lg: 0 34px 80px -36px rgba(2, 8, 20, 0.95);
+  --grid-opacity: 0.13;
+  --glow-opacity: 0.14;
+  --motion-scale: 1.15;
+  --tracking-display: -0.03em;
+  --weight-display: 660;
+}
+
+[data-theme='engineering'][data-mode='light'] {
+  color-scheme: light;
+  --bg-primary: #f6f9fc;
+  --bg-secondary: #eef4f9;
+  --surface: #ffffff;
+  --surface-elevated: #eef4f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #5a687d;
+  --text-subtle: #5f6876;
+  --border: #d7e2ec;
+  --border-subtle: #e4ecf3;
+  --accent-primary: #026ea5;
+  --accent-secondary: #7c3aed;
+  --accent-tertiary: #0891b2;
+  --accent-contrast: #ffffff;
+  --accent-glow: rgba(2, 132, 199, 0.18);
+  --success: #0f6030;
+  --warning: #a94e08;
+  --error: #b91c1c;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 10px 28px -14px rgba(15, 23, 42, 0.2);
+  --shadow-lg: 0 28px 64px -30px rgba(15, 23, 42, 0.28);
+  --grid-opacity: 0.09;
+  --glow-opacity: 0.10;
+  --motion-scale: 1.15;
+  --tracking-display: -0.03em;
+}
+
+/* ----------------------------- STUDIO ------------------------------ */
+[data-theme='studio'][data-mode='light'] {
+  color-scheme: light;
+  --bg-primary: #fbf7f2;
+  --bg-secondary: #f4ede4;
+  --surface: #ffffff;
+  --surface-elevated: #f7f0e8;
+  --text-primary: #1a1614;
+  --text-secondary: #55483e;
+  --text-muted: #736457;
+  --text-subtle: #706459;
+  --border: #e4d8ca;
+  --border-subtle: #efe6da;
+  --accent-primary: #ba3a13;
+  --accent-secondary: #1f5f5b;
+  --accent-tertiary: #9a6b12;
+  --accent-contrast: #fff8f2;
+  --accent-glow: rgba(194, 60, 20, 0.16);
+  --success: #17542c;
+  --warning: #895f10;
+  --error: #a52a1a;
+  --glass-bg: rgba(255, 252, 248, 0.72);
+  --glass-border: rgba(26, 22, 20, 0.1);
+  --shadow-sm: 0 1px 2px rgba(60, 40, 28, 0.08);
+  --shadow-md: 0 12px 30px -16px rgba(60, 40, 28, 0.28);
+  --shadow-lg: 0 30px 70px -32px rgba(60, 40, 28, 0.34);
+  --grid-opacity: 0;
+  --glow-opacity: 0.10;
+  --noise-opacity: 0.5;
+  --motion-scale: 1;
+  --tracking-display: -0.035em;
+  --weight-display: 700;
+  --leading-display: 0.98;
+}
+
+[data-theme='studio'][data-mode='dark'] {
+  color-scheme: dark;
+  --bg-primary: #16120f;
+  --bg-secondary: #1d1815;
+  --surface: #241e1a;
+  --surface-elevated: #2e2621;
+  --text-primary: #f7f1ea;
+  --text-secondary: #d6c7b8;
+  --text-muted: #a59383;
+  --text-subtle: #a1958b;
+  --border: #3a302a;
+  --border-subtle: #2b241f;
+  --accent-primary: #ff7a4d;
+  --accent-secondary: #62d2c3;
+  --accent-tertiary: #e0b265;
+  --accent-contrast: #1a1005;
+  --accent-glow: rgba(255, 122, 77, 0.24);
+  --success: #6ee7a8;
+  --warning: #f4c26b;
+  --error: #ff8a7a;
+  --glass-bg: rgba(36, 30, 26, 0.66);
+  --glass-border: rgba(247, 241, 234, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 12px 32px -16px rgba(0, 0, 0, 0.75);
+  --shadow-lg: 0 32px 74px -34px rgba(0, 0, 0, 0.85);
+  --grid-opacity: 0;
+  --glow-opacity: 0.12;
+  --noise-opacity: 0;
+  --motion-scale: 1;
+  --tracking-display: -0.035em;
+  --weight-display: 700;
+  --leading-display: 0.98;
+}
+
+/* --------------------------- FONT SETS ----------------------------- */
+[data-font='precision'] {
+  --font-display: var(--font-inter);
+  --font-body: var(--font-inter);
+}
+
+[data-font='technical'] {
+  --font-display: var(--font-jetbrains);
+  --font-body: var(--font-inter);
+  --tracking-display: -0.045em;
+  --weight-display: 600;
+}
+
+[data-font='editorial'] {
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-sora);
+  --tracking-display: -0.02em;
+  --weight-display: 620;
+}
+
+/* ------------------ Tailwind theme <- design tokens ----------------- */
+@theme inline {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-border-token: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-accent: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-tertiary: var(--accent-tertiary);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --radius-token-sm: var(--radius-sm);
+  --radius-token-md: var(--radius-md);
+  --radius-token-lg: var(--radius-lg);
+  --radius-token-xl: var(--radius-xl);
+
+  --shadow-token-sm: var(--shadow-sm);
+  --shadow-token-md: var(--shadow-md);
+  --shadow-token-lg: var(--shadow-lg);
+}
+
+/* ============================== BASE =============================== */
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Sticky header offset for in-page anchors. */
+  scroll-padding-top: 5.5rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  letter-spacing: var(--tracking-body);
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* Theme change should feel like a transition, not a flash. */
+  transition:
+    background-color var(--motion-base) var(--ease-in-out),
+    color var(--motion-base) var(--ease-in-out);
+}
+
+::selection {
+  background: var(--accent-glow);
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Focus rings only where they help; never removed, only scoped. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-display);
+  font-weight: var(--weight-display);
+  color: var(--text-primary);
+}
+
+h1 {
+  line-height: var(--leading-display);
+}
+
+/* ============================ UTILITIES ============================ */
+
+.surface-card {
+  background-color: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--motion-base) var(--ease-out),
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) var(--ease-out);
+}
+
+.surface-elevated {
+  background-color: var(--surface-elevated);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+/* Selective glass: reserved for the navbar, the hero card, the featured
+   project, the metric strip and the assistant panel. Roughly 10% of surfaces. */
+.glass {
+  background: var(--glass-bg);
+  border: var(--border-width) solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .glass {
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  }
+}
+
+.text-gradient {
+  background-image: linear-gradient(
+    100deg,
+    var(--text-primary) 0%,
+    var(--text-primary) 40%,
+    var(--accent-primary) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+/* ============================ ANIMATION ============================ */
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, calc(18px * var(--motion-scale)), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes draw-line {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes pulse-node {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -22px, 0);
+  }
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.reveal[data-visible='true'] {
+  animation: reveal-up calc(var(--motion-slow) * var(--motion-scale)) var(--ease-out) forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+.animate-fade-in {
+  animation: fade-in calc(var(--motion-base) * var(--motion-scale)) var(--ease-out) forwards;
+}
+
+/* ========================= REDUCED MOTION ========================== */
+/* Decorative motion is removed entirely; content still appears. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-scale: 0;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Same guarantee for anyone who disables JS: nothing stays invisible. */
+.no-js .reveal {
+  opacity: 1;
+  animation: none;
+}
+
+/* ========================== PRINT (resume) ========================= */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+}
