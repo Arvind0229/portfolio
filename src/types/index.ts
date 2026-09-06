@@ -47,6 +47,10 @@ export interface Profile {
   title: string;
   positioning: string;
   summary: string;
+  /** Same facts as `summary`, phrased about him — quoted by the AI layer. */
+  summaryThirdPerson: string;
+  /** Same facts as `positioning`, phrased about him. */
+  positioningThirdPerson: string;
   location: string;
   email: string;
   phone: string;

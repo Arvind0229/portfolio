@@ -124,6 +124,26 @@ export async function runAgent(input: AgentInput): Promise<AgentOutcome> {
   // would imply experience he does not have.
   const unknown = unknownEntities(message);
 
+  // A question whose subject is absent from the profile is answered by saying
+  // so, and nothing else. Retrieval will still have matched on framing words
+  // ("does he have EXPERIENCE with Kubernetes?"), and appending what those
+  // matched reads as though an unrelated role were the answer.
+  if (unknown.length > 0) {
+    return {
+      answer: notFoundAnswer(message, unknown),
+      sources: [],
+      toolUsed: intent.tool,
+      grounded: true,
+      suggestions: pickSuggestions(input.mode),
+      diagnostics: {
+        intent: intent.intent,
+        provider: 'local',
+        retrievedCount: 0,
+        blocked: false,
+      },
+    };
+  }
+
   const sources = toSources(retrieved);
 
   if (retrieved.length === 0) {
@@ -144,11 +164,7 @@ export async function runAgent(input: AgentInput): Promise<AgentOutcome> {
 
   /* 6. Generation ---------------------------------------------------- */
   const provider = resolveProvider();
-  const caveat =
-    unknown.length > 0
-      ? `I don't see ${formatList(unknown)} anywhere in Arvind's profile, so I can't claim experience there. `
-      : '';
-  let answer = caveat + composeGroundedAnswer(message, input.mode, retrieved);
+  let answer = composeGroundedAnswer(message, input.mode, retrieved);
   let providerId = 'local';
 
   if (provider) {
@@ -157,7 +173,7 @@ export async function runAgent(input: AgentInput): Promise<AgentOutcome> {
       const timeout = setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
       try {
         const result = await provider.generate({
-          systemPrompt: buildSystemPrompt(input.mode, retrieved, unknown),
+          systemPrompt: buildSystemPrompt(input.mode, retrieved),
           messages: [...trimHistory(input.history), { role: 'user', content: message }],
           maxTokens: MAX_OUTPUT_TOKENS,
           temperature: 0.2,
@@ -197,18 +213,41 @@ export async function runAgent(input: AgentInput): Promise<AgentOutcome> {
   };
 }
 
+/**
+ * Phrases that describe WHO the answer is for, not WHAT it is about.
+ *
+ * "Summarise his experience for a recruiter" was retrieving his Talent
+ * Acquisition role, because "recruiter" is a strong term in that chunk. The
+ * audience is already carried by the mode selector, so these phrases are
+ * stripped from the retrieval query — and from that query only. The model,
+ * when one is configured, still receives the visitor's words verbatim.
+ */
+const AUDIENCE_FRAMING: readonly RegExp[] = [
+  /\bfor (?:a |an |my )?(?:recruiter|hiring manager|hr|cto|cio|engineer|developer|technical (?:audience|reader)|business (?:audience|reader)|non-?technical (?:person|audience|reader))\b/gi,
+  /\bas (?:a |an )(?:recruiter|hiring manager|engineer|developer|cto)\b/gi,
+  /\bin (?:simple|plain|business|layman'?s?|non-?technical) (?:language|terms|english|words)\b/gi,
+  /\bexplain (?:it|this) like i'?m five\b/gi,
+  /\b(?:i'?m|i am) (?:hiring|recruiting) for\b/gi,
+];
+
+function stripAudienceFraming(message: string): string {
+  let out = message;
+  for (const pattern of AUDIENCE_FRAMING) out = out.replace(pattern, ' ');
+  return out.replace(/\s+/g, ' ').trim() || message;
+}
+
 function buildRetrievalQuery(message: string, history: ChatMessage[]): string {
+  const subject = stripAudienceFraming(message);
+
   const isFollowUp = /\b(those|these|that|it|them|which of|any of|the same|more about)\b/i.test(
     message,
   );
-  if (!isFollowUp) return message;
-  const lastUserTurn = [...history].reverse().find((m) => m.role === 'user');
-  return lastUserTurn ? `${lastUserTurn.content} ${message}` : message;
-}
+  if (!isFollowUp) return subject;
 
-function formatList(values: string[]): string {
-  if (values.length === 1) return values[0] as string;
-  return `${values.slice(0, -1).join(', ')} or ${values[values.length - 1]}`;
+  const lastUserTurn = [...history].reverse().find((m) => m.role === 'user');
+  return lastUserTurn
+    ? `${stripAudienceFraming(lastUserTurn.content)} ${subject}`
+    : subject;
 }
 
 function trimHistory(history: ChatMessage[]): ChatMessage[] {

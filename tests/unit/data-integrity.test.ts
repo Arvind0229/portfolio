@@ -6,6 +6,7 @@ import { projects } from '@/data/projects';
 import { allSkills, skillGroups } from '@/data/skills';
 import { suggestedQuestions } from '@/data/site';
 import { filterProjects } from '@/lib/utils/filter-projects';
+import { knowledgeBase } from '@/lib/ai/knowledge';
 
 /**
  * Content integrity.
@@ -39,6 +40,35 @@ describe('profile matches the resume', () => {
     // No LinkedIn or GitHub in the source document, so none may be invented.
     const ids = profile.socials.map((s) => s.id);
     expect(ids).toEqual(['email', 'phone']);
+  });
+});
+
+describe('assistant voice', () => {
+  const FIRST_PERSON = /\b(I|I'm|I've|my|me)\b/;
+
+  it('gives the AI a third-person summary carrying the same anchor facts', () => {
+    expect(FIRST_PERSON.test(profile.summaryThirdPerson)).toBe(false);
+    expect(FIRST_PERSON.test(profile.positioningThirdPerson)).toBe(false);
+
+    for (const fact of ['2+ years', 'SBFC Finance Limited', '80+', 'TruBot', '3 interns']) {
+      expect(profile.summaryThirdPerson, `missing anchor fact: ${fact}`).toContain(fact);
+      expect(profile.summary, `missing anchor fact: ${fact}`).toContain(fact);
+    }
+  });
+
+  it('never lets first-person page copy reach the AI knowledge base', () => {
+    // The assistant speaks ABOUT Arvind. A chunk written in his voice makes it
+    // say "I started as an IT Executive" under an assistant byline.
+    const offenders = knowledgeBase
+      .filter((chunk) => /(^|[\s"(])(I|I'm|I've|I'd|my|My|mine|Mine)([\s.,;:!?")]|$)/.test(chunk.text))
+      .map((chunk) => chunk.id);
+    expect(offenders).toEqual([]);
+  });
+
+  it('keeps the page copy in his own voice', () => {
+    // The site is his; the assistant is not. Both voices are intentional.
+    expect(FIRST_PERSON.test(profile.summary)).toBe(true);
+    expect(FIRST_PERSON.test(profile.positioning)).toBe(true);
   });
 });
 

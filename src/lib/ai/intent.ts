@@ -46,6 +46,15 @@ const RULES: readonly IntentRule[] = [
     patterns: [/\b(educat|degree|college|university|graduat|qualification|studied|study|bsc|b\.sc)/i],
   },
   {
+    // The noun decides the subject. "His most impactful project" is a request
+    // for a project, not for the achievements list, even though "impactful"
+    // is a strong impact signal.
+    intent: 'projects',
+    tool: 'searchProjects',
+    weight: 5,
+    patterns: [/\b(most impactful|best|biggest|favourite|favorite|proudest)\s+(?:\w+\s+)?projects?\b/i],
+  },
+  {
     intent: 'projects',
     tool: 'searchProjects',
     weight: 2,

@@ -21,6 +21,16 @@ import type { AssistantMode, RetrievedChunk } from '@/types';
 
 const NOT_FOUND_PREFIX = "I don't see";
 
+/**
+ * How far below the best match a chunk may score and still be worth quoting.
+ *
+ * Retrieval returns a ranked list, not a set of equally good answers. Quoting
+ * rank 2 and 3 when they scored a fraction of rank 1 pads a correct answer
+ * with text about something else — which reads, to a visitor, as though the
+ * padding were part of the answer.
+ */
+const RELEVANCE_FLOOR = 0.45;
+
 export function composeGroundedAnswer(
   question: string,
   mode: AssistantMode,
@@ -34,7 +44,10 @@ export function composeGroundedAnswer(
   const sentences: string[] = [];
   const seen = new Set<string>();
 
-  for (const item of context.slice(0, 3)) {
+  const best = context[0]?.score ?? 0;
+  const relevant = context.filter((item) => item.score >= best * RELEVANCE_FLOOR);
+
+  for (const item of relevant.slice(0, 3)) {
     for (const sentence of pickSentences(item, queryTerms, mode)) {
       const key = sentence.toLowerCase().slice(0, 60);
       if (seen.has(key)) continue;
@@ -52,9 +65,22 @@ export function composeGroundedAnswer(
   return sentences.join(' ');
 }
 
-export function notFoundAnswer(question: string): string {
-  const subject = describeSubject(question);
+/**
+ * The answer for a question about something the profile does not contain.
+ *
+ * `named` carries entity names lifted from the question ("Kubernetes"), so the
+ * refusal is specific rather than generic. Nothing from retrieval is appended:
+ * a question whose subject is absent has no relevant evidence to quote, and
+ * quoting adjacent text would imply experience that is not there.
+ */
+export function notFoundAnswer(question: string, named: string[] = []): string {
+  const subject = named.length > 0 ? formatNames(named) : describeSubject(question);
   return `${NOT_FOUND_PREFIX} ${subject} in Arvind's profile, so I can't claim any experience there. What his resume does cover is RPA delivery with TruBot and Automation Edge, SQL/PL-SQL across Oracle, MS SQL, MySQL, PostgreSQL and Redshift, Python automation, Power BI and MIS reporting, and SMS/WhatsApp API integration in banking and retail lending. Ask me about any of those and I'll give you the detail.`;
+}
+
+function formatNames(names: string[]): string {
+  if (names.length === 1) return names[0] as string;
+  return `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
 }
 
 function describeSubject(question: string): string {

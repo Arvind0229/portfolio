@@ -40,7 +40,10 @@ function buildChunks(): KnowledgeChunk[] {
       'profile-summary',
       'profile',
       'Professional summary',
-      `${profile.name} is an ${profile.title} based in ${profile.location}. ${profile.summary}`,
+      // summaryThirdPerson already opens with his name and title; repeating
+      // them here produced "Arvind Gupta is an RPA Developer... Arvind is an
+      // RPA Developer with 2+ years..." in composed answers.
+      `${profile.summaryThirdPerson} He is based in ${profile.location}.`,
       [
         'about',
         'who',
@@ -65,7 +68,7 @@ function buildChunks(): KnowledgeChunk[] {
       'profile-positioning',
       'profile',
       'What he does',
-      `${profile.positioning} Current focus areas: ${profile.focusAreas.join(', ')}. ${profile.availability}.`,
+      `${profile.positioningThirdPerson} Current focus areas: ${profile.focusAreas.join(', ')}. ${profile.availability}.`,
       ['focus', 'strength', 'strengths', 'specialisation', 'specialization', 'do', 'role', 'looking for', 'open to'],
       'Professional Summary',
     ),
@@ -207,7 +210,10 @@ function buildChunks(): KnowledgeChunk[] {
         `expertise-${pillar.id}`,
         'profile',
         pillar.title,
-        `${pillar.title}. ${pillar.description} Specifically: ${pillar.points.join('; ')}.`,
+        // The pillar description is page copy written in Arvind's voice
+        // ("I run the whole cycle"). The title and points carry the same
+        // substance without the pronoun, so the assistant quotes those.
+        `${pillar.title}. Specifically: ${pillar.points.join('; ')}.`,
         ['expertise', 'approach', 'how he works', 'strength', ...pillar.title.toLowerCase().split(/\s+/)],
         'Expertise',
       ),

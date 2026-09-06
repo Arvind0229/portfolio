@@ -38,9 +38,34 @@ describe('runAgent — grounding', () => {
       mode: 'technical',
       history: [],
     });
-    expect(result.answer).toMatch(/don't see/i);
+    expect(result.answer).toMatch(/don't see Kubernetes/i);
     expect(result.answer.toLowerCase()).not.toMatch(/\bhe (has|had) (used|worked with) kubernetes/);
     expect(result.sources).toHaveLength(0);
+  });
+
+  it('does not pad a refusal with unrelated profile content', async () => {
+    // Retrieval still matches on framing words ("does he have EXPERIENCE
+    // with X"), and quoting what those matched reads as though an unrelated
+    // role were the answer.
+    const result = await runAgent({
+      message: 'Does he have experience with Kubernetes?',
+      mode: 'general',
+      history: [],
+    });
+    expect(result.answer).toMatch(/don't see Kubernetes/i);
+    expect(result.answer).not.toMatch(/Harjai|Talent Acquisition|IT Recruiter/i);
+    expect(result.answer).not.toMatch(/Oct 2023|Jul 2021/);
+  });
+
+  it('quotes only chunks that are competitive with the best match', async () => {
+    // A dominant match should not drag weakly-scoring chunks into the answer.
+    const result = await runAgent({
+      message: 'Which databases has he worked with?',
+      mode: 'technical',
+      history: [],
+    });
+    expect(result.answer.toLowerCase()).toContain('oracle');
+    expect(result.answer).not.toMatch(/Harjai|Talent Acquisition/i);
   });
 
   it('does not invent a certification', async () => {
@@ -52,6 +77,20 @@ describe('runAgent — grounding', () => {
     // It may echo the phrase while refusing; what it must never do is affirm it.
     expect(result.answer).toMatch(/don't see/i);
     expect(result.answer).not.toMatch(/\b(he is|he's|yes,? he)\b.*certified/i);
+  });
+
+  it('does not retrieve his recruiter job when asked to summarise FOR a recruiter', async () => {
+    // "recruiter" here describes the audience, not the subject.
+    const result = await runAgent({
+      message: 'Summarise his experience for a recruiter.',
+      mode: 'recruiter',
+      history: [],
+    });
+    // Mentioning the earlier role inside a career summary is correct; leading
+    // with it because the word "recruiter" appeared is not.
+    const firstSentence = result.answer.split(/(?<=\.)\s/)[0] ?? '';
+    expect(firstSentence).not.toMatch(/Harjai|Talent Acquisition/i);
+    expect(firstSentence.toLowerCase()).toMatch(/rpa|automation|sbfc/);
   });
 
   it('answers a recruiter fit question with experience content', async () => {

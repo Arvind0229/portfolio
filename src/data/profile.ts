@@ -11,8 +11,17 @@ export const profile: Profile = {
   title: 'RPA Developer',
   positioning:
     'I automate high-volume banking, NBFC and retail lending processes — end to end, from the requirement conversation to the bot running in production.',
+  // The page speaks in Arvind's voice; the assistant speaks about him. Same
+  // facts, two voices — `summaryThirdPerson` and `positioningThirdPerson` are
+  // what the AI knowledge layer quotes, so an answer never says "I started as
+  // an IT Executive" over an assistant byline. A data-integrity test asserts
+  // both carry the same anchor facts and no first-person pronouns.
   summary:
     'RPA Developer with 2+ years of experience automating high-volume business processes across the Banking, NBFC and Retail Lending space at SBFC Finance Limited. I started as an IT Executive and was absorbed on-role as an RPA Developer on the strength of delivery performance. I have built 80+ production automations independently across LOS, LMS and reporting/operations workflows using TruBot (Datamatics), with recent hands-on in Automation Edge and working knowledge of UiPath. I own the full delivery cycle — requirement discussions, BRD authoring, development, testing, UAT, deployment and production support — and work daily with SQL/PL-SQL, Python, multi-database integration, Power BI and Excel/MIS automation, plus API-based compliance automation. I currently mentor 3 interns who now work as independent RPA developers.',
+  summaryThirdPerson:
+    'Arvind is an RPA Developer with 2+ years of experience automating high-volume business processes across the Banking, NBFC and Retail Lending space at SBFC Finance Limited. He started as an IT Executive and was absorbed on-role as an RPA Developer on the strength of delivery performance. He has built 80+ production automations independently across LOS, LMS and reporting/operations workflows using TruBot (Datamatics), with recent hands-on in Automation Edge and working knowledge of UiPath. He owns the full delivery cycle — requirement discussions, BRD authoring, development, testing, UAT, deployment and production support — and works daily with SQL/PL-SQL, Python, multi-database integration, Power BI and Excel/MIS automation, plus API-based compliance automation. He currently mentors 3 interns who now work as independent RPA developers.',
+  positioningThirdPerson:
+    'He automates high-volume banking, NBFC and retail lending processes end to end, from the requirement conversation to the bot running in production.',
   location: 'Mumbai, India — 400101',
   email: 'guptaarvind29042000@gmail.com',
   phone: '+91 82913 98844',
