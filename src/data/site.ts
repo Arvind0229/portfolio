@@ -15,16 +15,70 @@ export const siteConfig = {
   locale: 'en_IN',
 } as const;
 
+/**
+ * Routes.
+ *
+ * The site is a set of pages rather than one long scroll: each area of the
+ * profile gets a URL that can be linked, shared and landed on directly, which
+ * is what a recruiter forwarding "his projects" actually needs.
+ */
+/**
+ * The primary bar — seven anchors into the one-page scroll.
+ *
+ * Two changes, and the second is the reason for the first.
+ *
+ * **Ten items became seven.** The old bar had four entries answering one
+ * question — About, Expertise, Impact and Technology stack all say "here is
+ * what he can do" — and two more (Education, Resume) that resolved to a
+ * three-row list and a pair of download buttons. A recruiter scanning for
+ * thirty seconds does not audit ten labels; they pick the two that look
+ * obvious and leave.
+ *
+ * **Routes became anchors.** Giving each area its own page meant that
+ * finishing one did nothing: you had to come back to the bar, choose the next
+ * label, and click. A visitor who wants the whole story had to ask for it
+ * seven times. Now scrolling moves through the profile in reading order and
+ * the bar highlights where you are; clicking is for jumping, not for
+ * advancing.
+ *
+ * These `href`s are anchors, so they are **not** what the sitemap is built
+ * from — see `sitemapRoutes` below. Each `id` must match an element id on the
+ * home page; a test asserts that.
+ */
 export const navigation: readonly NavItem[] = [
-  { id: 'profile', label: 'Profile', href: '#profile' },
-  { id: 'expertise', label: 'Expertise', href: '#expertise' },
-  { id: 'experience', label: 'Experience', href: '#experience' },
-  { id: 'projects', label: 'Projects', href: '#projects' },
-  { id: 'skills', label: 'Stack', href: '#skills' },
-  { id: 'architecture', label: 'Architecture', href: '#architecture' },
-  { id: 'impact', label: 'Impact', href: '#impact' },
-  { id: 'assistant', label: 'AI Assistant', href: '#assistant' },
-  { id: 'contact', label: 'Contact', href: '#contact' },
+  { id: 'top', label: 'Home', href: '/#top' },
+  { id: 'about', label: 'About', href: '/#about' },
+  { id: 'experience', label: 'Experience', href: '/#experience' },
+  { id: 'projects', label: 'Projects', href: '/#projects' },
+  { id: 'skills', label: 'Skills', href: '/#skills' },
+  { id: 'impact', label: 'Impact', href: '/#impact' },
+  { id: 'contact', label: 'Contact', href: '/#contact' },
+];
+
+/**
+ * Real pages that are deliberately outside the scroll.
+ *
+ * The assistant is a conversation rather than a section — a chat box dropped
+ * mid-page invites people to type into it while scrolling past. The
+ * architecture demonstration runs on a timer and deserves the viewport to
+ * itself. Both are reached from the footer, from the cards at the foot of the
+ * home page, and — for the assistant — from the header button.
+ */
+export const secondaryNavigation: readonly NavItem[] = [
+  { id: 'architecture', label: 'Architecture', href: '/architecture' },
+  { id: 'assistant', label: 'AI assistant', href: '/assistant' },
+];
+
+/**
+ * What the sitemap is built from: URLs a crawler can actually fetch.
+ *
+ * `navigation` cannot be used for this any more. `/#projects` is the same URL
+ * as `/` to a crawler, and listing one document seven times under seven
+ * fragments is the kind of thing that quietly costs a site its indexing.
+ */
+export const sitemapRoutes: readonly string[] = [
+  '/',
+  ...secondaryNavigation.map((item) => item.href),
 ];
 
 export const themes: readonly ThemeDefinition[] = [
@@ -37,10 +91,10 @@ export const themes: readonly ThemeDefinition[] = [
   },
   {
     id: 'engineering',
-    name: 'Engineering',
-    tagline: 'Dark, technical, data-driven',
+    name: 'Midnight',
+    tagline: 'Midnight blue, electric accents, control-room dark',
     defaultMode: 'dark',
-    swatch: ['#38BDF8', '#8B5CF6'],
+    swatch: ['#3B82F6', '#06B6D4'],
   },
   {
     id: 'studio',
@@ -55,7 +109,7 @@ export const fontSets: readonly FontSetDefinition[] = [
   {
     id: 'precision',
     name: 'Precision',
-    description: 'Inter throughout — neutral, dense, corporate-safe.',
+    description: 'Space Grotesk display over Inter — the signature pairing.',
     preview: 'Aa — 80+ automations',
   },
   {
@@ -129,3 +183,22 @@ export const suggestedQuestions: Record<string, readonly string[]> = {
     'What is his background in banking and lending?',
   ],
 };
+
+/**
+ * The eight technologies the home page leads with.
+ *
+ * Every entry must be a real name from `src/data/skills.ts`. The strip used to
+ * carry "SQL / PL-SQL" — a display label that existed in no data file, so it
+ * matched no skill note and no case study, and nobody noticed because nothing
+ * failed. It lives here rather than in the page so a test can hold it to that.
+ */
+export const trustedTechnologies: readonly string[] = [
+  'TruBot (Datamatics)',
+  'Automation Edge',
+  'Python',
+  'SQL',
+  'PL/SQL',
+  'Power BI',
+  'Oracle',
+  'Redshift',
+];

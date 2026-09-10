@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Badge, Button, Reveal, Section, SectionHeading } from '@/components/ui';
+import Link from 'next/link';
+import { useId, useMemo, useState } from 'react';
+import { Badge, Button, Reveal } from '@/components/ui';
 import { projectCategories, projects } from '@/data/projects';
 import { filterProjects } from '@/lib/utils/filter-projects';
+import { useInView } from '@/hooks/use-in-view';
 import { cn } from '@/lib/utils/cn';
 import type { ProjectCaseStudy } from '@/types';
 
@@ -12,32 +14,25 @@ type View = 'business' | 'technical';
 /**
  * Projects.
  *
- * Every case study carries both a business view and a technical view. The
- * toggle is at section level rather than per card so a recruiter can put the
- * whole section into plain language in one click, and an engineer can do the
- * opposite — the same requirement the AI assistant's modes serve.
+ * Every case study carries both a business view and a technical view, and the
+ * toggle is at section level so a recruiter can put the whole page into plain
+ * language in one click and an engineer can do the opposite — the same
+ * requirement the assistant's modes serve.
+ *
+ * Each card links to its own route rather than opening a dialog. A case study
+ * is a page someone forwards; a modal is a state nobody can share.
  */
 export function ProjectsSection() {
   const [category, setCategory] = useState<string>('All');
   const [query, setQuery] = useState('');
   const [view, setView] = useState<View>('business');
-  const [openProject, setOpenProject] = useState<ProjectCaseStudy | null>(null);
   const searchId = useId();
 
-  const visible = useMemo(
-    () => filterProjects(projects, { category, query }),
-    [category, query],
-  );
+  const visible = useMemo(() => filterProjects(projects, { category, query }), [category, query]);
 
   return (
-    <Section id="projects" ariaLabel="Projects and case studies">
-      <SectionHeading
-        eyebrow="Projects"
-        title="Case studies, not screenshots"
-        description="Each one starts from the business problem, states what was built, and ends with what actually changed. Every detail here comes from work delivered at SBFC Finance Limited."
-      />
-
-      <div className="mt-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <>
+      <div className="mt-12 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2" role="group" aria-label="Filter projects by category">
           {['All', ...projectCategories].map((item) => (
             <button
@@ -47,7 +42,7 @@ export function ProjectsSection() {
               aria-pressed={category === item}
               data-testid={`project-filter-${item.replace(/\s+/g, '-').toLowerCase()}`}
               className={cn(
-                'rounded-full border px-3.5 py-1.5 text-[0.78rem] transition-colors duration-[var(--motion-fast)]',
+                'rounded-full border px-3.5 py-1.5 text-[0.78rem] transition-[color,border-color,background-color] duration-[var(--motion-fast)]',
                 category === item
                   ? 'border-[var(--accent-primary)] bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] text-[var(--accent-primary)]'
                   : 'border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -128,44 +123,65 @@ export function ProjectsSection() {
               delay={index * 60}
               className={cn(project.featured && index === 0 && 'md:col-span-2')}
             >
-              <ProjectCard
-                project={project}
-                view={view}
-                wide={project.featured && index === 0}
-                onOpen={() => setOpenProject(project)}
-              />
+              <ProjectCard project={project} view={view} wide={project.featured && index === 0} />
             </Reveal>
           ))}
         </div>
       )}
-
-      {openProject ? (
-        <ProjectDialog project={openProject} onClose={() => setOpenProject(null)} />
-      ) : null}
-    </Section>
+    </>
   );
 }
 
+/**
+ * A project card that reveals in stages.
+ *
+ * When the card enters the viewport the pieces arrive in the order a person
+ * wants them: the card, the title, what it does, the technologies, then the
+ * result. Each step is a CSS delay on an element already in the DOM — no
+ * measurement, no layout thrash, and the sequence collapses to "everything
+ * visible" under reduced motion.
+ *
+ * The edge reacts to the pointer through two custom properties, which repaint
+ * this element only and never invalidate layout.
+ */
 function ProjectCard({
   project,
   view,
   wide,
-  onOpen,
 }: {
   project: ProjectCaseStudy;
   view: View;
   wide: boolean;
-  onOpen: () => void;
 }) {
+  const { ref, inView } = useInView<HTMLElement>({ threshold: 0.25 });
+
+  const onPointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const target = event.currentTarget;
+    const box = target.getBoundingClientRect();
+    target.style.setProperty('--pointer-x', `${event.clientX - box.left}px`);
+    target.style.setProperty('--pointer-y', `${event.clientY - box.top}px`);
+  };
+
+  const stage = (index: number) => ({ ['--reveal-delay' as string]: `${index * 90}ms` });
+
   return (
     <article
+      ref={ref}
+      onPointerMove={onPointerMove}
       data-testid={`project-card-${project.id}`}
+      data-revealed={inView ? 'true' : 'false'}
       className={cn(
-        'group flex h-full flex-col p-6 transition-[transform,border-color] duration-[var(--motion-base)] hover:-translate-y-1',
-        wide ? 'glass' : 'surface-card hover:border-[var(--accent-primary)]',
+        'card-reactive group relative flex h-full flex-col p-6 transition-[transform,border-color,box-shadow] duration-[var(--motion-base)] hover:-translate-y-1',
+        wide
+          ? 'glass-elevated sm:p-8'
+          : 'surface-card hover:border-[var(--accent-primary)] hover:shadow-[var(--glow-soft)]',
       )}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div
+        className="reveal flex items-start justify-between gap-4"
+        data-visible={inView}
+        style={stage(0)}
+      >
         <Badge tone={project.featured ? 'accent' : 'neutral'}>{project.category}</Badge>
         {project.featured ? (
           <span className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-[var(--text-subtle)]">
@@ -174,194 +190,64 @@ function ProjectCard({
         ) : null}
       </div>
 
-      <h3 className={cn('mt-4', wide ? 'text-[1.5rem]' : 'text-[1.15rem]')}>{project.title}</h3>
+      <h2
+        className={cn('reveal mt-4 font-display', wide ? 'text-[1.6rem]' : 'text-[1.18rem]')}
+        data-visible={inView}
+        style={stage(1)}
+      >
+        {/* The whole card is the target: the link stretches over it so the hit
+            area matches what a person perceives as clickable, while the
+            accessible name stays just the project title. */}
+        <Link
+          href={`/projects/${project.id}`}
+          data-testid={`project-link-${project.id}`}
+          className="after:absolute after:inset-0 after:content-['']"
+        >
+          {project.title}
+        </Link>
+      </h2>
 
-      <p className="mt-3 flex-1 text-[0.92rem] leading-relaxed text-[var(--text-secondary)]">
+      <p
+        className="reveal mt-3 flex-1 text-[0.92rem] leading-relaxed text-[var(--text-secondary)]"
+        data-visible={inView}
+        style={stage(2)}
+      >
         {view === 'business' ? project.businessView : project.technicalView}
       </p>
 
-      <ul className="mt-5 flex flex-wrap gap-1.5">
+      <ul className="reveal mt-5 flex flex-wrap gap-1.5" data-visible={inView} style={stage(3)}>
         {project.technologies.map((tech) => (
           <li
             key={tech}
-            className="rounded-[var(--radius-sm)] border border-[var(--border-subtle)] px-2 py-1 font-mono text-[0.68rem] text-[var(--text-muted)]"
+            className="rounded-[var(--radius-sm)] border border-[var(--border-subtle)] px-2 py-1 font-mono text-[0.68rem] text-[var(--text-muted)] transition-colors duration-[var(--motion-fast)] group-hover:border-[var(--border)]"
           >
             {tech}
           </li>
         ))}
       </ul>
 
-      <Button variant="quiet" size="sm" className="mt-5 self-start px-0" onClick={onOpen}>
+      {project.impact[0] ? (
+        <p
+          className="reveal mt-4 flex gap-2 border-t border-[var(--border-subtle)] pt-4 text-[0.84rem] leading-relaxed text-[var(--text-muted)]"
+          data-visible={inView}
+          style={stage(4)}
+        >
+          <span aria-hidden="true" className="text-[var(--success)]">
+            ✓
+          </span>
+          {project.impact[0]}
+        </p>
+      ) : null}
+
+      <p className="mt-4 inline-flex items-center gap-1.5 text-[0.82rem] font-medium text-[var(--accent-primary)]">
         Read the case study
         <span
           aria-hidden="true"
-          className="ml-1 inline-block transition-transform duration-[var(--motion-fast)] group-hover:translate-x-1"
+          className="inline-block transition-transform duration-[var(--motion-fast)] group-hover:translate-x-1"
         >
           →
         </span>
-      </Button>
+      </p>
     </article>
-  );
-}
-
-/**
- * Accessible dialog: focus is moved in on open and restored on close, Escape
- * closes, Tab is trapped, and the backdrop is inert to screen readers.
- */
-function ProjectDialog({
-  project,
-  onClose,
-}: {
-  project: ProjectCaseStudy;
-  onClose: () => void;
-}) {
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-  const previouslyFocused = useRef<HTMLElement | null>(null);
-  const titleId = useId();
-
-  useEffect(() => {
-    previouslyFocused.current = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    dialogRef.current?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-
-      const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
-        'button, a[href], input, [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusables || focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      if (!first || !last) return;
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = overflow;
-      previouslyFocused.current?.focus();
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end justify-center overflow-y-auto bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-6"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        data-testid="project-dialog"
-        className="animate-fade-in max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-lg)] sm:rounded-[var(--radius-xl)] sm:p-8"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <Badge tone="accent">{project.category}</Badge>
-            <h3 id={titleId} className="mt-3 text-[1.5rem]">
-              {project.title}
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close case study"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-[var(--radius-md)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-          >
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
-
-        <div className="mt-6 space-y-6">
-          <Block title="For a non-technical reader" body={project.businessView} accent />
-          <Block title="The problem" body={project.problem} />
-          <Block title="What was built" body={project.solution} />
-          <Block title="Technically" body={project.technicalView} />
-          <Block title="My role" body={project.role} />
-
-          <div>
-            <h4 className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-[var(--text-muted)]">
-              How it was delivered
-            </h4>
-            <ol className="mt-3 space-y-2.5">
-              {project.process.map((step, index) => (
-                <li key={step} className="flex gap-3 text-[0.88rem] text-[var(--text-secondary)]">
-                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-[var(--border)] font-mono text-[0.65rem] text-[var(--accent-primary)]">
-                    {index + 1}
-                  </span>
-                  {step}
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <div>
-            <h4 className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-[var(--text-muted)]">
-              Impact
-            </h4>
-            <ul className="mt-3 space-y-2">
-              {project.impact.map((entry) => (
-                <li key={entry} className="flex gap-2.5 text-[0.88rem] text-[var(--text-secondary)]">
-                  <span aria-hidden="true" className="text-[var(--success)]">
-                    ✓
-                  </span>
-                  {entry}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-[var(--text-muted)]">
-              Technologies
-            </h4>
-            <ul className="mt-3 flex flex-wrap gap-1.5">
-              {project.technologies.map((tech) => (
-                <li
-                  key={tech}
-                  className="rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2 py-1 font-mono text-[0.7rem] text-[var(--text-muted)]"
-                >
-                  {tech}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Block({ title, body, accent }: { title: string; body: string; accent?: boolean }) {
-  return (
-    <div
-      className={cn(
-        accent &&
-          'rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4',
-      )}
-    >
-      <h4 className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-[var(--text-muted)]">
-        {title}
-      </h4>
-      <p className="mt-2 text-[0.92rem] leading-relaxed text-[var(--text-secondary)]">{body}</p>
-    </div>
   );
 }

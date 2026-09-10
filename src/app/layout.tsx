@@ -8,6 +8,7 @@ import type { Metadata, Viewport } from 'next';
  *   - the browser downloads only the unicode-range subsets it actually needs.
  * All four families are OFL-licensed and free to deploy commercially.
  */
+import '@fontsource-variable/space-grotesk';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/jetbrains-mono';
 import '@fontsource-variable/sora';
@@ -16,7 +17,9 @@ import './globals.css';
 
 import { AppearanceProvider } from '@/hooks/use-appearance';
 import { Backdrop } from '@/components/visuals/backdrop';
+import { MotionNotice } from '@/components/layout/motion-notice';
 import { Navbar } from '@/components/layout/navbar';
+import { PageTransition } from '@/components/layout/page-transition';
 import { Footer } from '@/components/layout/footer';
 import { THEME_BOOTSTRAP_SCRIPT } from '@/lib/theme/constants';
 import { siteConfig } from '@/data/site';
@@ -76,8 +79,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f6f9fc' },
-    { media: '(prefers-color-scheme: dark)', color: '#07111f' },
+    { media: '(prefers-color-scheme: light)', color: '#f5f8fc' },
+    { media: '(prefers-color-scheme: dark)', color: '#050a12' },
   ],
 };
 
@@ -118,7 +121,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AppearanceProvider>
           <Backdrop />
           <Navbar />
-          <main id="main">{children}</main>
+          {/* Pinned to the bottom edge, and rendering nothing at all unless
+              the OS is actually asking for reduced motion — see the note in
+              the component for why it is not in the flow up here. */}
+          <MotionNotice />
+          <main id="main">
+            <PageTransition>{children}</PageTransition>
+          </main>
           <Footer />
         </AppearanceProvider>
       </body>

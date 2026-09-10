@@ -93,15 +93,14 @@ test.describe('security', () => {
   });
 
   test('user-supplied text is rendered as text, never as markup', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('#assistant').scrollIntoViewIfNeeded();
+    await page.goto('/assistant');
 
     await page.getByTestId('assistant-input').fill('<img src=x onerror=alert(1)>Tell me his stack');
     await page.getByTestId('assistant-send').click();
     await expect(page.getByTestId('assistant-pending')).toHaveCount(0, { timeout: 20_000 });
 
     // The literal text must appear in the transcript and no element created.
-    const injected = await page.locator('#assistant img[src="x"]').count();
+    const injected = await page.locator('img[src="x"]').count();
     expect(injected).toBe(0);
   });
 });

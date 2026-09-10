@@ -49,9 +49,21 @@ const FONT_PREVIEW_CLASS: Record<FontSetId, string> = {
 };
 
 export function AppearanceControls({ variant = 'popover' }: { variant?: 'popover' | 'inline' }) {
-  const { theme, mode, font, setTheme, toggleMode, setFont, ready } = useAppearance();
+  const { theme, font, setTheme, setFont, ready, fullMotion, setFullMotion, systemReducedMotion } =
+    useAppearance();
   const { open, setOpen, containerRef } = usePopover();
 
+  /*
+   * The motion control only appears when the OS is actually asking for reduced
+   * motion. Shown unconditionally it would be a switch that does nothing for
+   * almost everyone and — worse — a second place to turn animation *off*,
+   * competing with the system setting that already does that.
+   *
+   * It exists for one real case: Windows disables animation wholesale under
+   * "adjust for best performance", so a visitor can be told the web has no
+   * animation without ever having asked for it. This is how they say otherwise
+   * for this site, without touching their system settings.
+   */
   const panel = (
     <div className={cn('space-y-5', variant === 'popover' && 'w-[19rem]')}>
       <fieldset>
@@ -114,33 +126,52 @@ export function AppearanceControls({ variant = 'popover' }: { variant?: 'popover
         </div>
       </fieldset>
 
-      <div className="flex items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
-        <span className="text-[0.8rem] text-[var(--text-secondary)]">
-          {mode === 'dark' ? 'Dark' : 'Light'} appearance
-        </span>
-        <button
-          type="button"
-          onClick={toggleMode}
-          role="switch"
-          aria-checked={mode === 'dark'}
-          aria-label="Toggle dark mode"
-          className={cn(
-            'relative h-6 w-11 shrink-0 rounded-full border transition-colors duration-[var(--motion-base)]',
-            mode === 'dark'
-              ? 'border-transparent bg-[var(--accent-primary)]'
-              : 'border-[var(--border)] bg-[var(--surface-elevated)]',
-          )}
-        >
-          <span
+      {systemReducedMotion ? (
+        <fieldset>
+          <legend className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            Motion
+          </legend>
+          <p className="mt-2 text-[0.72rem] leading-relaxed text-[var(--text-muted)]">
+            Your system is set to reduce motion, so animation here is off. Turn it
+            on for this site if that was not deliberate.
+          </p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={fullMotion}
+            onClick={() => setFullMotion(!fullMotion)}
+            data-testid="motion-toggle"
             className={cn(
-              'absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full transition-[left] duration-[var(--motion-base)] ease-[var(--ease-out)]',
-              mode === 'dark'
-                ? 'left-6 bg-[var(--accent-contrast)]'
-                : 'left-1 bg-[var(--text-secondary)]',
+              'mt-2.5 flex w-full items-center justify-between gap-3 rounded-[var(--radius-md)] border px-3 py-2 text-left transition-colors duration-[var(--motion-fast)]',
+              fullMotion
+                ? 'border-[var(--accent-primary)] bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)]'
+                : 'border-[var(--border-subtle)] hover:border-[var(--border)]',
             )}
-          />
-        </button>
-      </div>
+          >
+            <span className="text-[0.82rem] font-medium text-[var(--text-primary)]">
+              {fullMotion ? 'Animation on' : 'Animation off'}
+            </span>
+            <span
+              aria-hidden="true"
+              className={cn(
+                'relative h-4 w-7 shrink-0 rounded-full transition-colors duration-[var(--motion-fast)]',
+                fullMotion ? 'bg-[var(--accent-primary)]' : 'bg-[var(--border)]',
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 h-3 w-3 rounded-full bg-white transition-[left] duration-[var(--motion-fast)]',
+                  fullMotion ? 'left-[0.875rem]' : 'left-0.5',
+                )}
+              />
+            </span>
+          </button>
+        </fieldset>
+      ) : null}
+
+      <p className="border-t border-[var(--border-subtle)] pt-4 text-[0.72rem] leading-relaxed text-[var(--text-muted)]">
+        Light and dark are on the lamp in the corner — pull the cord or click the bulb.
+      </p>
     </div>
   );
 
@@ -172,7 +203,9 @@ export function AppearanceControls({ variant = 'popover' }: { variant?: 'popover
             style={{ background: 'var(--accent-secondary)' }}
           />
         </span>
-        <span className="hidden sm:inline">{ready ? capitalise(theme) : 'Theme'}</span>
+        <span className="hidden sm:inline">
+          {ready ? (themes.find((item) => item.id === theme)?.name ?? 'Theme') : 'Theme'}
+        </span>
       </button>
 
       {open ? (
@@ -233,8 +266,4 @@ function ThemeOption({
       </span>
     </button>
   );
-}
-
-function capitalise(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

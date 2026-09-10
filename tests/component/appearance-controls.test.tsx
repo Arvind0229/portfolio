@@ -58,19 +58,15 @@ describe('AppearanceControls', () => {
     expect(document.documentElement.getAttribute('data-mode')).toBe('light');
   });
 
-  it('remembers a mode the visitor chose explicitly for a theme', async () => {
+  it('hands light and dark to the lamp rather than duplicating the control', async () => {
+    // Two controls for one setting is a UX bug waiting to happen; the panel
+    // points at the bulb instead of shipping a second switch.
     const user = userEvent.setup();
     renderControls();
 
     await user.click(screen.getByTestId('appearance-trigger'));
-    await user.click(screen.getByTestId('theme-option-enterprise'));
-    await user.click(screen.getByRole('switch', { name: /dark mode/i }));
-    expect(document.documentElement.getAttribute('data-mode')).toBe('dark');
-
-    // Leave and come back — the explicit choice wins over the theme default.
-    await user.click(screen.getByTestId('theme-option-studio'));
-    await user.click(screen.getByTestId('theme-option-enterprise'));
-    expect(document.documentElement.getAttribute('data-mode')).toBe('dark');
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.getByText(/pull the cord or click the bulb/i)).toBeInTheDocument();
   });
 
   it('applies and persists a font choice', async () => {

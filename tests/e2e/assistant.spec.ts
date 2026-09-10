@@ -13,8 +13,7 @@ async function lastAnswer(page: Page): Promise<string> {
 
 test.describe('AI assistant', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.locator('#assistant').scrollIntoViewIfNeeded();
+    await page.goto('/assistant');
   });
 
   test('answers a question from the resume', async ({ page }) => {
@@ -43,7 +42,6 @@ test.describe('AI assistant', () => {
     const technical = await lastAnswer(page);
 
     await page.reload();
-    await page.locator('#assistant').scrollIntoViewIfNeeded();
     await page.getByTestId('assistant-mode-business').click();
     await ask(page, 'Explain the compliance tracking project.');
     const business = await lastAnswer(page);

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Reveal, Section, SectionHeading } from '@/components/ui';
+import { Icon } from '@/components/icons';
+import { Badge, Reveal } from '@/components/ui';
 import { experience } from '@/data/experience';
 import { cn } from '@/lib/utils/cn';
 
@@ -15,13 +16,12 @@ import { cn } from '@/lib/utils/cn';
  * assistive technology once expanded.
  */
 export function ExperienceSection() {
+  // No `id` on the section here: the page's Section wrapper owns the anchor.
+  // Two elements sharing one id is invalid HTML, and it makes
+  // `document.getElementById` — which the scroll spy relies on — return
+  // whichever came first rather than the section.
   return (
-    <Section id="experience" ariaLabel="Professional experience">
-      <SectionHeading
-        eyebrow="Experience"
-        title="Where the work happened"
-        description="From IT Executive to on-role RPA Developer — and, before that, the recruitment years that taught the stakeholder side of delivery."
-      />
+    <section className="scroll-mt-24">
 
       <ol className="mt-14 space-y-4">
         {experience.map((item, index) => (
@@ -30,7 +30,7 @@ export function ExperienceSection() {
           </Reveal>
         ))}
       </ol>
-    </Section>
+    </section>
   );
 }
 
@@ -42,14 +42,23 @@ function ExperienceCard({ item }: { item: (typeof experience)[number] }) {
 
   return (
     <article className="surface-card relative overflow-hidden p-6 sm:p-8">
+      {/*
+        The edge bar. On the role he still holds, a charge runs down it — the
+        same vocabulary as the hero's connectors, and the animation is a
+        statement about the data rather than decoration spread evenly over a
+        list: the finished role keeps a flat bar, because it is finished.
+      */}
       <span
         aria-hidden="true"
-        className="absolute left-0 top-0 h-full w-[3px]"
-        style={{
-          background: item.current
-            ? 'linear-gradient(180deg, var(--accent-primary), transparent)'
-            : 'var(--border)',
-        }}
+        className={cn(
+          'absolute left-0 top-0 h-full w-[3px]',
+          item.current && 'role-bar-live',
+        )}
+        style={
+          item.current
+            ? { backgroundColor: 'color-mix(in srgb, var(--accent-primary) 30%, transparent)' }
+            : { background: 'var(--border)' }
+        }
       />
 
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
@@ -58,12 +67,44 @@ function ExperienceCard({ item }: { item: (typeof experience)[number] }) {
             <h3 className="text-[1.15rem]">{item.role}</h3>
             {item.current ? <Badge tone="accent">Current</Badge> : null}
           </div>
-          <p className="mt-1 text-[0.95rem] text-[var(--text-secondary)]">
-            {item.company} · {item.location}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.95rem] text-[var(--text-secondary)]">
+            <span>
+              {item.company} · {item.location}
+            </span>
+            {item.companyProfile ? (
+              <Badge tone="muted" className="border border-[var(--border-subtle)]">
+                {item.companyProfile.sector}
+              </Badge>
+            ) : null}
           </p>
         </div>
         <p className="font-mono text-[0.78rem] text-[var(--text-muted)]">{item.period}</p>
       </div>
+
+      {/* What the employer does. A reader who has not heard of SBFC cannot
+          judge "automated the LOS–LMS environment" until they know it is a
+          lender — so the context comes before the responsibilities, not
+          after them. */}
+      {item.companyProfile ? (
+        <div className="surface-elevated mt-5 flex gap-3.5 p-4 sm:p-5">
+          <Icon
+            name="layers"
+            size={17}
+            className="mt-0.5 shrink-0 text-[var(--accent-secondary)]"
+          />
+          <div className="min-w-0">
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--text-subtle)]">
+              About {item.company}
+            </p>
+            <p className="mt-2 text-[0.88rem] leading-relaxed text-[var(--text-secondary)]">
+              {item.companyProfile.what}
+            </p>
+            <p className="mt-2.5 text-[0.85rem] leading-relaxed text-[var(--text-muted)]">
+              {item.companyProfile.relevance}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <p className="mt-5 max-w-3xl text-[0.93rem] leading-relaxed text-[var(--text-secondary)]">
         {item.summary}

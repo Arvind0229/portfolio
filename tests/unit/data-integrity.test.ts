@@ -4,7 +4,8 @@ import { experience } from '@/data/experience';
 import { profile } from '@/data/profile';
 import { projects } from '@/data/projects';
 import { allSkills, skillGroups } from '@/data/skills';
-import { suggestedQuestions } from '@/data/site';
+import { skillNotes, skillsWithoutNotes, usedIn } from '@/data/skill-notes';
+import { suggestedQuestions, trustedTechnologies } from '@/data/site';
 import { filterProjects } from '@/lib/utils/filter-projects';
 import { knowledgeBase } from '@/lib/ai/knowledge';
 
@@ -36,10 +37,15 @@ describe('profile matches the resume', () => {
     expect(profile.title).toBe('RPA Developer');
   });
 
-  it('lists only contact channels that exist in the resume', () => {
-    // No LinkedIn or GitHub in the source document, so none may be invented.
+  it('lists only contact channels with a traceable source', () => {
+    // The rule this test exists for is "nothing invented", not "nothing but
+    // the resume". Email and phone come from the resume. LinkedIn was supplied
+    // by Arvind directly, in conversation, on 2026-09-07 — which is a source,
+    // and is why it is allowed here and a GitHub link still is not.
+    const SOURCED = ['email', 'phone', 'linkedin'];
     const ids = profile.socials.map((s) => s.id);
-    expect(ids).toEqual(['email', 'phone']);
+    expect(ids).toEqual(SOURCED.filter((id) => ids.includes(id)));
+    expect(ids.filter((id) => !SOURCED.includes(id))).toEqual([]);
   });
 });
 
@@ -50,7 +56,7 @@ describe('assistant voice', () => {
     expect(FIRST_PERSON.test(profile.summaryThirdPerson)).toBe(false);
     expect(FIRST_PERSON.test(profile.positioningThirdPerson)).toBe(false);
 
-    for (const fact of ['2+ years', 'SBFC Finance Limited', '80+', 'TruBot', '3 interns']) {
+    for (const fact of ['2.9 years', 'SBFC Finance Limited', '80+', 'TruBot', '3 interns']) {
       expect(profile.summaryThirdPerson, `missing anchor fact: ${fact}`).toContain(fact);
       expect(profile.summary, `missing anchor fact: ${fact}`).toContain(fact);
     }
@@ -222,5 +228,134 @@ describe('project filtering', () => {
 
   it('returns nothing for a term that appears nowhere', () => {
     expect(filterProjects(projects, { category: 'All', query: 'kubernetes' })).toHaveLength(0);
+  });
+});
+
+describe('skill notes', () => {
+  it('covers every technology in the stack', () => {
+    // A chip with no note opens a panel that says nothing. The component
+    // degrades rather than crashing, but silence is not the intent — so the
+    // gap is a failing test, not something to notice in the browser.
+    expect(skillsWithoutNotes).toEqual([]);
+  });
+
+  it('describes the technology, never the person', () => {
+    // The `what`/`why` halves are public facts about a tool. The moment one
+    // starts making claims about Arvind, it has left the ground this file can
+    // stand on — the personal half is derived from the case studies instead.
+    const personal = /\b(he|his|him|arvind|i built|i have|my )\b/i;
+    const offenders = Object.entries(skillNotes)
+      .filter(([, note]) => personal.test(note.what) || personal.test(note.why))
+      .map(([skill]) => skill);
+    expect(offenders).toEqual([]);
+  });
+
+  it('only ever claims a project that actually lists the technology', () => {
+    // usedIn() is fuzzy by necessity — the stack says "SQL", a case study says
+    // "SQL / PL-SQL". Fuzzy matching that drifts would invent history, so every
+    // returned project is checked back against the real project record.
+    for (const skill of allSkills) {
+      for (const claimed of usedIn(skill)) {
+        const project = projects.find((entry) => entry.id === claimed.id);
+        expect(project, `${skill} pointed at a project that does not exist`).toBeDefined();
+        expect(
+          project?.technologies.length,
+          `${skill} matched ${claimed.id}, which lists no technologies`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('only reaches every project for technologies that really are in every project', () => {
+    // The failure mode of fuzzy matching is a short name swallowing everything.
+    // `PL/SQL` did exactly that before the matcher stopped splitting a slash
+    // with no spaces around it — it claimed five projects that never mention it.
+    //
+    // The guard is a second, stricter method: a skill may only claim all five
+    // case studies if its name appears verbatim as a whole word in all five
+    // technology lists. Two do, and the assertion checks that independently
+    // rather than trusting a hard-coded allow-list.
+    const literallyEverywhere = allSkills.filter((skill) => {
+      const needle = skill.replace(/\s*\([^)]*\)/g, '').toLowerCase();
+      const pattern = new RegExp(`(^|[^a-z0-9])${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`, 'i');
+      return projects.every((project) =>
+        project.technologies.some((technology) => pattern.test(technology)),
+      );
+    });
+
+    const matchedEverywhere = allSkills.filter(
+      (skill) => usedIn(skill).length === projects.length,
+    );
+
+    expect(matchedEverywhere.sort()).toEqual(literallyEverywhere.sort());
+  });
+
+  it('resolves the technologies the home page shows up front', () => {
+    // The strip used to say "SQL / PL-SQL" — a label that exists in no data
+    // file, so it silently matched no note and no project.
+    for (const tool of trustedTechnologies) {
+      expect(allSkills, `${tool} is not a real skill name`).toContain(tool);
+      expect(skillNotes[tool], `${tool} has no note`).toBeDefined();
+    }
+  });
+});
+
+describe('social links', () => {
+  it('stores the LinkedIn profile without the share tracking it was copied with', () => {
+    const linkedin = profile.socials.find((social) => social.id === 'linkedin');
+    expect(linkedin, 'LinkedIn link is missing').toBeDefined();
+    expect(linkedin?.href).toMatch(/^https:\/\/www\.linkedin\.com\/in\//);
+    // The URL arrives from the mobile app carrying utm_source / utm_content /
+    // utm_medium. Those describe one share, not the profile, and publishing
+    // them hands the analytics to every visitor.
+    expect(linkedin?.href).not.toContain('?');
+    expect(linkedin?.href).not.toMatch(/utm_/i);
+  });
+
+  it('uses a real scheme for every social link', () => {
+    for (const social of profile.socials) {
+      expect(social.href, `${social.id} has no usable href`).toMatch(/^(https:|mailto:|tel:)/);
+    }
+  });
+});
+
+describe('employer profiles', () => {
+  it('describes the company, never the person', () => {
+    // Same line the skill notes draw. `what` is a public fact about a business;
+    // the moment it starts saying what Arvind achieved, it has left the ground
+    // it can stand on — that belongs in `highlights`, which is resume-sourced.
+    const personal = /\b(he|his|him|arvind)\b/i;
+    for (const item of experience) {
+      if (!item.companyProfile) continue;
+      expect(
+        personal.test(item.companyProfile.what),
+        `${item.company}: the "what" line makes a claim about a person`,
+      ).toBe(false);
+    }
+  });
+
+  it('keeps the resume-sourced fields untouched', () => {
+    // Adding context must not have quietly reworded the facts.
+    const sbfc = experience.find((item) => item.id === 'sbfc-rpa-developer');
+    expect(sbfc?.company).toBe('SBFC Finance Limited');
+    expect(sbfc?.role).toBe('RPA Developer');
+    expect(sbfc?.current).toBe(true);
+    expect(sbfc?.highlights.length).toBeGreaterThanOrEqual(13);
+
+    const harjai = experience.find((item) => item.id === 'harjai-recruiter');
+    expect(harjai?.company).toBe('Harjai Computers Pvt. Ltd.');
+    expect(harjai?.current).toBe(false);
+  });
+
+  it('gives every profile all three parts, or none at all', () => {
+    for (const item of experience) {
+      if (!item.companyProfile) continue;
+      expect(item.companyProfile.sector.length, `${item.company}: empty sector`).toBeGreaterThan(0);
+      expect(item.companyProfile.what.length, `${item.company}: empty what`).toBeGreaterThan(40);
+      expect(
+        item.companyProfile.relevance.length,
+        `${item.company}: empty relevance`,
+      ).toBeGreaterThan(40);
+    }
   });
 });

@@ -31,3 +31,7 @@ npm-debug.log*
 yarn-error.log*
 .vercel
 *.tsbuildinfo
+
+# Build artefacts that slipped into a delivery zip once.
+tsconfig.tsbuildinfo
+*.mjs.local

@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Badge, Reveal, Section, SectionHeading } from '@/components/ui';
+import { Icon, type IconName } from '@/components/icons';
+import { Badge, Reveal } from '@/components/ui';
 import { architectureFlows } from '@/data/impact';
+import { AutomationPipeline } from '@/components/visuals/automation-pipeline';
+import { RunMonitor } from '@/components/visuals/run-monitor';
 import { cn } from '@/lib/utils/cn';
 
 /**
@@ -21,12 +24,7 @@ export function ArchitectureSection() {
   if (!active) return null;
 
   return (
-    <Section id="architecture" ariaLabel="Engineering approach">
-      <SectionHeading
-        eyebrow="Architecture"
-        title="How an automation gets from a conversation to production"
-        description="Two views of the same discipline: the delivery cycle around every bot, and the runtime shape of the bots themselves."
-      />
+    <section id="architecture" className="scroll-mt-24">
 
       <div
         className="mt-10 flex flex-wrap gap-2"
@@ -68,6 +66,14 @@ export function ArchitectureSection() {
           <p className="text-[0.88rem] text-[var(--text-muted)]">{active.caption}</p>
         </div>
 
+        {/* The same pipeline component as the hero, fed by whichever flow is
+            selected — one implementation, two contexts. */}
+        <div className="glass mt-8 p-5 sm:p-7">
+          <AutomationPipeline
+            stages={active.steps.map((step) => ({ id: step.id, label: step.label }))}
+          />
+        </div>
+
         <ol className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {active.steps.map((step, index) => (
             <Reveal as="li" key={step.id} delay={index * 70} className="surface-card relative h-full p-5">
@@ -93,7 +99,71 @@ export function ArchitectureSection() {
             </Reveal>
           ))}
         </ol>
+
+        {/* The pipeline above shows the shape of an automation. This shows one
+            going through it — which is the part a business reader actually
+            pictures when they hear "the bot runs overnight". */}
+        <div className="mt-16 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)] lg:items-start">
+          <Reveal>
+            <RunMonitor />
+          </Reveal>
+          <Reveal delay={90}>
+            <div className="surface-card h-full p-5 sm:p-7">
+              <h3 className="font-display text-[1.15rem]">What a run leaves behind</h3>
+              <p className="mt-2.5 text-[0.9rem] leading-relaxed text-[var(--text-secondary)]">
+                Every one of these finishes somewhere a person can check. That is the difference
+                between an automation that survives its first exception and one that quietly stops
+                and nobody notices for a week.
+              </p>
+              <ul className="mt-5 space-y-3">
+                {RUN_OUTPUTS.map((output) => (
+                  <li key={output.label} className="flex items-start gap-3">
+                    <Icon
+                      name={output.icon}
+                      size={16}
+                      className="mt-1 shrink-0 text-[var(--accent-secondary)]"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-[0.88rem] font-medium text-[var(--text-primary)]">
+                        {output.label}
+                      </span>
+                      <span className="block text-[0.8rem] leading-relaxed text-[var(--text-muted)]">
+                        {output.detail}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        </div>
       </div>
-    </Section>
+    </section>
   );
 }
+
+/* Presentation-side list: what the runtime produces, which is the half of
+   "monitored" that a diagram cannot show. Each of these is described in the
+   resume — updated systems, MIS, alerts and an audit trail. */
+const RUN_OUTPUTS: ReadonlyArray<{ icon: IconName; label: string; detail: string }> = [
+  {
+    icon: 'layers',
+    label: 'Updated systems',
+    detail: 'LOS, LMS and downstream records written back, not just read.',
+  },
+  {
+    icon: 'chart',
+    label: 'MIS and dashboards',
+    detail: 'Product-wise reports out on schedule, formatted and ready to read.',
+  },
+  {
+    icon: 'shield',
+    label: 'Exceptions raised',
+    detail: 'Anything that fails a rule reaches the right team while it can still be fixed.',
+  },
+  {
+    icon: 'document',
+    label: 'An audit trail',
+    detail: 'Logs that answer what ran, when, and what it touched.',
+  },
+];

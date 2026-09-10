@@ -38,6 +38,17 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+
+  /*
+   * The dev server serves `/_next/*` to whatever host the page was opened on.
+   * Opening the site as `127.0.0.1` when the server announced `localhost` (or
+   * the reverse) counts as cross-origin, and Next warns that a future major
+   * version will refuse it outright rather than warn.
+   *
+   * Listing both spellings costs nothing and is development-only — it has no
+   * effect on a production build.
+   */
+  allowedDevOrigins: ['localhost', '127.0.0.1'],
   poweredByHeader: false,
   // `standalone` keeps the Docker image small and makes the app portable
   // beyond Vercel without changing a line of application code.
@@ -46,6 +57,48 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  /**
+   * Every URL this site has ever had, still resolving.
+   *
+   * Two rounds of restructuring retired ten paths: four when four pages were
+   * merged into two, and six more when the section pages became anchors on a
+   * single scrolling home page. Any of them may be in a sitemap Google has
+   * crawled, in a message Arvind has sent a recruiter, or in someone's
+   * bookmarks — and a portfolio that 404s a link its owner shared is worse
+   * than any navigation problem it was fixing.
+   *
+   * `permanent: true` issues a 308, which tells a crawler to move its index to
+   * the new address rather than treating this as a temporary detour. Every
+   * destination carries the fragment for the section the old URL was about, so
+   * a shared link still lands on the right content rather than at the top of a
+   * long page.
+   *
+   * `/projects` redirects while `/projects/:id` does not: a redirect `source`
+   * matches the whole path, so the case studies are untouched.
+   */
+  async redirects() {
+    const moved: ReadonlyArray<readonly [string, string]> = [
+      // Round 9 — four pages merged into two.
+      ['/expertise', '/#skills'],
+      ['/stack', '/#skills'],
+      ['/education', '/#about'],
+      ['/resume', '/#resume'],
+      // Round 10 — section pages became anchors on the home page.
+      ['/about', '/#about'],
+      ['/experience', '/#experience'],
+      ['/projects', '/#projects'],
+      ['/skills', '/#skills'],
+      ['/impact', '/#impact'],
+      ['/contact', '/#contact'],
+    ];
+
+    return moved.map(([source, destination]) => ({
+      source,
+      destination,
+      permanent: true,
+    }));
+  },
+
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },

@@ -40,5 +40,18 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      /*
+       * Admin secrets for the test server only.
+       *
+       * Without them the admin routes answer "sign-in is not configured" and
+       * the locked-down path — the one that matters, because it is the one the
+       * public internet can reach — would never be exercised. These are fixed,
+       * public, and used by nothing else; `tests/e2e/admin.spec.ts` derives the
+       * six-digit code from the first, the way an authenticator app would.
+       */
+      ADMIN_TOTP_SECRET: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
+      ADMIN_SESSION_SECRET: 'e2e-only-session-secret-at-least-32-chars-long',
+    },
   },
 });

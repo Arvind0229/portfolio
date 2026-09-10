@@ -139,6 +139,77 @@ export function Badge({
 }
 
 /* ------------------------------------------------------------------ */
+/* SplitText — per-character reveal                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Splits a string into spans so each character can rise independently.
+ *
+ * The string stays in the accessibility tree once, as real text in a
+ * visually-hidden span, with the animated character spans marked
+ * `aria-hidden`. An `aria-label` on the wrapper would be simpler but is
+ * invalid: a plain `span` has no role, and ARIA forbids naming a generic
+ * element — axe flags it, and support across screen readers is inconsistent.
+ *
+ * Delay is a CSS custom property rather than an inline `animation-delay`, so
+ * the stagger step can be retuned in one place in the stylesheet, and the
+ * whole effect collapses to nothing under `prefers-reduced-motion`.
+ */
+export function SplitText({
+  text,
+  className,
+  offsetMs = 0,
+  as: Tag = 'span',
+  announce = true,
+}: {
+  text: string;
+  className?: string;
+  offsetMs?: number;
+  as?: 'span' | 'h1' | 'h2';
+  /**
+   * Set false when the caller supplies its own accessible text — e.g. a name
+   * split across two coloured halves, where two separate hidden spans would
+   * read as "ArvindGupta" with no space.
+   */
+  announce?: boolean;
+}) {
+  let index = 0;
+  return (
+    <Tag
+      className={cn('char-rise', className)}
+      style={{ ['--char-offset' as string]: `${offsetMs}ms` }}
+    >
+      {announce ? <span className="sr-only">{text}</span> : null}
+      {text.split(' ').map((word, wordIndex, words) => (
+        <span
+          key={`${word}-${wordIndex}`}
+          aria-hidden="true"
+          className="inline-block whitespace-nowrap"
+        >
+          {Array.from(word).map((character) => {
+            const currentIndex = index++;
+            return (
+              <span
+                key={`${character}-${currentIndex}`}
+                className="char"
+                style={{ ['--char-index' as string]: currentIndex }}
+              >
+                {character}
+              </span>
+            );
+          })}
+          {wordIndex < words.length - 1 ? (
+            <span className="char" style={{ ['--char-index' as string]: index++ }}>
+              {'\u00A0'}
+            </span>
+          ) : null}
+        </span>
+      ))}
+    </Tag>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Reveal — viewport entrance animation                                */
 /* ------------------------------------------------------------------ */
 

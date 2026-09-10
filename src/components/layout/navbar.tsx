@@ -1,29 +1,130 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppearanceControls } from '@/components/layout/appearance-controls';
+import { BulbSwitch } from '@/components/layout/bulb-switch';
 import { navigation } from '@/data/site';
+import { useScrollSpy } from '@/hooks/use-scroll-spy';
 import { profile } from '@/data/profile';
-import { useActiveSection } from '@/hooks/use-active-section';
 import { cn } from '@/lib/utils/cn';
 
+/**
+ * Navigation.
+ *
+ * Transparent at the top of the page, glass once scrolling starts, with a
+ * single indicator pill that slides between sections rather than fading in and
+ * out under each link — one moving element instead of nine, and the movement
+ * itself tells you where you came from.
+ *
+ * The scroll progress line is driven by a CSS custom property updated inside a
+ * `requestAnimationFrame`, so a fast scroll coalesces to one write per frame
+ * and never triggers layout.
+ */
+/**
+ * The ids the scroll spy watches, in document order.
+ *
+ * Declared at module scope rather than inline: the hook takes this as a
+ * dependency, and a fresh array literal on every render would disconnect and
+ * rebuild the IntersectionObserver on every render.
+ *
+ * Derived from `navigation` so the two can never drift — a nav item whose
+ * anchor is not watched is an item that never lights up.
+ */
 const SECTION_IDS = navigation.map((item) => item.id);
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const active = useActiveSection(SECTION_IDS);
+  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+  const pathname = usePathname();
 
+  /*
+   * Which item is lit.
+   *
+   * On the home page the bar is a scroll indicator: the nav items are anchors
+   * into one long document, so "current" is a question about scroll position,
+   * not about the URL. `useScrollSpy` answers it and the bar advances on its
+   * own as the visitor reads — which is the whole point of the one-page
+   * layout, and the reason clicking is now optional rather than the only way
+   * to move forward.
+   *
+   * Off the home page — `/assistant`, `/architecture`, a case study — there is
+   * nothing to spy on, so the spy is disabled and nothing is marked current.
+   * A case study used to light "Projects" by prefix match; it no longer can,
+   * because `/#projects` is not a prefix of `/projects/compliance-tracking`.
+   * That is honest: on a case study page you are not *in* the projects
+   * section, you have left the page it lives on.
+   */
+  const onHome = pathname === '/';
+  const spied = useScrollSpy(SECTION_IDS, onHome);
+  const active = onHome ? spied : null;
+
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const itemRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const progressRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<number | null>(null);
+
+  /* ---- Scroll state + progress ------------------------------------ */
   useEffect(() => {
-    // Passive listener + a boolean flip: no layout reads, no per-frame work.
-    function onScroll() {
-      setScrolled(window.scrollY > 12);
+    function read() {
+      frameRef.current = null;
+      const scrollTop = window.scrollY;
+      setScrolled(scrollTop > 12);
+
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const ratio = max > 0 ? Math.min(1, scrollTop / max) : 0;
+      progressRef.current?.style.setProperty('--progress', String(ratio));
     }
-    onScroll();
+
+    function onScroll() {
+      if (frameRef.current !== null) return;
+      frameRef.current = requestAnimationFrame(read);
+    }
+
+    read();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    };
   }, []);
 
+  /* ---- Sliding indicator ------------------------------------------- */
+  const measure = useCallback(() => {
+    if (!active) return;
+    const item = itemRefs.current.get(active);
+    const list = listRef.current;
+    if (!item || !list) return;
+    const itemBox = item.getBoundingClientRect();
+    const listBox = list.getBoundingClientRect();
+    setIndicator({ left: itemBox.left - listBox.left, width: itemBox.width });
+  }, [active]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    // The pill must follow the links when the viewport, the font set or the
+    // theme changes their metrics — all of which resize the list.
+    const list = listRef.current;
+    if (!list || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => measure());
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [measure]);
+
+  // Route changes close the sheet; leaving it open across a navigation is the
+  // classic mobile-nav bug.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  /* ---- Mobile menu -------------------------------------------------- */
   useEffect(() => {
     if (!menuOpen) return;
     const previous = document.body.style.overflow;
@@ -55,73 +156,103 @@ export function Navbar() {
       >
         <nav
           aria-label="Primary"
-          className={cn(
-            'mx-auto flex max-w-[76rem] items-center justify-between gap-4 px-4 sm:px-6',
-          )}
+          className="mx-auto flex max-w-[76rem] items-start justify-between gap-4 px-4 sm:px-6"
         >
           <div
             className={cn(
-              'flex w-full items-center justify-between gap-4 rounded-[var(--radius-lg)] px-3 py-2 transition-[background,border-color,box-shadow] duration-[var(--motion-base)] sm:px-4',
+              'relative flex min-w-0 flex-1 items-center justify-between gap-3 rounded-[var(--radius-lg)] px-3 py-2 transition-[background,border-color,box-shadow] duration-[var(--motion-base)] sm:px-4',
               scrolled ? 'glass' : 'border border-transparent',
             )}
           >
+            {/* Scroll progress — a hairline that fills as the page advances. */}
+            <div
+              ref={progressRef}
+              aria-hidden="true"
+              className={cn(
+                'pointer-events-none absolute inset-x-3 bottom-0 h-px origin-left overflow-hidden rounded-full transition-opacity duration-[var(--motion-base)] sm:inset-x-4',
+                scrolled ? 'opacity-100' : 'opacity-0',
+              )}
+              style={{
+                background: 'var(--gradient-signature)',
+                transform: 'scaleX(var(--progress, 0))',
+                transformOrigin: 'left',
+              }}
+            />
+
             {/* The wordmark is hidden below `sm` and the monogram is decorative,
                 so the link needs an explicit name or it is nameless on a phone. */}
-            <a
-              href="#top"
-              aria-label={`${profile.name} — back to top`}
-              className="group flex items-center gap-2.5 rounded-[var(--radius-sm)] text-[0.9rem] font-semibold tracking-tight text-[var(--text-primary)]"
+            <Link
+              href="/"
+              aria-label={`${profile.name} — home`}
+              className="group flex shrink-0 items-center gap-2.5 rounded-[var(--radius-sm)] text-[0.9rem] font-semibold tracking-tight text-[var(--text-primary)]"
             >
               <span
                 aria-hidden="true"
-                className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-elevated)] font-mono text-[0.7rem] text-[var(--accent-primary)]"
+                className="grid h-7 w-7 place-items-center rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface-elevated)] font-mono text-[0.7rem] text-[var(--accent-primary)] transition-[border-color,box-shadow] duration-[var(--motion-base)] group-hover:border-[var(--accent-primary)] group-hover:shadow-[var(--glow-ring)]"
               >
                 AG
               </span>
-              <span className="hidden sm:inline">{profile.name}</span>
-            </a>
+              <span className="hidden font-display sm:inline">{profile.name}</span>
+            </Link>
 
-            <ul className="hidden items-center gap-0.5 lg:flex">
+            <ul ref={listRef} className="relative hidden min-w-0 items-center gap-0 lg:flex">
+              {/* One indicator for the whole bar. */}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'pointer-events-none absolute inset-y-0.5 -z-0 rounded-[var(--radius-sm)] transition-[transform,width,opacity] duration-[var(--motion-base)] ease-[var(--ease-out)]',
+                  indicator ? 'opacity-100' : 'opacity-0',
+                )}
+                style={{
+                  transform: `translateX(${indicator?.left ?? 0}px)`,
+                  width: indicator?.width ?? 0,
+                  background:
+                    'color-mix(in srgb, var(--accent-primary) 12%, transparent)',
+                  boxShadow: 'inset 0 -1px 0 0 var(--accent-primary)',
+                }}
+              />
               {navigation.map((item) => (
                 <li key={item.id}>
-                  <a
+                  <Link
                     href={item.href}
-                    aria-current={active === item.id ? 'true' : undefined}
+                    ref={(element) => {
+                      if (element) itemRefs.current.set(item.id, element);
+                      else itemRefs.current.delete(item.id);
+                    }}
+                    aria-current={active === item.id ? 'page' : undefined}
                     className={cn(
-                      'relative rounded-[var(--radius-sm)] px-2.5 py-1.5 text-[0.8rem] transition-colors duration-[var(--motion-fast)]',
+                      // Item padding is deliberately tight at `lg`: ten primary
+                      // links, a wordmark, the appearance control, the AI
+                      // button and the lamp all share 1216px, and the list is
+                      // the only part that can give. See the header-overflow
+                      // test in tests/e2e/responsive.spec.ts — it fails if a
+                      // future item pushes this past the bar again.
+                      'relative z-10 block whitespace-nowrap rounded-[var(--radius-sm)] px-[0.35rem] py-1.5 text-[0.74rem] transition-colors duration-[var(--motion-fast)] xl:px-2 xl:text-[0.78rem]',
                       active === item.id
                         ? 'text-[var(--text-primary)]'
                         : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
                     )}
                   >
                     {item.label}
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'absolute inset-x-2.5 -bottom-0.5 h-px origin-left transition-transform duration-[var(--motion-base)] ease-[var(--ease-out)]',
-                        active === item.id ? 'scale-x-100' : 'scale-x-0',
-                      )}
-                      style={{ background: 'var(--accent-primary)' }}
-                    />
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <div className="hidden sm:block">
                 <AppearanceControls />
               </div>
-              <a
-                href="#assistant"
-                className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--accent-primary)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--accent-primary)] transition-colors duration-[var(--motion-fast)] hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] md:inline-flex"
+              <Link
+                href="/assistant"
+                className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--accent-primary)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--accent-primary)] transition-[background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] hover:shadow-[var(--glow-soft)] md:inline-flex"
               >
                 <span
                   aria-hidden="true"
                   className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]"
                 />
                 Ask my AI
-              </a>
+              </Link>
               <button
                 type="button"
                 onClick={() => setMenuOpen((value) => !value)}
@@ -154,6 +285,12 @@ export function Navbar() {
               </button>
             </div>
           </div>
+
+          {/* The lamp hangs from the top edge of the page, outside the bar, so
+              it reads as a fixture in the room rather than another button. */}
+          <div className="-mt-3 w-14 shrink-0 sm:w-16">
+            <BulbSwitch />
+          </div>
         </nav>
       </header>
 
@@ -161,18 +298,22 @@ export function Navbar() {
         <div
           id="mobile-menu"
           data-testid="mobile-menu"
-          className="fixed inset-0 z-40 overflow-y-auto bg-[var(--bg-primary)] px-5 pb-10 pt-20 lg:hidden"
+          className="fixed inset-0 z-40 overflow-y-auto bg-[var(--bg-primary)] px-5 pb-10 pt-24 lg:hidden"
         >
           <ul className="space-y-1">
-            {navigation.map((item) => (
+            {navigation.map((item, index) => (
               <li key={item.id}>
-                <a
+                <Link
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
-                  className="block rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)]"
+                  aria-current={active === item.id ? 'page' : undefined}
+                  className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] transition-colors duration-[var(--motion-fast)] hover:border-[var(--accent-primary)]"
                 >
                   {item.label}
-                </a>
+                  <span className="font-mono text-[0.65rem] text-[var(--text-subtle)]">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,3 +1,4 @@
+import { depthFor } from '@/data/project-depth';
 import type { ProjectCaseStudy, ProjectCategory } from '@/types';
 
 /**
@@ -6,8 +7,22 @@ import type { ProjectCaseStudy, ProjectCategory } from '@/types';
  * describe the delivery lifecycle the resume states was owned end to end.
  * No client names, no invented metrics, no per-project numbers that the
  * resume does not contain.
+ *
+ * ## The depth layer
+ *
+ * Everything below is the *baseline* — what the resume itself supports. The
+ * detail an interviewer actually probes (volumes, systems, what went wrong,
+ * why one approach over another) is not on a resume and cannot be inferred
+ * from one, so it lives in `project-depth.json`, written by Arvind through the
+ * admin panel, and is attached to each project as `depth` at the bottom of
+ * this file.
+ *
+ * Keeping the two apart is the point. This file stays hand-written and
+ * reviewable; the other is machine-written and validated on load. Neither can
+ * corrupt the other, and a project with no depth entry renders and answers
+ * exactly as it did before the layer existed.
  */
-export const projects: readonly ProjectCaseStudy[] = [
+const baseline: readonly Omit<ProjectCaseStudy, 'depth'>[] = [
   {
     id: 'compliance-tracking',
     title: 'Compliance Tracking & Exception Alerting',
@@ -147,6 +162,18 @@ export const projects: readonly ProjectCaseStudy[] = [
     featured: false,
   },
 ];
+
+/**
+ * The baseline with any depth Arvind has supplied attached.
+ *
+ * Done here, once, rather than at each call site: the site and the AI
+ * knowledge layer both read `projects`, and a merge either of them could
+ * forget is a merge that will eventually be forgotten in one of them.
+ */
+export const projects: readonly ProjectCaseStudy[] = baseline.map((project) => {
+  const depth = depthFor(project.id);
+  return depth ? { ...project, depth } : project;
+});
 
 export const projectCategories: readonly ProjectCategory[] = [
   'Operations Automation',

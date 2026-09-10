@@ -1,6 +1,6 @@
 # Getting this on GitHub and online
 
-The repository in this folder is already a git repository with one clean commit — nothing to initialise, nothing to tidy. `node_modules`, `.next`, `.env*` and test output are all ignored.
+The repository in this folder is already a git repository — nothing to initialise, nothing to tidy. `node_modules`, `.next`, `.env*` and test output are all ignored, and the working tree has been checked: the only strings that look like credentials are placeholders (`github_pat_...` in the setup script, `ghp_not_a_real_token` in a test, and the deliberately public E2E secrets in `playwright.config.ts`). There is nothing real to leak.
 
 ## 1. The GitHub account
 
@@ -25,8 +25,16 @@ git branch -M main
 git push -u origin main
 ```
 
-GitHub will ask for a password — use a **personal access token**, not your account password:
-Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → scope `repo`.
+GitHub will ask for a password. **Your account password will not work** — GitHub stopped accepting it for pushes in 2021. Use a **personal access token** instead:
+
+Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token
+- Repository access: **Only select repositories** → `portfolio`
+- Permissions → Repository permissions → **Contents: Read and write**
+- Nothing else. A token that can only touch this one repository is a token whose loss costs you this one repository.
+
+Paste the token when git asks for the password. Windows will remember it after the first time.
+
+*(Classic tokens with the `repo` scope also work, but that scope grants access to **every** repository you own — including private ones you make later. Fine-grained is the better habit.)*
 
 ## 4. Put it online (Vercel, free)
 
@@ -36,6 +44,24 @@ Settings → Developer settings → Personal access tokens → Tokens (classic) 
    - `NEXT_PUBLIC_SITE_URL` = the URL Vercel gives you (e.g. `https://portfolio-arvind.vercel.app`)
    - `ANTHROPIC_API_KEY` = your key — **optional**. Without it the assistant still answers correctly from your resume; with it the answers become more conversational.
 4. **Deploy**
+
+### Turning on the admin page for the live site
+
+Optional, and the site works fully without it. Skip it until you actually want to edit from somewhere other than your laptop — on your own machine `/admin` never asks for a code.
+
+Run `npm run admin:secret` locally. It prints everything and writes nothing to disk, deliberately: a script that helpfully saved secrets into a file is a script that eventually saves them into a commit. Then in Vercel → Settings → Environment Variables:
+
+| Variable | What it is |
+| --- | --- |
+| `ADMIN_TOTP_SECRET` | The key you also type into your authenticator app |
+| `ADMIN_SESSION_SECRET` | Signs the login cookie. Changing it signs you out everywhere — that is the whole "log me out" button |
+| `ADMIN_GITHUB_REPO` | `your-username/portfolio` |
+| `ADMIN_GITHUB_TOKEN` | The fine-grained token from step 3 above |
+| `ADMIN_GITHUB_BRANCH` | `main` |
+
+Without the three `ADMIN_GITHUB_*` values the admin page still opens and still refuses to save — and says exactly which variable is missing rather than failing quietly.
+
+**How a live edit reaches the site:** you save → it commits to this repository → Vercel sees the commit and redeploys → the change is live in a minute or two. There is no database and no second copy of your content. `src/data` stays the only source of truth, and every edit is in your git history where you can read it or undo it.
 
 Every later `git push` redeploys automatically.
 
@@ -49,8 +75,13 @@ Every later `git push` redeploys automatically.
 
 Everything the site says lives in `src/data/`. Change a job, add a project, add a skill — edit the data file and push. No component needs touching, and the AI assistant picks up the change automatically because it reads the same files.
 
+Two ways to make those edits:
+
+- **The admin page.** `npm run dev`, then <http://localhost:3000/admin>. No sign-in on your own machine — that page is not reachable from the internet. Fill the form, Save, then push. Project detail written here is what lets the assistant answer follow-up questions instead of repeating the resume.
+- **The files directly**, in VS Code, if you prefer.
+
 Before pushing a change:
 
 ```bash
-npm run verify        # types, lint, 152 tests, production build
+npm run verify        # types, lint, unit tests, production build, dev console check
 ```

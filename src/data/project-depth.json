@@ -1,0 +1,4 @@
+{
+  "$comment": "Written by the admin panel, not by hand. See src/data/project-depth.ts for the shape and why this file is JSON rather than TypeScript. Keys are project ids from src/data/projects.ts.",
+  "projects": {}
+}

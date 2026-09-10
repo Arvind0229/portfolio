@@ -23,7 +23,7 @@ const STATES = [
   { theme: 'studio', mode: 'dark' },
 ] as const;
 
-const SECTIONS = ['top', 'projects', 'architecture', 'assistant', 'contact'] as const;
+const ROUTES = ['/', '/projects', '/architecture', '/impact', '/assistant', '/contact'] as const;
 
 test.describe('visual capture', () => {
   for (const state of STATES) {
@@ -38,12 +38,19 @@ test.describe('visual capture', () => {
       );
       await page.waitForTimeout(400);
 
-      for (const section of SECTIONS) {
-        await page.locator(`#${section}`).scrollIntoViewIfNeeded();
-        await page.waitForTimeout(250);
-        const shot = await page.screenshot();
+      for (const route of ROUTES) {
+        await page.goto(route);
+        await page.evaluate(
+          ([theme, mode]) => {
+            document.documentElement.setAttribute('data-theme', theme as string);
+            document.documentElement.setAttribute('data-mode', mode as string);
+          },
+          [state.theme, state.mode],
+        );
+        await page.waitForTimeout(400);
+        const shot = await page.screenshot({ fullPage: false });
         expect(shot.byteLength).toBeGreaterThan(1000);
-        await testInfo.attach(`${state.theme}-${state.mode}-${section}`, {
+        await testInfo.attach(`${state.theme}-${state.mode}-${route.replace(/\//g, '_') || 'home'}`, {
           body: shot,
           contentType: 'image/png',
         });

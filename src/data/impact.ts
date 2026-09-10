@@ -19,6 +19,9 @@ export const impactMetrics: readonly ImpactMetric[] = [
     value: 80,
     prefix: '',
     suffix: '%+',
+    // A percentage is a share of a hundred, so this one can carry a meter.
+    // None of the others can — see `outOf` in `src/types/index.ts`.
+    outOf: 100,
     label: 'Manual effort reduced',
     detail: 'Across the processes automated at SBFC Finance Limited.',
   },

@@ -1,3 +1,4 @@
+import { projects } from '@/data/projects';
 import { knowledgeBase } from '@/lib/ai/knowledge';
 import type { KnowledgeChunk, KnowledgeKind, RetrievedChunk } from '@/types';
 
@@ -65,6 +66,57 @@ const SYNONYMS: Record<string, string[]> = {
   python: ['script', 'scripting', 'calculation'],
   compliance: ['regulatory', 'exception', 'alert', 'audit'],
   security: ['compliance', 'access', 'deactivation'],
+
+  /*
+   * "What has he built?" returned nothing at all.
+   *
+   * After stop-word removal the query is the single token "built", which lives
+   * only on the project overview chunks. One term against one keyword scores
+   * below the 2.0 floor, so the retriever correctly found weak evidence and
+   * correctly refused to answer on it — and the visitor got silence to the most
+   * natural opening question anyone asks a portfolio.
+   *
+   * The fault is vocabulary, not scoring. Lowering the floor to admit a
+   * one-term match would let every vague question through; expanding the term
+   * into the words the corpus actually uses fixes this question without
+   * weakening the guard that protects the rest.
+   */
+  built: ['project', 'projects', 'automation', 'developed', 'delivered'],
+  build: ['project', 'projects', 'automation', 'developed'],
+  building: ['project', 'projects', 'automation', 'developed'],
+  developed: ['project', 'projects', 'automation', 'built'],
+  develop: ['project', 'projects', 'automation', 'built'],
+  made: ['project', 'projects', 'built', 'automation'],
+  created: ['project', 'projects', 'built', 'automation'],
+  /*
+   * `work` is deliberately NOT expanded, and the omission is the interesting
+   * part. Adding `work: ['project', ...]` fixed nothing that `built` had not
+   * already fixed, and it broke the guard that makes the assistant trustworthy:
+   * "did he work with Kubernetes?" started returning five project chunks,
+   * because a generic query word had been turned into specific corpus
+   * vocabulary and the specific-match filter had nothing left to catch.
+   *
+   * The general rule this leaves behind: a synonym may map a *specific* word to
+   * other specific words. Mapping a word that appears all over the corpus into
+   * specific ones hands every vague question a false match.
+   */
+
+  /* Facet vocabulary — the words people use to ask a *narrow* question about a
+     project they have already named. Without these, "how often does it run"
+     and "what breaks" land on the overview chunk and the specific answer stays
+     buried in a paragraph. */
+  often: ['frequency', 'schedule', 'daily', 'scale'],
+  frequency: ['often', 'schedule', 'scale', 'daily'],
+  volume: ['scale', 'records', 'transactions'],
+  hardest: ['challenge', 'difficult', 'problem'],
+  difficult: ['challenge', 'hardest', 'problem'],
+  challenge: ['difficult', 'hardest', 'problem', 'resolved'],
+  fails: ['failure', 'error', 'monitoring', 'exception'],
+  fail: ['failure', 'error', 'monitoring', 'exception'],
+  failed: ['failure', 'error', 'monitoring', 'exception'],
+  monitoring: ['failure', 'support', 'production', 'alert'],
+  chose: ['decision', 'why', 'approach', 'alternative'],
+  decision: ['chose', 'why', 'approach', 'alternative', 'tradeoff'],
 };
 
 export function tokenize(input: string): string[] {
@@ -175,6 +227,47 @@ export function unknownEntities(message: string): string[] {
   return unknown;
 }
 
+/**
+ * Which project, if any, the visitor named.
+ *
+ * Built once from each project's own words — its title, its id, its category.
+ * A query is taken to name a project only when one project matches strictly
+ * more of those words than every other. A tie means the question was ambiguous
+ * and nothing is filtered, which is the safe direction: filtering on a guess
+ * would hide the right answer, while not filtering only leaves the ranking as
+ * it was.
+ */
+const PROJECT_IDENTITY: ReadonlyArray<{ id: string; tokens: Set<string> }> = projects.map(
+  (project) => ({
+    id: project.id,
+    tokens: new Set([
+      ...tokenize(project.title),
+      ...tokenize(project.id.replace(/-/g, ' ')),
+      ...tokenize(project.category),
+    ]),
+  }),
+);
+
+export function namedProject(queryTokens: readonly string[]): string | null {
+  let best: { id: string; score: number } | null = null;
+  let runnerUp = 0;
+
+  for (const project of PROJECT_IDENTITY) {
+    let score = 0;
+    for (const token of queryTokens) if (project.tokens.has(token)) score += 1;
+    if (score === 0) continue;
+
+    if (!best || score > best.score) {
+      runnerUp = best?.score ?? 0;
+      best = { id: project.id, score };
+    } else if (score > runnerUp) {
+      runnerUp = score;
+    }
+  }
+
+  return best && best.score > runnerUp ? best.id : null;
+}
+
 export interface RetrieveOptions {
   limit?: number;
   /** Restrict retrieval to certain kinds — this is how tool permissions bite. */
@@ -189,12 +282,32 @@ export function retrieve(query: string, options: RetrieveOptions = {}): Retrieve
   // around 1.1, while every genuinely answerable question scores 3 or above.
   // The gap is wide, so the floor sits in the middle of it.
   const { limit = 5, kinds, minScore = 2.0 } = options;
-  const terms = expandQuery(tokenize(query));
+  const queryTokens = tokenize(query);
+  const terms = expandQuery(queryTokens);
   if (terms.length === 0) return [];
 
-  const candidates = kinds
-    ? index.documents.filter((doc) => kinds.includes(doc.chunk.kind))
-    : index.documents;
+  /*
+   * If the question names one project, chunks belonging to a *different*
+   * project are removed outright rather than merely ranked lower.
+   *
+   * Ranking was not enough. Facet vocabulary is globally rare, so a single
+   * "hardest" or "how often" carries enormous IDF, and one project's challenge
+   * chunk beat every chunk of the project actually being asked about — the
+   * assistant answered a question about the HR automation with a difficulty
+   * from the compliance bot. Attributing one project's story to another is not
+   * a ranking imperfection; it is a false statement about his work, and no
+   * amount of score tuning makes it acceptably rare.
+   *
+   * Chunks with no `projectId` — skills, experience, contact — are untouched,
+   * because a project question can legitimately be answered partly from them.
+   */
+  const focus = namedProject(queryTokens);
+
+  const candidates = index.documents.filter((doc) => {
+    if (kinds && !kinds.includes(doc.chunk.kind)) return false;
+    if (focus && doc.chunk.projectId && doc.chunk.projectId !== focus) return false;
+    return true;
+  });
 
   const totalDocs = index.documents.length;
 

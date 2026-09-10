@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Reveal, Section, SectionHeading } from '@/components/ui';
+import { Reveal } from '@/components/ui';
 import { assistantModes, suggestedQuestions } from '@/data/site';
 import { MAX_MESSAGE_LENGTH } from '@/lib/ai/guardrails';
 import { cn } from '@/lib/utils/cn';
@@ -115,12 +115,7 @@ export function Assistant() {
   );
 
   return (
-    <Section id="assistant" ariaLabel="AI professional assistant">
-      <SectionHeading
-        eyebrow="AI Assistant"
-        title="Ask about the work, get a grounded answer"
-        description="This assistant is wired to Arvind's resume and nothing else. It retrieves the relevant part of his profile before it answers, and it will tell you plainly when something isn't in there."
-      />
+    <section id="assistant" className="scroll-mt-24">
 
       <Reveal delay={80}>
         <div className="glass mt-10 overflow-hidden">
@@ -258,7 +253,7 @@ export function Assistant() {
         Answers are generated from Arvind&apos;s resume. Nothing you type here is stored beyond the
         length of the conversation, and the assistant has no access to anything outside his profile.
       </p>
-    </Section>
+    </section>
   );
 }
 

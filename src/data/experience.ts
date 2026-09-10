@@ -1,9 +1,35 @@
 import type { ExperienceItem } from '@/types';
 
+/**
+ * Roles as the resume states them, plus a short profile of each employer.
+ *
+ * The employer profiles are the one thing here that does not come from the
+ * resume, because the resume does not describe its own employers. They are
+ * public facts about the companies, checked against each company's own site
+ * and public reporting rather than written from memory:
+ *
+ *   - SBFC Finance Limited — a listed NBFC lending to small businesses and
+ *     against gold; listed on the NSE and BSE in August 2023.
+ *     Sources: sbfc.com, screener.in/company/SBFC, and the listing coverage.
+ *   - Harjai Computers Pvt. Ltd. — a Mumbai IT services firm whose main line
+ *     is staff augmentation. Source: harjai.com/staff-augmentation.html.
+ *
+ * They describe the *company*, never Arvind. What he did at each is in
+ * `highlights`, and that is resume-sourced as before. A `relevance` line
+ * connects the two, and is written so it says why the context matters — not
+ * what he achieved in it.
+ */
+
 export const experience: readonly ExperienceItem[] = [
   {
     id: 'sbfc-rpa-developer',
     company: 'SBFC Finance Limited',
+    companyProfile: {
+      sector: 'NBFC · Retail lending',
+      what: 'A non-banking financial company listed on the NSE and BSE, lending to small businesses and against gold — secured MSME loans and gold loans, written through a branch network across India.',
+      relevance:
+        'Lending at that volume runs on a loan origination system, a loan management system and a great deal of recurring reporting, all of it inside a regulated environment where an exception has to reach a person quickly. That is the ground every automation here was built on.',
+    },
     role: 'RPA Developer',
     location: 'Mumbai',
     start: 'Oct 2023',
@@ -51,6 +77,12 @@ export const experience: readonly ExperienceItem[] = [
   {
     id: 'harjai-recruiter',
     company: 'Harjai Computers Pvt. Ltd.',
+    companyProfile: {
+      sector: 'IT services · Staffing',
+      what: 'A Mumbai IT services company whose main line is staff augmentation — placing engineers and specialists into client teams for the length of a project.',
+      relevance:
+        'Recruiting for technical roles means reading job specifications closely and talking to the people who own a requirement. It is the same conversation an automation starts with, which is why the step from here into RPA delivery was shorter than the job titles suggest.',
+    },
     role: 'Talent Acquisition / IT Recruiter',
     location: 'Mumbai',
     start: 'Jul 2021',

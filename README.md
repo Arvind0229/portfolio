@@ -32,8 +32,8 @@ Built with Next.js 15 (App Router), React 19 and TypeScript in strict mode.
 
 Two products in one application:
 
-1. **The portfolio** — hero, profile, expertise, experience timeline, project case studies, technology stack, engineering architecture, business impact, resume and contact.
-2. **The agentic AI layer** — a retrieval-grounded assistant with four conversation modes (Recruiter, Technical, Business, General), built into the page rather than bolted on as a chat widget.
+1. **The portfolio** — a page set, not a single scroll: home, about, expertise, experience, projects (with a route per case study), technology stack, architecture, impact, education, assistant, contact and resume. Each area has a URL that can be linked, shared and landed on directly, which is what a recruiter forwarding "his projects" actually needs.
+2. **The agentic AI layer** — a retrieval-grounded assistant with four conversation modes (Recruiter, Technical, Business, General), built into the site rather than bolted on as a chat widget.
 
 Every fact on the site comes from one typed data layer derived from the resume. **No content is invented.** A test suite enforces this: `tests/unit/data-integrity.test.ts` fails the build if a project claims a technology that is not in the skills data, if a case study contains a per-project metric the resume does not state, or if an AI starter question references a technology Arvind has not worked with.
 
@@ -41,14 +41,23 @@ Every fact on the site comes from one typed data layer derived from the resume. 
 
 ## Features
 
+**Design system**
+
+- A signature midnight-blue palette with electric blue and cyan accents, in both dark and light. Where a specified hex did not clear WCAG AA as text, it was lifted by the smallest amount that passes and the original kept for gradients and glow, where contrast does not apply — the shift is imperceptible and documented inline.
+- A **pendant bulb on a cord** as the dark/light control: click it, pull the cord, or focus it and press Enter. It is a real `role="switch"` underneath, so a screen reader announces state and a keyboard operates it normally; the swing and the light wash are presentation layered on top and vanish under reduced motion.
+- An **automation pipeline** drawn in inline SVG — manual queue to bot to processing to validation to result, with data packets riding the real path and each stage lighting as work reaches it. One component, reused in the hero, the architecture page and each case study. Paused while off-screen.
+- The name splits into characters that rise on entry, in two solid colours rather than a clipped gradient (a transformed character creates a containing block, and `background-clip: text` does not paint into one — the gradient version rendered the name invisible).
+- Selective glass on the navigation, featured project, assistant and metric panels; pointer-reactive card edges; a sliding navigation indicator and a scroll-progress hairline.
+
 **Portfolio**
 
-- Three genuinely distinct themes — **Enterprise** (restrained, executive), **Engineering** (dark, technical) and **Studio** (editorial, typographic) — each with its own light and dark palette, background language, motion intensity and type treatment.
-- Three typography sets — **Precision** (Inter), **Technical** (JetBrains Mono headings), **Editorial** (Fraunces + Sora).
+- Three genuinely distinct themes — **Midnight** (the signature dark, electric blue and cyan), **Enterprise** (restrained, executive) and **Studio** (editorial, typographic) — each with its own light and dark palette, background language, motion intensity and type treatment.
+- Three typography sets — **Precision** (Space Grotesk display over Inter), **Technical** (JetBrains Mono headings), **Editorial** (Fraunces + Sora) — switchable from the header, on every page.
 - Theme, mode and font persist across visits and are applied **before first paint**, so there is no flash and no layout shift.
 - Experience timeline with progressive disclosure; project case studies with category filter, full-text search, and a **business view / technical view** toggle so the same work reads correctly to a recruiter and to an engineer.
-- Accessible modal case studies with focus trapping and restoration.
-- Animated impact counters, scroll reveals and micro-interactions — all disabled under `prefers-reduced-motion`.
+- Each case study is its own route — a URL to forward, not modal state to describe.
+- Animated impact counters, staged project reveals and micro-interactions — all disabled under `prefers-reduced-motion`.
+- An **automated-reporting showcase** on the impact page, reproducing the mail-body dashboard formats described in the resume. Every figure there is invented — see "Content policy" below.
 
 **AI assistant**
 
@@ -142,18 +151,21 @@ Add a key and answers become conversational; remove it and they stay correct.
 ```text
 src/
   app/
+    page.tsx                 Home: hero, featured work, directory
+    about/ expertise/ experience/ projects/ architecture/
+    impact/ education/ assistant/ contact/ stack/ resume/
+    projects/[id]/           One static route per case study
     api/ai/chat/route.ts     Assistant endpoint: validation, rate limit, session, agent
     api/health/route.ts      Readiness probe for load balancers
     layout.tsx               Fonts, metadata, JSON-LD, theme bootstrap
-    page.tsx                 Section composition
     globals.css              Design tokens, themes, animation, reduced motion
     error.tsx / not-found.tsx
   components/
     ai/                      Assistant UI
     layout/                  Navbar, footer, appearance controls
     sections/                Hero, profile, experience, projects, skills, architecture, impact, contact
-    ui/                      Button, Badge, Reveal, Section, SectionHeading
-    visuals/                 Per-theme backdrop
+    ui/                      Button, Badge, Reveal, SplitText, Section
+    visuals/                 Per-theme backdrop, automation pipeline
   data/                      SINGLE SOURCE OF TRUTH (profile, experience, projects, skills, impact, site)
   hooks/                     use-appearance, use-in-view, use-active-section
   lib/
@@ -221,8 +233,8 @@ npm run verify      # typecheck + lint + test + build
 Tests are not decoration here — several defects in this codebase were found and fixed by them, including a retriever that answered "does he know Kubernetes?" with unrelated content, a nameless navigation link on small screens, and invalid list markup in the architecture section.
 
 ```bash
-npm test                                  # 152 tests
-npm run build && npm run test:e2e         # 200 tests across 4 viewports
+npm test                                  # 165 tests
+npm run build && npm run test:e2e         # 233 tests across 4 viewports
 ```
 
 **Unit / component / API** (Vitest, jsdom)
@@ -267,7 +279,7 @@ npm run build && npm run test:e2e         # 200 tests across 4 viewports
 
 ## Performance
 
-- **119 kB first-load JS** for the whole page including the assistant.
+- **103 kB shared first-load JS**; the heaviest route is the projects list at 112 kB.
 - Zero runtime UI dependencies; animation is CSS, revealed by `IntersectionObserver`.
 - Fonts self-hosted, `display: swap`, unicode-range subsetting.
 - No canvas or WebGL; decorative layers are GPU-composited gradients and one small inline SVG.
@@ -363,5 +375,11 @@ Recorded because the reasoning matters more than the outcome.
 ---
 
 ## Content policy
+
+**Nothing on this site comes from a real report, system or customer record.**
+
+The resume describes MIS reports delivered as formatted HTML mail-body dashboards, and the impact page shows what those look like. The layouts are real; the data is not. Every figure, region name and status in `src/data/reporting.ts` is invented, and the UI labels the panels as illustrative.
+
+That is deliberate. The production versions of those reports contain employee names, official email addresses, PAN and mobile numbers, insider-trading designated-person lists and branch-level portfolio figures — third-party personal data and regulated internal information belonging to an NBFC. None of it may appear on a public site, and an end-to-end test asserts that nothing shaped like an email address, a PAN or a mobile number ever renders in that section.
 
 All portfolio content derives from Arvind Gupta's resume. No employer, client, project, certification, technology, date or metric appears anywhere in this application that is not present in that document. The AI assistant is constrained to the same corpus and refuses questions it cannot ground.

@@ -28,10 +28,16 @@
 
   /* Typography — families are self-hosted (see layout.tsx); each stack ends
      in a real system fallback so text renders before the woff2 arrives. */
-  --font-inter: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-jetbrains: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, 'Cascadia Mono', Menlo, monospace;
+  --font-inter:
+    'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
+  --font-jetbrains:
+    'JetBrains Mono Variable', ui-monospace, SFMono-Regular, 'Cascadia Mono', Menlo,
+    monospace;
   --font-sora: 'Sora Variable', ui-sans-serif, system-ui, sans-serif;
   --font-fraunces: 'Fraunces Variable', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-grotesk:
+    'Space Grotesk Variable', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 
   --font-display: var(--font-inter);
   --font-body: var(--font-inter);
@@ -40,6 +46,21 @@
   --tracking-body: 0em;
   --weight-display: 640;
   --leading-display: 1.06;
+
+  /* Signature gradient + glow. `--accent-vivid` is the saturated brand blue:
+     it is used for gradients, glows and graphics ONLY, never for text, because
+     at full saturation it does not clear 4.5:1 on every surface. Text uses
+     --accent-primary, which is tuned to pass on the lightest dark surface and
+     the darkest light surface alike. */
+  --accent-vivid: #3b82f6;
+  --gradient-signature: linear-gradient(
+    115deg,
+    var(--accent-primary) 0%,
+    var(--accent-secondary) 55%,
+    var(--accent-tertiary) 100%
+  );
+  --glow-ring: 0 0 0 1px color-mix(in srgb, var(--accent-primary) 22%, transparent);
+  --glow-soft: 0 18px 60px -30px var(--accent-glow);
 
   /* Decorative background intensity */
   --grid-opacity: 0.05;
@@ -71,6 +92,47 @@
   --shadow-sm: 0 1px 2px rgba(11, 18, 32, 0.06);
   --shadow-md: 0 8px 24px -12px rgba(11, 18, 32, 0.18);
   --shadow-lg: 0 24px 60px -28px rgba(11, 18, 32, 0.26);
+
+  /* -------------------------- PANEL SYSTEM --------------------------
+     Every card on the site is one recipe; each theme decides how much of
+     it to spend. The defaults below are a flat, opaque card — which is
+     what Enterprise and Studio want, and what they had before this
+     system existed, so those themes are unchanged by it.
+
+     Signature overrides these into lit glass: a translucent navy fill
+     over a blurred backdrop, a bright cyan hairline, a highlight along
+     the top edge and a bloom pulled in from the edges. Those five values
+     are the whole difference between an opaque card and the panels in
+     the design, and they live in one place rather than in every
+     component.
+
+     Measured off the reference design rather than guessed: the border
+     there resolves to ~0.68 alpha of #7DD3FC over the page ground, and
+     the fill lifts the ground by roughly +8/+14/+18 with the top edge
+     brighter than the middle. The border is dialled back from 0.68 to
+     0.34 here because the reference is a rendered image with bloom
+     baked in — at a real 1px stroke, 0.68 reads as a neon outline
+     rather than an edge. Hover restores the brighter value, where it
+     belongs: as a response, not a resting state. */
+  --panel-bg: var(--surface);
+  --panel-border: var(--border);
+  --panel-border-hover: var(--accent-primary);
+  --panel-highlight: transparent;
+  --panel-bloom: transparent;
+  --panel-blur: 0px;
+  --panel-saturate: 100%;
+  --panel-shadow: var(--shadow-sm);
+  --panel-glow: none;
+  --panel-radius: var(--radius-lg);
+  /* The gloss. A single diagonal band of light across the upper-left of the
+     card, painted as a background-image layer rather than a pseudo-element:
+     background-image sits above background-color, so the fill still lives in
+     `background-color` and still interpolates on a theme change — which a
+     ::after overlay would have been fine with, but which moving the fill into
+     background-image would have broken. Transparent by default, so the flat
+     themes stay flat. */
+  --panel-sheen: transparent;
+  --panel-sheen-strong: transparent;
 }
 
 /* --------------------------- ENTERPRISE ---------------------------- */
@@ -113,68 +175,127 @@
   --motion-scale: 0.8;
 }
 
-/* -------------------------- ENGINEERING ---------------------------- */
+/* ------------------------- SIGNATURE (id: engineering) --------------------
+   Midnight blue ground, electric blue interaction, cyan for data and glow.
+   The brief's hexes are used verbatim wherever they clear WCAG AA as text on
+   the lightest surface of the theme. Three did not, and were lifted by the
+   smallest amount that passes — the shift is imperceptible next to the
+   original and is documented inline. Saturated originals survive as
+   --accent-vivid for gradients and glow, where contrast does not apply.
+   ------------------------------------------------------------------------ */
 [data-theme='engineering'][data-mode='dark'] {
   color-scheme: dark;
-  --bg-primary: #07111f;
-  --bg-secondary: #0b1728;
-  --surface: #102238;
-  --surface-elevated: #142b44;
+  --bg-primary: #050a12;
+  --bg-secondary: #0a1220;
+  --surface: #0f1b2d;
+  --surface-elevated: #142338;
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
-  --text-subtle: #8e9aaa;
-  --border: #1e3a56;
-  --border-subtle: #183149;
-  --accent-primary: #38bdf8;
-  --accent-secondary: #8b5cf6;
-  --accent-tertiary: #22d3ee;
-  --accent-contrast: #04101d;
-  --accent-glow: rgba(56, 189, 248, 0.26);
+  --text-subtle: #8296b2;
+  --border: #1e3a5f;
+  --border-subtle: #16293f;
+  /* #3b82f6 measures 4.66:1 on --surface-elevated; 4.8 needs #4b8cf7. */
+  --accent-primary: #4b8cf7;
+  --accent-secondary: #06b6d4;
+  --accent-tertiary: #67e8f9;
+  --accent-contrast: #050a12;
+  --accent-vivid: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.34);
   --success: #22c55e;
   --warning: #f59e0b;
   --error: #f36f6f;
-  --glass-bg: rgba(16, 34, 56, 0.58);
-  --glass-border: rgba(148, 163, 184, 0.14);
-  --shadow-sm: 0 1px 2px rgba(2, 8, 20, 0.5);
-  --shadow-md: 0 12px 34px -18px rgba(2, 8, 20, 0.85);
-  --shadow-lg: 0 34px 80px -36px rgba(2, 8, 20, 0.95);
-  --grid-opacity: 0.13;
-  --glow-opacity: 0.14;
-  --motion-scale: 1.15;
+  --glass-bg: rgba(13, 32, 56, 0.6);
+  --glass-border: rgba(125, 211, 252, 0.6);
+  --glass-blur: 20px;
+  --shadow-sm: 0 1px 2px rgba(2, 6, 16, 0.6);
+  --shadow-md: 0 14px 38px -20px rgba(2, 6, 16, 0.9);
+  --shadow-lg: 0 38px 90px -40px rgba(2, 6, 16, 0.96);
+
+  /* Panels become lit glass. See the note on --panel-bg in :root. */
+  --panel-bg: rgba(13, 32, 56, 0.62);
+  --panel-border: rgba(125, 211, 252, 0.55);
+  --panel-border-hover: rgba(125, 211, 252, 0.85);
+  --panel-highlight: rgba(191, 237, 255, 0.22);
+  --panel-bloom: rgba(59, 130, 246, 0.5);
+  --panel-blur: 16px;
+  --panel-saturate: 150%;
+  --panel-shadow: 0 18px 44px -26px rgba(1, 6, 16, 0.95);
+  --panel-glow: 0 0 32px -14px rgba(56, 189, 248, 0.42);
+  --panel-radius: 0.875rem;
+  --panel-sheen: rgba(190, 236, 255, 0.09);
+  --panel-sheen-strong: rgba(190, 236, 255, 0.16);
+  /* Icons run cyan and lit in this theme only — see the note on `.icon-tile`. */
+  --icon-tint: var(--accent-tertiary);
+  --icon-glow: 0 0 14px -4px color-mix(in srgb, var(--accent-tertiary) 55%, transparent);
+
+  /* The ground carries more light than the other themes: the design's page
+     background is a lit midnight blue, not a flat near-black, and the panels
+     only read as glass if there is something behind them worth blurring.
+     Raised from 0.1 once the grid started moving — a still grid at 0.1 is
+     texture, but a *moving* one at 0.1 is a thing you can only find by
+     diffing two screenshots, which is not what "live" means. Everything on
+     this ground is checked by the axe contrast pass at every theme and mode. */
+  --grid-opacity: 0.16;
+  --glow-opacity: 0.26;
+  --motion-scale: 1.1;
   --tracking-display: -0.03em;
-  --weight-display: 660;
+  --weight-display: 600;
 }
 
 [data-theme='engineering'][data-mode='light'] {
   color-scheme: light;
-  --bg-primary: #f6f9fc;
-  --bg-secondary: #eef4f9;
+  --bg-primary: #f5f8fc;
+  --bg-secondary: #eaf1f8;
   --surface: #ffffff;
-  --surface-elevated: #eef4f9;
+  --surface-elevated: #eaf1f8;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #5a687d;
-  --text-subtle: #5f6876;
-  --border: #d7e2ec;
-  --border-subtle: #e4ecf3;
-  --accent-primary: #026ea5;
-  --accent-secondary: #7c3aed;
-  --accent-tertiary: #0891b2;
+  --text-secondary: #334155;
+  /* #64748b measures 4.18:1 on --surface-elevated; these clear 4.8. */
+  --text-muted: #4c5a6e;
+  --text-subtle: #5b6a7e;
+  --border: #d7e2ee;
+  --border-subtle: #e6edf6;
+  /* #2563eb -> #245fe2 and #0891b2 -> #06718b for the same reason. */
+  --accent-primary: #245fe2;
+  --accent-secondary: #06718b;
+  --accent-tertiary: #0ea5e9;
   --accent-contrast: #ffffff;
-  --accent-glow: rgba(2, 132, 199, 0.18);
+  --accent-vivid: #2563eb;
+  --accent-glow: rgba(37, 99, 235, 0.2);
   --success: #0f6030;
   --warning: #a94e08;
   --error: #b91c1c;
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(37, 99, 235, 0.38);
+  --glass-blur: 20px;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 10px 28px -14px rgba(15, 23, 42, 0.2);
-  --shadow-lg: 0 28px 64px -30px rgba(15, 23, 42, 0.28);
-  --grid-opacity: 0.09;
-  --glow-opacity: 0.10;
-  --motion-scale: 1.15;
+  --shadow-md: 0 14px 34px -18px rgba(15, 23, 42, 0.22);
+  --shadow-lg: 0 34px 76px -34px rgba(15, 23, 42, 0.3);
+
+  /* The light mode is the same construction inverted, not the dark one
+     with its colours flipped: the fill is a white frost, the highlight
+     runs along the top as a white hairline rather than a cyan one, and
+     the bloom is a cool tint instead of a glow — light surfaces gain
+     depth from shadow, not from emitted light. */
+  --panel-bg: rgba(255, 255, 255, 0.72);
+  --panel-border: rgba(37, 99, 235, 0.34);
+  --panel-border-hover: rgba(37, 99, 235, 0.68);
+  --panel-highlight: rgba(255, 255, 255, 0.9);
+  --panel-bloom: rgba(37, 99, 235, 0.16);
+  --panel-blur: 16px;
+  --panel-saturate: 165%;
+  --panel-shadow: 0 16px 38px -24px rgba(15, 23, 42, 0.42);
+  --panel-glow: 0 0 30px -16px rgba(37, 99, 235, 0.3);
+  --panel-radius: 0.875rem;
+  --panel-sheen: rgba(255, 255, 255, 0.85);
+  --panel-sheen-strong: rgba(255, 255, 255, 0.95);
+
+  --grid-opacity: 0.07;
+  --glow-opacity: 0.1;
+  --motion-scale: 1.1;
   --tracking-display: -0.03em;
+  --weight-display: 600;
 }
 
 /* ----------------------------- STUDIO ------------------------------ */
@@ -204,7 +325,7 @@
   --shadow-md: 0 12px 30px -16px rgba(60, 40, 28, 0.28);
   --shadow-lg: 0 30px 70px -32px rgba(60, 40, 28, 0.34);
   --grid-opacity: 0;
-  --glow-opacity: 0.10;
+  --glow-opacity: 0.1;
   --noise-opacity: 0.5;
   --motion-scale: 1;
   --tracking-display: -0.035em;
@@ -247,9 +368,14 @@
 }
 
 /* --------------------------- FONT SETS ----------------------------- */
+/* Space Grotesk carries the identity: geometric, slightly technical, with
+   distinctive letterforms that stay legible at display size. Inter keeps the
+   body neutral so the display face does the remembering. */
 [data-font='precision'] {
-  --font-display: var(--font-inter);
+  --font-display: var(--font-grotesk);
   --font-body: var(--font-inter);
+  --tracking-display: -0.03em;
+  --weight-display: 600;
 }
 
 [data-font='technical'] {
@@ -289,6 +415,7 @@
   --font-display: var(--font-display);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
+  --font-grotesk: var(--font-grotesk);
 
   --radius-token-sm: var(--radius-sm);
   --radius-token-md: var(--radius-md);
@@ -358,55 +485,464 @@ h1 {
 }
 
 /* ============================ UTILITIES ============================ */
+/*
+ * These live in Tailwind's `components` layer, deliberately.
+ *
+ * Unlayered CSS outranks every layered rule regardless of source order,
+ * and `@import 'tailwindcss'` puts all utilities inside `@layer utilities`.
+ * So an unlayered `.surface-card { border: 1px solid ... }` quietly beat
+ * `hover:border-[var(--accent-primary)]` everywhere the two met — the class
+ * was in the markup, the hover never happened, and nothing failed loudly.
+ *
+ * Declaring these in `components` restores the order the markup already
+ * assumes: a utility in a className overrides the card recipe, which is the
+ * only reason to write the utility there in the first place.
+ */
+@layer components {
+  /*
+   * The panel.
+   *
+   * One card recipe for the whole site, assembled entirely from box-shadow
+   * layers so it needs no pseudo-element and survives `overflow: hidden`
+   * (several cards clip their content, and a border drawn on a ::after at
+   * inset -1px would simply vanish inside them).
+   *
+   * The four inset layers, outermost first:
+   *   1. a hairline of light along the top edge — the lit edge of glass;
+   *   2. a bloom pulled down from the top edge;
+   *   3. the same bloom pushed up from the bottom, which is what stops the
+   *      panel reading as a flat rectangle of tint;
+   *   4. the drop shadow and the outer glow, which sit outside the box.
+   *
+   * A gradient border (brighter at the top, dimmer at the bottom) would be
+   * a closer match to the reference still, but it costs either a masked
+   * pseudo-element or moving the fill into `background-image` — and
+   * `background-image` does not interpolate, so every theme change would
+   * snap the fill of every card on the page. The top highlight buys almost
+   * all of the same directionality for none of that.
+   */
+  .surface-card {
+    background-color: var(--panel-bg);
+    background-image: linear-gradient(
+      148deg,
+      var(--panel-sheen) 0%,
+      transparent 38%,
+      transparent 100%
+    );
+    border: var(--border-width) solid var(--panel-border);
+    border-radius: var(--panel-radius);
+    box-shadow:
+      inset 0 1px 0 var(--panel-highlight),
+      inset 0 20px 30px -30px var(--panel-bloom),
+      inset 0 -20px 30px -30px var(--panel-bloom),
+      var(--panel-shadow);
+  }
 
-.surface-card {
-  background-color: var(--surface);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition:
-    border-color var(--motion-base) var(--ease-out),
-    transform var(--motion-base) var(--ease-out),
-    box-shadow var(--motion-base) var(--ease-out);
-}
+  .surface-elevated {
+    background-color: var(--surface-elevated);
+    border: var(--border-width) solid var(--border-subtle);
+    border-radius: var(--panel-radius);
+  }
 
-.surface-elevated {
-  background-color: var(--surface-elevated);
-  border: var(--border-width) solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-}
-
-/* Selective glass: reserved for the navbar, the hero card, the featured
-   project, the metric strip and the assistant panel. Roughly 10% of surfaces. */
-.glass {
-  background: var(--glass-bg);
-  border: var(--border-width) solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-}
-
-@supports (backdrop-filter: blur(1px)) {
+  /* Glass proper — the pieces that should read as floating above the page:
+     the navbar, the hero panel, the metric strip, the assistant. In the
+     Signature theme the panels above are glass too, which is the design;
+     in Enterprise and Studio these stay the only translucent surfaces. */
   .glass {
-    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    background-color: var(--glass-bg);
+    background-image: linear-gradient(
+      148deg,
+      var(--panel-sheen-strong) 0%,
+      transparent 42%,
+      transparent 100%
+    );
+    border: var(--border-width) solid var(--glass-border);
+    border-radius: var(--panel-radius);
+    box-shadow:
+      inset 0 1px 0 var(--panel-highlight),
+      inset 0 26px 40px -34px var(--panel-bloom),
+      inset 0 -26px 40px -34px var(--panel-bloom),
+      var(--shadow-md),
+      var(--panel-glow);
+  }
+
+  /* Elevated glass for the pieces that should feel like they float highest:
+     the assistant panel and the featured project. Same recipe, more presence. */
+  .glass-elevated {
+    background-color: var(--glass-bg);
+    background-image: linear-gradient(
+      148deg,
+      var(--panel-sheen-strong) 0%,
+      transparent 46%,
+      transparent 100%
+    );
+    border: var(--border-width) solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    box-shadow:
+      inset 0 1px 0 var(--panel-highlight),
+      inset 0 30px 46px -36px var(--panel-bloom),
+      inset 0 -30px 46px -36px var(--panel-bloom),
+      var(--shadow-lg),
+      var(--glow-soft);
+  }
+
+  /*
+   * Backdrop blur is the expensive part of glass: every blurred element
+   * forces the compositor to sample and filter what is behind it, and a
+   * projects page can hold twenty panels at once. So it is applied in one
+   * place, gated three ways:
+   *
+   *   - `@supports`, because without it the fill still needs to be legible
+   *     on its own (it is: the alpha values are chosen so the panel reads
+   *     as a panel with no blur at all);
+   *   - on `.surface-card` only, dropped below 640px: that is the class
+   *     with twenty instances on a page, it is where the cost concentrates,
+   *     and at that width the backdrop behind a full-bleed card is a
+   *     near-flat gradient, so blurring it changes almost nothing visible.
+   *     `.glass` keeps its blur at every width, because the navbar floats
+   *     over scrolling content and needs the separation most on a phone;
+   *   - dropped entirely under `prefers-reduced-transparency`, where the
+   *     fills go opaque as well.
+   */
+  @supports (backdrop-filter: blur(1px)) {
+    .glass {
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--panel-saturate));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--panel-saturate));
+    }
+
+    .glass-elevated {
+      backdrop-filter: blur(calc(var(--glass-blur) * 1.3)) saturate(160%);
+      -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.3)) saturate(160%);
+    }
+
+    @media (min-width: 640px) {
+      .surface-card {
+        backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturate));
+        -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturate));
+      }
+    }
+  }
+
+  /* Transparency is a preference some people turn off for a reason — motion
+     sickness, low vision, or simply wanting text to sit on a flat ground.
+     Honour it by removing the effect, not by softening it. */
+  @media (prefers-reduced-transparency: reduce) {
+    .surface-card,
+    .glass,
+    .glass-elevated {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background-color: var(--surface);
+      background-image: none;
+    }
+  }
+
+  /*
+   * Icon tile.
+   *
+   * The reference design puts a small bordered square holding an accent
+   * icon at the head of most cards — expertise, contact, architecture,
+   * the metric strip. It is a distinct surface from the card it sits in,
+   * one step brighter, so the two never merge into a single wash.
+   */
+  /*
+   * Pipeline legend.
+   *
+   * The labels must line up one-to-one with the nodes above them, so the
+   * column count has to equal the stage count exactly — `auto-fit` gets it
+   * right in a wide container and wrong in a narrow one, stranding the last
+   * stage on a second row out of step with its node. The count comes from the
+   * component as a custom property; below `sm` it drops to two columns and
+   * stacks, where alignment with the diagram is no longer the point.
+   */
+  /*
+   * The travelling shine.
+   *
+   * The gloss layer is sized to twice the card and parked at the top-left, so
+   * shifting its background-position slides the highlight diagonally across
+   * the surface. That is a paint-only change on a layer that already exists:
+   * no overlay element, no `position: relative` forced onto every card, and
+   * nothing to be clipped by the cards that set `overflow: hidden`.
+   *
+   * It runs on hover and focus-within only. A shine that sweeps continuously
+   * across twenty panels at once is not premium, it is a screensaver.
+   */
+  .surface-card,
+  .glass,
+  .glass-elevated {
+    background-size: 220% 220%;
+    background-position: 0% 0%;
+  }
+
+  .surface-card:hover,
+  .surface-card:focus-within,
+  .glass:hover,
+  .glass:focus-within,
+  .glass-elevated:hover,
+  .glass-elevated:focus-within {
+    background-position: 100% 100%;
+  }
+
+  /*
+   * The explainer dialog.
+   *
+   * `<dialog>` in the top layer is not positioned by the page's layout, so it
+   * needs its own centring — `margin: auto` inside the fixed inset does that
+   * without a transform, which keeps the text crisp.
+   *
+   * The backdrop is a pseudo-element with its own stacking context: it cannot
+   * inherit the page's tokens through the cascade the way a normal overlay
+   * would, so its colour is stated here.
+   */
+  .skill-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    max-height: min(85vh, 44rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-xl);
+    box-shadow:
+      inset 0 1px 0 var(--panel-highlight),
+      var(--shadow-lg),
+      var(--glow-soft);
+  }
+
+  .skill-dialog::backdrop {
+    background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* The entrance is short and small. A modal that slides a long way reads as
+     slow the second time someone opens it, and this one is meant to be opened
+     repeatedly while scanning the stack. */
+  @keyframes skill-dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .skill-dialog[open] {
+    animation: skill-dialog-in 200ms var(--ease-out);
+  }
+
+  /*
+   * Route entrance.
+   *
+   * Enter-only, on purpose: an exit animation means holding the new page back
+   * to play the old one out, so every navigation gets slower in order to look
+   * smoother. 320ms is long enough to register as a change and short enough
+   * that nobody waits for it.
+   *
+   * `will-change` is deliberately absent. It would promote a layer for the
+   * whole page subtree on every navigation, which costs more memory than the
+   * animation saves — and the animation runs once, so there is nothing for a
+   * standing hint to help with.
+   */
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translate3d(0, calc(10px * var(--motion-scale)), 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .page-enter {
+    animation: page-enter 320ms var(--ease-out) both;
+  }
+
+  .pipeline-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (min-width: 640px) {
+    .pipeline-legend {
+      grid-template-columns: repeat(var(--stage-count, 5), minmax(0, 1fr));
+    }
+  }
+
+  .icon-tile {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    border: var(--border-width) solid var(--panel-border);
+    border-radius: var(--radius-md);
+    background-color: color-mix(
+      in srgb,
+      var(--accent-primary) 10%,
+      var(--surface-elevated)
+    );
+    box-shadow:
+      inset 0 1px 0 var(--panel-highlight),
+      var(--icon-glow, none);
+    /*
+     * The tint is a token rather than `--accent-primary` outright because the
+     * bright cyan the design uses for icons is a dark-mode affordance. On the
+     * Signature light theme the same hue measures about 2.5:1 against a white
+     * tile — under the 3:1 that WCAG 1.4.11 asks of a meaningful graphic — so
+     * light mode and the other themes keep the accessible blue. Only the theme
+     * that can afford it opts in.
+     */
+    color: var(--icon-tint, var(--accent-primary));
+  }
+
+  /*
+   * Reactive card edge.
+   *
+   * A gradient border that brightens toward the pointer. The gradient lives on a
+   * pseudo-element behind the card so the card keeps an opaque background — a
+   * gradient *border-image* would bleed through and cost text contrast. Position
+   * comes from two custom properties the component updates on pointer move,
+   * which only ever triggers paint on this one element.
+   */
+  .card-reactive {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .card-reactive::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: radial-gradient(
+      22rem circle at var(--pointer-x, 50%) var(--pointer-y, 0%),
+      color-mix(in srgb, var(--accent-tertiary) 70%, transparent),
+      color-mix(in srgb, var(--accent-primary) 34%, transparent) 38%,
+      transparent 70%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--motion-base) var(--ease-out);
+    z-index: -1;
+  }
+
+  .card-reactive:hover::before,
+  .card-reactive:focus-within::before {
+    opacity: 1;
+  }
+
+  /* Signature gradient text. Falls back to a solid colour where
+     background-clip: text is unsupported, so the words never disappear. */
+  .text-signature {
+    color: var(--accent-primary);
+  }
+
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .text-signature {
+      background-image: var(--gradient-signature);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(
+      100deg,
+      var(--text-primary) 0%,
+      var(--text-primary) 40%,
+      var(--accent-primary) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
   }
 }
 
-.text-gradient {
-  background-image: linear-gradient(
-    100deg,
-    var(--text-primary) 0%,
-    var(--text-primary) 40%,
-    var(--accent-primary) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* ==================== ENVIRONMENTAL THEME TRANSITION ================ */
+/*
+ * Switching the bulb should feel like the lights coming up in a room, not a
+ * palette swap. Surfaces, borders and glow all cross-fade together over one
+ * shared duration, and a brief wash sweeps the viewport.
+ *
+ * Only compositor-friendly properties are animated on the wash layer; the
+ * colour transitions are on `background-color`/`border-color`/`color`, which
+ * the browser interpolates cheaply because the values are flat colours.
+ */
+:root {
+  --theme-transition: 420ms;
 }
 
-.hairline {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
+/*
+ * This rule is unlayered, and unlayered CSS outranks every layered rule — so
+ * it is the only place a transition on these classes actually takes effect.
+ * `background-position` (the travelling shine) and `transform` (card lift)
+ * are declared here for that reason, not because they have anything to do
+ * with switching theme; declaring them inside `@layer components` beside the
+ * card recipe looked right and did nothing.
+ */
+body,
+.surface-card,
+.surface-elevated,
+.glass,
+.glass-elevated,
+header nav > div,
+input,
+textarea,
+button,
+a {
+  transition:
+    background-color var(--theme-transition) var(--ease-in-out),
+    background-position 900ms var(--ease-out),
+    border-color var(--theme-transition) var(--ease-in-out),
+    color var(--theme-transition) var(--ease-in-out),
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--theme-transition) var(--ease-in-out);
+}
+
+/* The wash: a single full-viewport radial sweep, mounted only while a theme
+   change is in flight, then removed. Pointer-events none, aria-hidden. */
+.theme-wash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--wash-x, 85%) var(--wash-y, 6%),
+    color-mix(in srgb, var(--accent-tertiary) 34%, transparent) 0%,
+    color-mix(in srgb, var(--accent-vivid) 16%, transparent) 32%,
+    transparent 68%
+  );
+  animation: theme-wash calc(var(--theme-transition) * 1.6) var(--ease-out) forwards;
+}
+
+@keyframes theme-wash {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
 }
 
 /* ============================ ANIMATION ============================ */
@@ -480,37 +1016,1283 @@ h1 {
 }
 
 .reveal[data-visible='true'] {
-  animation: reveal-up calc(var(--motion-slow) * var(--motion-scale)) var(--ease-out) forwards;
+  animation: reveal-up calc(var(--motion-slow) * var(--motion-scale)) var(--ease-out)
+    forwards;
   animation-delay: var(--reveal-delay, 0ms);
 }
 
 .animate-fade-in {
-  animation: fade-in calc(var(--motion-base) * var(--motion-scale)) var(--ease-out) forwards;
+  animation: fade-in calc(var(--motion-base) * var(--motion-scale)) var(--ease-out)
+    forwards;
+}
+
+/* --- Name reveal: per-character rise, staggered by --char-index --- */
+@keyframes char-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, calc(0.42em * var(--motion-scale)), 0) rotate(1.5deg);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0);
+  }
+}
+
+.char-rise .char {
+  display: inline-block;
+  opacity: 0;
+  animation: char-rise calc(560ms * var(--motion-scale, 1)) var(--ease-out) forwards;
+  animation-delay: calc(var(--char-index) * 34ms + var(--char-offset, 0ms));
+  will-change: transform, opacity;
+}
+
+/* Without JS there is no hydration mismatch to fear, but there is also no
+   reason for the name to depend on an animation completing. */
+.no-js .char-rise .char {
+  opacity: 1;
+  animation: none;
+}
+
+/* --- Automation pipeline --- */
+@keyframes packet-travel {
+  from {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  to {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes trace-draw {
+  from {
+    stroke-dashoffset: var(--trace-length, 400);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes node-activate {
+  0%,
+  72%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  12%,
+  32% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+}
+
+@keyframes node-halo {
+  0%,
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  14% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  46% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+/* --- Automation flow graph --- */
+/*
+ * One charge, one pass, then the wire is empty until the loop comes round.
+ *
+ * Every connector carries `pathLength="100"`, which normalises its length for
+ * dash arithmetic: a `6 94` pattern is then exactly one packet per wire, and
+ * an offset from 100 to 6 walks that packet from the start to the end no
+ * matter whether the wire is a 26-unit arrow or a 330-unit arc. Without it,
+ * one dash range would have to serve every path length, and the short links
+ * would flash past while the long arc crawled.
+ *
+ * It stops at 6 rather than 0 so the *next* dash in the pattern parks just
+ * off the start instead of appearing there — a fade would hide it, but not
+ * having it arrive at all is better than covering it up.
+ *
+ * The travel occupies a fixed 22% of the cycle for every segment, because a
+ * keyframe selector cannot take a custom property — only the declarations
+ * inside one can. Per-segment timing therefore comes from `animation-delay`,
+ * which is enough: staggering the departures is what produces the sense of a
+ * single charge moving through the graph, and equal transit times just mean
+ * the long arc reads as the fast path, which it is.
+ *
+ * `stroke-dashoffset` is paint-only — no layout, no compositing surface per
+ * packet — which is why a dozen of these cost nothing.
+ */
+@keyframes flow-charge {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  25% {
+    stroke-dashoffset: 6;
+    opacity: 1;
+  }
+  31% {
+    stroke-dashoffset: 6;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 6;
+    opacity: 0;
+  }
+}
+
+.flow-charge {
+  animation-name: flow-charge;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+}
+
+@keyframes flow-bead {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  3% {
+    opacity: 1;
+    transform: scale(2.2);
+  }
+  12% {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+
+.flow-bead {
+  animation-name: flow-bead;
+  animation-timing-function: var(--ease-out);
+  animation-iteration-count: infinite;
+}
+
+/* The bot sits at the centre of the graph and is the only node that is doing
+   anything, so it is the only one that breathes. */
+@keyframes flow-node-active {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 var(--panel-highlight),
+      inset 0 0 22px -14px var(--accent-tertiary),
+      0 0 22px -6px var(--accent-glow),
+      var(--panel-shadow);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 var(--panel-highlight),
+      inset 0 0 30px -10px var(--accent-tertiary),
+      0 0 40px 0 var(--accent-glow),
+      var(--panel-shadow);
+  }
+}
+
+/*
+ * Nodes on the graph carry a brighter edge than a page card does. They sit on
+ * a lit wire and read as terminals on it, not as content panels — a resting
+ * `--panel-border` made them recede behind the wiring, which inverted the
+ * hierarchy the diagram is trying to establish.
+ */
+.flow-node {
+  border-color: color-mix(in srgb, var(--panel-border) 100%, var(--accent-tertiary) 22%);
+  box-shadow:
+    inset 0 1px 0 var(--panel-highlight),
+    inset 0 0 18px -14px var(--accent-tertiary),
+    var(--panel-shadow);
+}
+
+/* The node's face. Bright cyan with its own bloom, because on the graph the
+   icon is the thing the eye lands on before the label. */
+.flow-node-icon {
+  color: var(--icon-tint, var(--accent-primary));
+  filter: drop-shadow(
+    0 0 6px color-mix(in srgb, var(--icon-tint, var(--accent-primary)) 55%, transparent)
+  );
+  stroke-width: 1.5;
+}
+
+.flow-node-active {
+  border-color: var(--panel-border-hover);
+  animation: flow-node-active 3.6s var(--ease-in-out) infinite;
+}
+
+/* --- Run monitor --- */
+@keyframes run-pip {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+.run-pip {
+  animation: run-pip 1.2s var(--ease-in-out) infinite;
+}
+
+@keyframes run-step-active {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-primary) 34%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+
+.run-step-active {
+  animation: run-step-active 1.4s var(--ease-out) infinite;
+}
+
+/* The phone layout's rail: charge running down the vertical connector. */
+@keyframes flow-rail {
+  0% {
+    background-position: 0 -16px;
+  }
+  100% {
+    background-position: 0 16px;
+  }
+}
+
+.flow-rail {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--accent-tertiary) 45%,
+    var(--accent-tertiary) 55%,
+    transparent 100%
+  );
+  background-size: 100% 16px;
+  background-repeat: no-repeat;
+  animation: flow-rail 2.4s linear infinite;
+}
+
+/* --- Live circuit (backdrop) --- */
+/* The dash offset runs the full path length. 320 comfortably exceeds the
+   longest trace in the layer's 100x70 user-space, so one dash makes exactly
+   one pass and then waits in the gap — which is what makes it read as a
+   discrete packet rather than a marching-ants border. */
+@keyframes circuit-pulse {
+  from {
+    stroke-dashoffset: 320;
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes circuit-pad {
+  0%,
+  62%,
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  8% {
+    opacity: 0.9;
+    transform: scale(2.6);
+  }
+  26% {
+    opacity: 0;
+    transform: scale(3.6);
+  }
+}
+
+.circuit-pad {
+  animation: circuit-pad 6.5s var(--ease-out) infinite;
+}
+
+/* --- Automation figure (backdrop) --- */
+@keyframes robot-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, calc(-6px * var(--motion-scale)), 0);
+  }
+}
+
+@keyframes robot-eyes {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  /* A light does not dim like an eyelid: it cuts out and comes back up. */
+  41%,
+  43% {
+    opacity: 0.08;
+  }
+  47% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes robot-beacon {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes robot-core {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes robot-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  10%,
+  70% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(392px);
+  }
+}
+
+.robot-float {
+  animation: robot-float 11s var(--ease-in-out) infinite;
+}
+
+.robot-eyes {
+  animation: robot-eyes 7s var(--ease-in-out) infinite;
+}
+
+.robot-beacon {
+  animation: robot-beacon 3.4s var(--ease-in-out) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.robot-core {
+  animation: robot-core 26s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.robot-signal {
+  animation: dash-flow 7s linear infinite;
+}
+
+.robot-signal-delayed {
+  animation-delay: 2.3s;
+}
+
+.robot-signal-slow {
+  animation-duration: 11s;
+}
+
+.robot-scan {
+  animation: robot-scan 9s var(--ease-in-out) 1.5s infinite;
+}
+
+/* --- Bulb --- */
+@keyframes bulb-swing {
+  0% {
+    transform: rotate(0deg);
+  }
+  22% {
+    transform: rotate(7deg);
+  }
+  46% {
+    transform: rotate(-4.5deg);
+  }
+  68% {
+    transform: rotate(2.4deg);
+  }
+  86% {
+    transform: rotate(-1.1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes cord-pull {
+  0% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(7px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes dash-flow {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* --- Scroll progress + shimmer --- */
+@keyframes sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+
+/* ==================================================================== */
+/* THE PULL CORD                                                        */
+/* ==================================================================== */
+/*
+ * Clicking the bulb used to swing it and nothing else. A pendant lamp on a
+ * cord invites one gesture — you pull it — so the click should do what the
+ * gesture does: the cord stretches, snaps back past its rest length, and
+ * settles.
+ *
+ * ## Why these particular keyframes
+ *
+ * A cord is a spring with damping, and a two-keyframe stretch-and-return looks
+ * like an elastic band rather than a cable. Each rebound here is smaller than
+ * the one before it — 1.55, 0.92, 1.12, 0.97, 1 — which is what a real
+ * oscillation does and is the whole difference between "snapped back" and
+ * "wobbled".
+ *
+ * The cord scales rather than changing height: `scaleY` on a
+ * `transform-origin: top` element is a compositor transform, where animating
+ * `height` would run layout on every frame of every pull.
+ *
+ * The bulb translates on the same curve but at a fraction of the amplitude —
+ * the cord stretches, the bulb is carried. Moving both by the same distance
+ * detaches the bulb from the end of the cord, which is instantly wrong.
+ */
+.cord-yank {
+  transform-origin: top center;
+  animation: cord-yank 720ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cord-yank {
+  0% {
+    transform: scaleY(1);
+  }
+  22% {
+    transform: scaleY(1.55);
+  }
+  45% {
+    transform: scaleY(0.92);
+  }
+  65% {
+    transform: scaleY(1.12);
+  }
+  82% {
+    transform: scaleY(0.97);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+.bulb-yank {
+  animation: bulb-yank 720ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bulb-yank {
+  0% {
+    transform: translateY(0);
+  }
+  22% {
+    transform: translateY(9px);
+  }
+  45% {
+    transform: translateY(-1.4px);
+  }
+  65% {
+    transform: translateY(2.2px);
+  }
+  82% {
+    transform: translateY(-0.5px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* ==================================================================== */
+/* THE MOVING GROUND                                                    */
+/* ==================================================================== */
+/*
+ * Arvind's reference is a hero whose *background* moves: a technical grid
+ * panning slowly, and a circuit layer drifting behind it, so the page reads as
+ * a live system rather than a printed one. Ours had both elements and neither
+ * moved — the grid was a fixed `background-size` and the circuit only pulsed
+ * in place.
+ *
+ * Two rules for everything here, and they are why it can run on every route
+ * without costing anything:
+ *
+ *   - **Transforms, never `background-position`.** Animating a background
+ *     position repaints the layer every frame. Translating an oversized
+ *     element is a compositor job: the browser moves an already-painted
+ *     texture, which is the difference between a phone idling and a phone
+ *     warming up.
+ *   - **The travel is exactly one tile.** The grid repeats every 64px, so a
+ *     64px translation lands on an identical frame and the loop is seamless.
+ *     Any other distance produces a visible jump once per cycle, which is the
+ *     single most common way an ambient background gives itself away.
+ *
+ * ## On the speeds
+ *
+ * These were slower — 64px over 18s, which is 3.6 pixels a second. That is
+ * inside the band where a diff proves motion and a person does not see any:
+ * the page measured as moving and still read as a printed image. Everything
+ * here is now roughly 1.8× faster (the near grid at ~6.4 px/s), which is the
+ * slowest it can be and still be *noticed* rather than merely detected.
+ *
+ * All four are single numbers in this file. If it ever reads as busy rather
+ * than alive, raising the durations is the whole edit.
+ *
+ * The mask cannot live on the moving element — it would travel with it and the
+ * fade would slide off the page. So the mask is on a static wrapper and the
+ * grid moves inside it.
+ */
+
+.grid-window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: var(--grid-opacity);
+  mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, #000 40%, transparent 100%);
+}
+
+.grid-plane {
+  position: absolute;
+  /* Oversized so the translation never exposes an edge. */
+  inset: -80px;
+  background-image:
+    linear-gradient(to right, var(--text-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--text-subtle) 1px, transparent 1px);
+  background-size: 64px 64px;
+  animation: grid-drift 10s linear infinite;
+}
+
+/*
+ * A second grid at four times the scale and a different speed.
+ *
+ * One plane moving on its own reads as the whole page sliding. Two at
+ * different rates read as depth — the same trick a parallax starfield uses,
+ * and the reason the reference video feels like a space rather than a
+ * wallpaper. The coarse one is fainter, because the far layer is always the
+ * dimmer one.
+ */
+.grid-plane-far {
+  position: absolute;
+  inset: -280px;
+  background-image:
+    linear-gradient(to right, var(--accent-primary) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--accent-primary) 1px, transparent 1px);
+  background-size: 256px 256px;
+  opacity: 0.55;
+  animation: grid-drift-far 28s linear infinite;
+}
+
+@keyframes grid-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(64px, 64px, 0);
+  }
+}
+
+@keyframes grid-drift-far {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-256px, 256px, 0);
+  }
+}
+
+/*
+ * The circuit layer drifts as well, and in the opposite direction to the near
+ * grid. Opposed motion is what stops the two layers reading as one sheet: the
+ * eye separates them immediately, and the traces feel like they sit *behind*
+ * the grid rather than being printed on it.
+ *
+ * Deliberately slow — a full minute for a small excursion. The pulses running
+ * along the traces are the fast motion in this layer; if the layer itself
+ * moved quickly there would be nothing to read them against.
+ */
+.circuit-drift {
+  animation: circuit-drift 64s ease-in-out infinite;
+}
+
+@keyframes circuit-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-2.5%, 1.8%, 0);
+  }
+}
+
+/* ==================================================================== */
+/* AMBIENT LIFE + THE PORTRAIT FRAME                                    */
+/* ==================================================================== */
+/*
+ * Why this section exists.
+ *
+ * A motion audit measured how many pixels actually change 2.5s after a page
+ * has settled — i.e. once every entrance animation is done and only ongoing
+ * motion is left. The result was the honest answer to "is this page alive":
+ *
+ *     theme         /        /experience   /projects   /stack
+ *     engineering   1.32%    0.36%         0.47%       0.45%
+ *     enterprise    0.35%    0.00%         0.00%       0.00%
+ *     studio        0.62%    0.00%         0.00%       0.00%
+ *
+ * Two thirds of the site was frozen, and on two of the three themes the inner
+ * pages were frozen *exactly*. The entrance reveals were real but one-shot; the
+ * only continuous motion lived in the Signature theme's circuit layer and the
+ * figure, which is scoped to two routes. So the page did not "come alive" —
+ * it arrived and then died.
+ *
+ * The fix is ambient rather than decorative: slow, large, low-contrast motion
+ * in the backdrop that the eye registers as *aliveness* without ever competing
+ * with the text. Everything below animates `transform` or `opacity` only, so
+ * it is composited and never triggers layout. Nothing here brightens the page:
+ * the amplitudes are displacement, not opacity, so the contrast figures the
+ * palette was validated against still hold.
+ */
+
+:root {
+  /* The frame reads from the accent tokens rather than from hard-coded hexes,
+     which is the whole reason it re-themes for free: every theme already
+     redefines these three, so the ring, the ticks and the scan follow. */
+  --frame-arc-a: color-mix(in srgb, var(--accent-primary) 88%, transparent);
+  --frame-arc-b: color-mix(in srgb, var(--accent-tertiary) 72%, transparent);
+  --frame-tick: color-mix(in srgb, var(--accent-secondary) 65%, transparent);
+  --frame-scan: color-mix(in srgb, var(--accent-tertiary) 20%, transparent);
+  --frame-spin: 16s;
+
+  /*
+   * How loud the ambient layer is allowed to be.
+   *
+   * It is deliberately *not* `--glow-opacity`. That token was tuned for a
+   * stationary wash sitting behind text, where anything higher costs contrast.
+   * A moving highlight is read differently: the eye registers the change, not
+   * the absolute level, so it can be quieter than a static glow and still be
+   * noticed. The first attempt reused `--glow-opacity` and the audit showed
+   * why that failed — 0.09 behind a 60px blur is below the threshold at which
+   * a pixel counts as changed at all, let alone as motion.
+   */
+  --ambient-opacity: 0.34;
+}
+
+/* --- The portrait frame ------------------------------------------------ */
+
+/*
+ * A rotating conic gradient, clipped to the card's shape.
+ *
+ * The obvious implementation — animating a gradient's `from` angle — needs
+ * `@property --angle` to make the custom property interpolatable, and that is
+ * still not universal. So instead the gradient is painted onto an oversized
+ * square pseudo-element and the *element* is rotated. A square whose side is
+ * 200% of the card's width always exceeds the card's diagonal, so the card is
+ * covered at every angle; `overflow: hidden` on the wrapper turns the spinning
+ * square into a ring that appears to travel around the edge.
+ *
+ * It is also cheaper: rotating a painted layer is a compositor transform,
+ * where re-resolving a conic gradient every frame is a repaint.
+ */
+.portrait-frame {
+  position: relative;
+  isolation: isolate;
+  padding: 2px;
+  overflow: hidden;
+  border-radius: calc(var(--panel-radius) + 2px);
+}
+
+.portrait-frame::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  z-index: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--frame-arc-a) 38deg,
+    var(--frame-arc-b) 76deg,
+    transparent 132deg,
+    transparent 208deg,
+    var(--frame-arc-b) 262deg,
+    var(--frame-arc-a) 300deg,
+    transparent 360deg
+  );
+  animation: frame-orbit var(--frame-spin) linear infinite;
+}
+
+/* The card itself sits above the ring, leaving only the 2px padding lit. */
+.portrait-frame > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes frame-orbit {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* The photo's own box: the crop window everything else is positioned against. */
+.portrait-shot {
+  position: relative;
+  overflow: hidden;
+}
+
+/*
+ * A scan band crossing the photograph, at the same slow cadence as the
+ * figure's. It is 20% of an accent at its brightest and passes in six seconds,
+ * which is enough to notice and not enough to read as a defect on a face.
+ */
+.portrait-scan {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 26%;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--frame-scan) 45%,
+    var(--frame-scan) 55%,
+    transparent 100%
+  );
+  animation: portrait-scan 6.5s ease-in-out infinite;
+}
+
+@keyframes portrait-scan {
+  0% {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(500%);
+    opacity: 0;
+  }
+}
+
+/*
+ * Corner ticks — the HUD bracket the rest of the site already speaks in.
+ * Eight one-pixel gradients on one element rather than four positioned spans:
+ * same drawing, no extra nodes, and it re-themes off `--frame-tick` with it.
+ */
+.portrait-ticks {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 0 0 / 15px 1px no-repeat,
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 0 0 / 1px 15px no-repeat,
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 100% 0 / 15px 1px no-repeat,
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 100% 0 / 1px 15px no-repeat,
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 0 100% / 15px 1px no-repeat,
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 0 100% / 1px 15px no-repeat,
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 100% 100% / 15px 1px no-repeat,
+    linear-gradient(var(--frame-tick), var(--frame-tick)) 100% 100% / 1px 15px no-repeat;
+  opacity: 0.85;
+}
+
+/* --- Ambient backdrop motion (every theme, every route) ---------------- */
+
+/*
+ * The two ambient glows drift. Displacement is a few percent of their own
+ * radius over most of a minute, which is below the threshold at which the eye
+ * tracks it as movement and above the one at which a page reads as a still
+ * image. The two orbs run at different periods so they never return to the
+ * same relative position and the loop cannot be spotted.
+ */
+.orb-drift-a {
+  animation: orb-drift-a 34s ease-in-out infinite;
+}
+
+.orb-drift-b {
+  animation: orb-drift-b 47s ease-in-out infinite;
+}
+
+@keyframes orb-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 3%, 0) scale(1.06);
+  }
+}
+
+@keyframes orb-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  50% {
+    transform: translate3d(-5%, 4%, 0) scale(1);
+  }
+}
+
+/*
+ * A single wide beam that crosses the page. This is the one piece of motion
+ * that is on every route in every theme, and it is the reason an inner page no
+ * longer measures 0.00%. Deliberately enormous and deliberately faint: a large
+ * soft thing moving slowly is peripheral, where a small sharp thing moving
+ * quickly is a distraction.
+ */
+.ambient-beam {
+  position: absolute;
+  top: -20%;
+  left: -40%;
+  width: 45%;
+  height: 140%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent-primary) 24%, transparent) 45%,
+    color-mix(in srgb, var(--accent-tertiary) 20%, transparent) 55%,
+    transparent 100%
+  );
+  filter: blur(42px);
+  opacity: var(--ambient-opacity);
+  animation: ambient-beam 17s linear infinite;
+}
+
+@keyframes ambient-beam {
+  from {
+    transform: translateX(0) skewX(-8deg);
+  }
+  to {
+    transform: translateX(340%) skewX(-8deg);
+  }
+}
+
+/*
+ * The scan band — the piece that makes every route read as live.
+ *
+ * The backdrop is `position: fixed`, so this band is in view at every scroll
+ * position on every page: it is the one thing guaranteed to be moving whatever
+ * the visitor is reading. It passes *behind* all content (the backdrop sits at
+ * `-z-10`), so at this opacity it lightly lifts the ground behind text rather
+ * than crossing over it.
+ *
+ * Wide, soft and slow on purpose. A narrow, sharp, fast band is a progress
+ * indicator — it implies the page is loading something. A 30vh band taking
+ * nineteen seconds to cross is weather.
+ */
+.ambient-scan {
+  position: absolute;
+  inset-inline: -10%;
+  top: 0;
+  height: 30vh;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--accent-tertiary) 30%, transparent) 42%,
+    color-mix(in srgb, var(--accent-primary) 26%, transparent) 58%,
+    transparent 100%
+  );
+  filter: blur(34px);
+  opacity: calc(var(--ambient-opacity) * 0.8);
+  animation: ambient-scan 12s linear infinite;
+}
+
+@keyframes ambient-scan {
+  from {
+    transform: translateY(-110%);
+  }
+  to {
+    transform: translateY(430%);
+  }
+}
+
+/* Enterprise's horizon line was static by design. It still is a line; now a
+   brighter segment travels along it, which is the most restrained possible
+   way for that theme to be alive rather than printed. */
+.horizon-run {
+  background-size: 220% 100%;
+  animation: horizon-run 11s linear infinite;
+}
+
+@keyframes horizon-run {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+/* Studio's concentric rings turn against each other. Slow enough that it reads
+   as a mechanism idling rather than a spinner claiming something is loading. */
+.ring-turn-slow {
+  transform-origin: 50% 50%;
+  animation: ring-turn 90s linear infinite;
+}
+
+.ring-turn-rev {
+  transform-origin: 50% 50%;
+  animation: ring-turn 64s linear infinite reverse;
+}
+
+@keyframes ring-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* --- Content motion that means something ------------------------------- */
+
+/*
+ * The live node: the one milestone that is still happening.
+ *
+ * Every other node on the timeline is a finished event and sits still. This
+ * one pulses because it is *ongoing* — which makes the animation a statement
+ * about the data rather than decoration applied evenly to a list.
+ */
+.node-live::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 1px solid var(--accent-primary);
+  animation: node-live 2.8s ease-out infinite;
+}
+
+@keyframes node-live {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+  }
+}
+
+/* The current role's edge bar carries a charge running down it — the same
+   vocabulary as the hero's connectors, applied to the one role that is still
+   running. Finished roles keep a flat bar. */
+.role-bar-live {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--accent-tertiary) 42%,
+    var(--accent-primary) 58%,
+    transparent 100%
+  );
+  background-size: 100% 42%;
+  background-repeat: no-repeat;
+  animation: role-bar-live 3.6s linear infinite;
+}
+
+@keyframes role-bar-live {
+  from {
+    background-position: 0 -45%;
+  }
+  to {
+    background-position: 0 145%;
+  }
+}
+
+/*
+ * The impact meters.
+ *
+ * The counter already animates the number; the bar animates the *proportion*,
+ * which is the part a number alone does not show. Width is driven by a custom
+ * property set per metric in the component, so the CSS carries no figures —
+ * the resume data stays the only source of them.
+ */
+.meter {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--text-subtle) 22%, transparent);
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  width: var(--meter-value, 0%);
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--accent-tertiary),
+    var(--accent-primary)
+  );
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 1100ms var(--ease-out);
+}
+
+.meter[data-filled='true'] .meter-fill {
+  transform: scaleX(1);
 }
 
 /* ========================= REDUCED MOTION ========================== */
 /* Decorative motion is removed entirely; content still appears. */
+/*
+ * Reduced motion — honoured by default, overridable by the visitor.
+ *
+ * The guard is the whole point. The OS preference stays the default, because
+ * someone who set it meant it. But it is a blunt instrument: Windows turns it
+ * on wholesale under "adjust for best performance", and a visitor can end up
+ * with every animation on the web disabled without knowing they asked for it.
+ * Arvind hit exactly that — he reported the hero graph as frozen while a
+ * measurement showed it running at 4.88% of the graph's pixels per second.
+ *
+ * So `data-motion="full"`, set from the appearance panel, opts back in. There
+ * is deliberately no `data-motion="reduced"`: anyone who wants less motion
+ * already has the OS switch, and duplicating it here would be a second place
+ * for the same preference to disagree with itself.
+ *
+ * Everything below is nested under that guard rather than duplicated, so there
+ * is exactly one copy of these rules to keep correct.
+ */
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --motion-scale: 0;
-  }
+  :root:not([data-motion='full']) {
 
-  html {
-    scroll-behavior: auto;
-  }
+    & {
+      --motion-scale: 0;
+    }
 
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
+    & {
+      scroll-behavior: auto;
+    }
 
-  .reveal {
-    opacity: 1 !important;
-    transform: none !important;
+    & *,
+    & *::before,
+    & *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    & .reveal {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    /* Decorative motion is removed outright rather than merely shortened:
+       a 0.001ms loop still schedules work every frame, and a shortened loop
+       still *runs* — it lands on its final keyframe after the delay elapses,
+       which is motion arriving late rather than motion suppressed.
+
+       These carry content, so they are forced to their visible resting state. */
+    /* The hero graph's own classes. These were missing from this list from the
+       day the graph was built, and the site was reported as "0 pixels under
+       reduced motion" while they were still running — because the check used a
+       6/255 difference threshold and a short sample, and these are staggered by
+       `animation-delay`. With the global `*` rule they do not *loop*, but a
+       delayed animation still fires when its delay elapses and lands on its
+       final keyframe: motion arriving late rather than motion suppressed, which
+       is exactly the failure this block was written to prevent. Found by
+       re-measuring at 4/255 over a 2.5s gap. */
+    & .flow-charge,
+    & .flow-bead,
+    & .flow-node-active,
+    & .flow-rail,
+    & .char-rise .char,
+    & .robot-float,
+    & .robot-eyes,
+    & .robot-beacon,
+    & .robot-core,
+    & .robot-signal,
+    & .run-pip,
+    & .run-step-active,
+    & .pipeline-packet,
+    & .pipeline-node,
+    & .pipeline-halo,
+    & .pipeline-trace {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      stroke-dashoffset: 0 !important;
+    }
+
+    /* These are pure backdrop. Stopping them is the whole requirement; forcing
+       them to full opacity would make the still page *brighter* than the moving
+       one, which is the opposite of what someone asking for less motion wants.
+       So the animation goes and the authored opacity stays. */
+    & .circuit-pad,
+    & .flow-charge,
+    & .flow-bead {
+      animation: none !important;
+      opacity: 0 !important;
+    }
+
+    /* The rail is a connector, not a highlight, so it stays — as a solid one. */
+    & .flow-rail {
+      background-size: 100% 100% !important;
+      background-position: 0 0 !important;
+    }
+
+    & .circuit-anim {
+      animation: none !important;
+      transform: none !important;
+      stroke-dashoffset: 0 !important;
+    }
+
+    & .theme-wash,
+    & .robot-scan {
+      display: none !important;
+    }
+
+    /* Everything added for the ambient round. Split the same way as the rest:
+       what carries information is forced to its resting *visible* state, what is
+       pure backdrop is stopped where it was authored so the still page is never
+       brighter than the moving one. */
+
+    /* Backdrop — stop, do not brighten. */
+    & .grid-plane,
+    & .grid-plane-far,
+    & .circuit-drift,
+    & .orb-drift-a,
+    & .orb-drift-b,
+    & .horizon-run,
+    & .ring-turn-slow,
+    & .ring-turn-rev {
+      animation: none !important;
+      transform: none !important;
+      rotate: none !important;
+    }
+
+    /* The beam only exists to move. A stationary blur across a third of the
+       viewport is a stain, not a highlight, so it goes entirely. */
+    & .ambient-beam,
+    & .ambient-scan,
+    & .portrait-scan {
+      display: none !important;
+    }
+
+    /* The cord pull is feedback for a click, and the click already has
+       feedback that cannot be switched off: the whole page changes mode. So
+       the animation goes and nothing is lost. */
+    & .cord-yank,
+    & .bulb-yank {
+      animation: none !important;
+      transform: none !important;
+    }
+
+    /* The ring is the frame. Stopping the rotation leaves it drawn at its
+       starting angle, which is still a frame — so it stays, still. */
+    & .portrait-frame::before {
+      animation: none !important;
+    }
+
+    /* The pulse says "this one is ongoing". That meaning has to survive without
+       the motion, so the ring resolves to a visible static halo rather than
+       vanishing mid-fade. */
+    & .node-live::after {
+      animation: none !important;
+      transform: scale(1.2) !important;
+      opacity: 0.55 !important;
+    }
+
+    /* Same reasoning: the live role keeps a lit bar, it just stops travelling. */
+    & .role-bar-live {
+      animation: none !important;
+      background-size: 100% 100% !important;
+      background-position: 0 0 !important;
+    }
+
+    /* The bar is the value. It must arrive, not animate. */
+    & .meter-fill {
+      transition: none !important;
+      transform: scaleX(1) !important;
+    }
+
+    /* An unannounced instant page change is exactly what reduced motion asks
+       for, so the entrance goes rather than being shortened. */
+    & .page-enter {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    /* The dialog still opens — only the entrance is dropped. Hiding it would
+       remove the content, which is the opposite of what is being asked for. */
+    & .skill-dialog[open] {
+      animation: none !important;
+    }
+
   }
 }
 

@@ -56,20 +56,15 @@ describe('ProjectsSection', () => {
     expect(screen.queryByText(first.businessView)).not.toBeInTheDocument();
   });
 
-  it('opens an accessible case-study dialog and closes it on Escape', async () => {
-    const user = userEvent.setup();
+  it('links each card to its own case-study route', () => {
     render(<ProjectsSection />);
 
-    const card = screen.getByTestId('project-card-compliance-tracking');
-    await user.click(within(card).getByRole('button', { name: /read the case study/i }));
-
-    const dialog = screen.getByTestId('project-dialog');
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(within(dialog).getByText(/how it was delivered/i)).toBeInTheDocument();
-    expect(within(dialog).getByText(/impact/i)).toBeInTheDocument();
-
-    await user.keyboard('{Escape}');
-    expect(screen.queryByTestId('project-dialog')).not.toBeInTheDocument();
+    for (const project of projects) {
+      const link = screen.getByTestId(`project-link-${project.id}`);
+      expect(link).toHaveAttribute('href', `/projects/${project.id}`);
+      // The accessible name is the project title, not "read more".
+      expect(link).toHaveAccessibleName(project.title);
+    }
   });
 
   it('announces the result count to screen readers', async () => {

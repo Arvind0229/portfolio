@@ -4,6 +4,16 @@ export const STORAGE_KEYS = {
   theme: 'ag.theme',
   mode: 'ag.mode',
   font: 'ag.font',
+  /**
+   * Motion override. Only ever `'full'` or absent.
+   *
+   * There is no stored `'reduced'`: anyone who wants less motion already has
+   * the OS switch, and a second place to say the same thing is a second place
+   * for the two to disagree. This exists for the opposite case — a visitor
+   * whose OS reports `prefers-reduced-motion` without their having meant it,
+   * which is what Windows does under "adjust for best performance".
+   */
+  motion: 'ag.motion',
 } as const;
 
 export const DEFAULT_THEME: ThemeId = 'engineering';
@@ -41,6 +51,7 @@ var d=document.documentElement;
 var t=localStorage.getItem('${STORAGE_KEYS.theme}');
 var m=localStorage.getItem('${STORAGE_KEYS.mode}');
 var f=localStorage.getItem('${STORAGE_KEYS.font}');
+var mo=localStorage.getItem('${STORAGE_KEYS.motion}');
 var themes=['enterprise','engineering','studio'];
 var modes=['light','dark'];
 var fonts=['precision','technical','editorial'];
@@ -53,6 +64,7 @@ if(fonts.indexOf(f)===-1){f='${DEFAULT_FONT}';}
 d.setAttribute('data-theme',t);
 d.setAttribute('data-mode',m);
 d.setAttribute('data-font',f);
+if(mo==='full'){d.setAttribute('data-motion','full');}else{d.removeAttribute('data-motion');}
 d.classList.remove('no-js');
 }catch(e){
   document.documentElement.setAttribute('data-theme','${DEFAULT_THEME}');
