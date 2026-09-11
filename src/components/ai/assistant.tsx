@@ -234,7 +234,7 @@ export function Assistant() {
               maxLength={MAX_MESSAGE_LENGTH}
               placeholder="Ask about his experience, a project, or a technology…"
               data-testid="assistant-input"
-              className="max-h-32 min-h-[2.75rem] flex-1 resize-none rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3 text-[0.88rem] text-[var(--text-primary)] placeholder:text-[var(--text-subtle)] focus-visible:border-[var(--accent-primary)]"
+              className="max-h-32 min-h-[2.75rem] flex-1 resize-none rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-3 text-base sm:text-[0.88rem] text-[var(--text-primary)] placeholder:text-[var(--text-subtle)] focus-visible:border-[var(--accent-primary)]"
             />
             <button
               type="submit"

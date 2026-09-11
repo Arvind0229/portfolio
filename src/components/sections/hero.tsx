@@ -146,7 +146,7 @@ export function Hero() {
         Two weights of one palette also matches the identity better than a
         rainbow across a person's name.
       */}
-          <h1 className="mt-7 text-[clamp(2.7rem,8.8vw,5.8rem)] leading-[var(--leading-display)]">
+          <h1 className="mt-7 text-[clamp(2rem,7.5vw,5.5rem)] leading-[var(--leading-display)]">
             {/* One hidden string carries the whole name; the two coloured halves
             are decorative so a screen reader never hears "ArvindGupta". */}
             <span className="sr-only">{profile.name}</span>
@@ -170,14 +170,14 @@ export function Hero() {
               ) : null}
             </span>
             <Reveal delay={520}>
-              <span className="mt-2 block text-[clamp(1.05rem,3vw,1.9rem)] font-normal tracking-[-0.01em] text-[var(--text-secondary)]">
+              <span className="mt-2 block text-[clamp(1rem,2.8vw,1.9rem)] font-normal tracking-[-0.01em] text-[var(--text-secondary)]">
                 {profile.title} — Banking, NBFC &amp; Retail Lending Automation
               </span>
             </Reveal>
           </h1>
 
           <Reveal delay={600}>
-            <p className="mt-7 max-w-2xl text-[clamp(1rem,2.2vw,1.15rem)] leading-relaxed text-[var(--text-secondary)]">
+            <p className="mt-7 max-w-2xl text-[clamp(0.95rem,2.2vw,1.15rem)] leading-relaxed text-[var(--text-secondary)]">
               {profile.positioning}
             </p>
           </Reveal>
@@ -196,8 +196,8 @@ export function Hero() {
           </Reveal>
 
           <Reveal delay={720}>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <LinkButton href="#projects" size="lg">
+            <div className="mt-9 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+              <LinkButton href="#projects" size="lg" className="w-full sm:w-auto text-center justify-center">
                 Explore the work
                 <span
                   aria-hidden="true"
@@ -206,7 +206,7 @@ export function Hero() {
                   →
                 </span>
               </LinkButton>
-              <LinkButton href="/assistant" variant="secondary" size="lg">
+              <LinkButton href="/assistant" variant="secondary" size="lg" className="w-full sm:w-auto text-center justify-center">
                 Ask my AI assistant
               </LinkButton>
               <LinkButton
@@ -215,6 +215,7 @@ export function Hero() {
                 size="lg"
                 download
                 aria-label="Download resume as PDF"
+                className="w-full sm:w-auto text-center justify-center"
               >
                 Download resume
               </LinkButton>
@@ -257,7 +258,7 @@ export function Hero() {
       <Reveal delay={840}>
         <dl
           ref={metricsRef}
-          className="surface-card mt-12 grid grid-cols-2 gap-x-4 gap-y-7 p-6 sm:p-7 md:grid-cols-4 md:gap-x-0"
+          className="surface-card mt-12 grid grid-cols-2 gap-x-3 gap-y-6 p-4 sm:p-7 md:grid-cols-4 md:gap-x-0"
         >
           {impactMetrics.map((metric, index) => (
             <div

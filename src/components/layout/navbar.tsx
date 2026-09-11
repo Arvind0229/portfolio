@@ -239,19 +239,20 @@ export function Navbar() {
               ))}
             </ul>
 
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <div className="hidden sm:block">
                 <AppearanceControls />
               </div>
               <Link
                 href="/assistant"
-                className="hidden items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--accent-primary)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--accent-primary)] transition-[background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] hover:shadow-[var(--glow-soft)] md:inline-flex"
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--accent-primary)] px-2.5 py-1 text-[0.72rem] font-medium text-[var(--accent-primary)] transition-[background-color,box-shadow] duration-[var(--motion-fast)] hover:bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] hover:shadow-[var(--glow-soft)] sm:px-3 sm:py-1.5 sm:text-[0.78rem]"
               >
                 <span
                   aria-hidden="true"
                   className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]"
                 />
-                Ask my AI
+                <span className="inline sm:hidden">Ask AI</span>
+                <span className="hidden sm:inline">Ask my AI</span>
               </Link>
               <button
                 type="button"
@@ -300,6 +301,19 @@ export function Navbar() {
           data-testid="mobile-menu"
           className="fixed inset-0 z-40 overflow-y-auto bg-[var(--bg-primary)] px-5 pb-10 pt-24 lg:hidden"
         >
+          <div className="mb-4">
+            <Link
+              href="/assistant"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--accent-primary)] bg-[color-mix(in_srgb,var(--accent-primary)_10%,transparent)] p-3.5 text-[0.95rem] font-semibold text-[var(--accent-primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--accent-primary)_15%,transparent)]"
+            >
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[var(--accent-primary)]" />
+                Ask my AI Assistant
+              </span>
+              <span>→</span>
+            </Link>
+          </div>
           <ul className="space-y-1">
             {navigation.map((item, index) => (
               <li key={item.id}>
