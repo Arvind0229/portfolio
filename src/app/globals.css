@@ -770,6 +770,26 @@ h1 {
     animation: page-enter 320ms var(--ease-out) both;
   }
 
+  /*
+   * Off on phones, and the reason is memory rather than taste.
+   *
+   * This wrapper contains the entire document. Animating its opacity and
+   * transform makes the browser composite the whole thing as one layer — on a
+   * phone that measured 390x24628 pixels, about 36 MB on its own, inside a
+   * layer tree already totalling ~180 MB. Past a phone's budget the browser
+   * starts discarding layer contents, and a discarded layer re-rasters from its
+   * base style, which for everything inside is `opacity: 0`. That is how a
+   * section comes back blank after you scroll away from it.
+   *
+   * What is lost is a 320ms fade on navigation, on the device least likely to
+   * notice it and most likely to be hurt by it.
+   */
+  @media (max-width: 767px) {
+    .page-enter {
+      animation: none;
+    }
+  }
+
   .pipeline-legend {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1020,15 +1040,72 @@ a {
   }
 }
 
+/*
+ * No `will-change` here, and the omission is load-bearing.
+ *
+ * It used to say `will-change: opacity, transform`, which promotes the element
+ * to its own GPU layer and — the part that matters — keeps it there for the
+ * life of the page. There are about ninety-one of these on the home page. Past
+ * a phone's GPU memory limit the browser starts discarding layer contents, and
+ * a discarded `.reveal` re-rasters from its base style: `opacity: 0`. Scroll
+ * down, scroll back up, the section is blank. The element was never missing;
+ * it was painted empty.
+ *
+ * The hint was not buying anything either. These are one-shot entrance
+ * animations, and a browser already composites an opacity/transform animation
+ * for as long as it runs, then releases the layer — which is the behaviour we
+ * want, for free. `will-change` is for an element that is *about to* change
+ * repeatedly, not for ninety-one that animate once each.
+ */
 .reveal {
   opacity: 0;
-  will-change: opacity, transform;
 }
 
 .reveal[data-visible='true'] {
-  animation: reveal-up calc(var(--motion-slow) * var(--motion-scale)) var(--ease-out)
-    forwards;
-  animation-delay: var(--reveal-delay, 0ms);
+  animation: reveal-up calc(var(--motion-slow) * var(--motion-scale) * var(--reveal-speed, 1))
+    var(--ease-out) forwards;
+  /*
+   * The stagger is multiplied rather than used directly, so a breakpoint can
+   * turn it down without `!important`. `--reveal-delay` is set as an inline
+   * style by the component, and inline styles win every specificity contest —
+   * a plain override in a media query would have been silently ignored.
+   */
+  animation-delay: calc(var(--reveal-delay, 0ms) * var(--reveal-stagger, 1));
+}
+
+/*
+ * On a phone the entrance is cut to roughly a third, and the stagger removed.
+ *
+ * Not a taste change — a measurement. A thumb flick covers a couple of thousand
+ * pixels a second down a page that is 25,000 pixels tall, so a 620ms fade
+ * behind a 300ms stagger is still playing when the element leaves the screen,
+ * and the visitor meets it half-painted on the way back up. The stagger is a
+ * desktop flourish: it reads as considered when content arrives at reading
+ * speed, and as broken when it arrives at scrolling speed.
+ */
+/*
+ * On a phone the entrance is removed outright. Content is simply there.
+ *
+ * The stagger went first, then the duration was cut to a third, and the
+ * measured fault only halved: 6 of 31 upward stops still caught content
+ * mid-fade, because any entrance animation has a window in which the content
+ * is not yet painted, and a thumb outruns it. Shortening the window makes that
+ * less likely; it cannot make it impossible.
+ *
+ * So the question is what the animation is worth here. On a 25,000-pixel page
+ * scrolled by flicking, almost nobody sees it — and the people who do see it
+ * see it as the bug Arvind reported. On a desktop, where scrolling happens at
+ * reading speed and the animation reads as considered, it stays exactly as it
+ * was. This is a device making a different trade, not a feature being deleted.
+ */
+@media (max-width: 767px) {
+  .reveal {
+    opacity: 1;
+  }
+
+  .reveal[data-visible='true'] {
+    animation: none;
+  }
 }
 
 .animate-fade-in {
@@ -1053,7 +1130,9 @@ a {
   opacity: 0;
   animation: char-rise calc(560ms * var(--motion-scale, 1)) var(--ease-out) forwards;
   animation-delay: calc(var(--char-index) * 34ms + var(--char-offset, 0ms));
-  will-change: transform, opacity;
+  /* Same reasoning as `.reveal` above, and worse here: this selector is per
+     *letter*, so the hint was a permanent layer for every character of the
+     name. It runs once on load and never again. */
 }
 
 /* Without JS there is no hydration mismatch to fear, but there is also no

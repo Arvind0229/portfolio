@@ -18,7 +18,28 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(options?: {
   rootMargin?: string;
   once?: boolean;
 }) {
-  const { threshold = 0.15, rootMargin = '0px 0px -8% 0px', once = true } = options ?? {};
+  /*
+   * These defaults are tuned for a thumb, not for a mouse wheel.
+   *
+   * They used to be `threshold: 0.15` with `rootMargin: '0px 0px -8% 0px'` — a
+   * root *shrunk* at the bottom, so an element only began its 620ms fade once
+   * 15% of it had pushed past a line above the fold. Reading slowly on a
+   * desktop that looks considered. On a phone, a flick covers a couple of
+   * thousand pixels a second down a page that is 25,000 pixels tall, and the
+   * element is still fading in as it leaves the screen. Scroll back up and you
+   * meet it mid-animation — or before its delay has elapsed — which is exactly
+   * the "sections come back blank" report.
+   *
+   * Measured: with a slow scroll all 91 reveals completed and stayed complete.
+   * With a fast one, elements sat at opacity 0, 0.39, 0.78 while on screen. The
+   * mechanism was never broken; it was simply slower than the user.
+   *
+   * So the root is now *expanded* by 300px top and bottom, and any intersection
+   * at all counts. An element begins its entrance while it is still off-screen
+   * and has finished by the time it is read — in both directions, which is what
+   * makes scrolling back up behave.
+   */
+  const { threshold = 0, rootMargin = '300px 0px 300px 0px', once = true } = options ?? {};
   const ref = useRef<T | null>(null);
   const [inView, setInView] = useState(false);
 

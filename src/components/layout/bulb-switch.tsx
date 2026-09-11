@@ -49,7 +49,22 @@ export function BulbSwitch({ compact = false }: { compact?: boolean }) {
     // mounted, it plays, it is removed. Nothing stays in the tree costing
     // compositor work after the transition ends.
     if (typeof document !== 'undefined') {
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      /*
+       * Both halves of the preference, not just the OS half.
+       *
+       * This used to read `matchMedia('(prefers-reduced-motion: reduce)')`
+       * alone, which made the appearance panel's "Turn animation on" a lie for
+       * this one control: the CSS honoured the override — the whole
+       * reduced-motion block is nested under `:root:not([data-motion='full'])`
+       * — but the click handler never started the animation in the first
+       * place, so there was nothing for the CSS to allow. Arvind reported the
+       * pull working on his phone and dead on his desktop, and this is why:
+       * Windows had reduced motion on, and opting back in did not reach here.
+       */
+      const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const optedIntoMotion =
+        document.documentElement.getAttribute('data-motion') === 'full';
+      const reduced = osReduced && !optedIntoMotion;
       if (!reduced) {
         const wash = document.createElement('div');
         wash.className = 'theme-wash';

@@ -17,14 +17,23 @@ export function Backdrop() {
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* Ambient light — every theme, tuned by --glow-opacity. */}
+      {/*
+        Ambient light — every theme, tuned by --glow-opacity.
+
+        Neither orb carries `will-change: transform`, and it should not be added
+        back. They animate continuously, so the browser composites them anyway;
+        the hint bought nothing and forced the layer to exist even when the
+        animation is not running — including under reduced motion, where these
+        are stopped outright. Two layers this large and this blurred are exactly
+        the kind a phone runs out of memory for, and when it does, other layers
+        on the page start coming back blank.
+      */}
       <div
         className="orb-drift-a absolute -left-[18%] -top-[22%] h-[24rem] w-[24rem] sm:h-[42rem] sm:w-[42rem] rounded-full blur-[40px] sm:blur-[70px]"
         style={{
           background:
             'radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 55%, transparent) 0%, transparent 68%)',
           opacity: 'var(--glow-opacity)',
-          willChange: 'transform',
         }}
       />
       {/* Both glows are anchored to the top of the page. An ambient blob sitting
@@ -36,7 +45,6 @@ export function Backdrop() {
           background:
             'radial-gradient(circle, color-mix(in srgb, var(--accent-secondary) 50%, transparent) 0%, transparent 70%)',
           opacity: 'calc(var(--glow-opacity) * 0.7)',
-          willChange: 'transform',
         }}
       />
 

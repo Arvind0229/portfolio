@@ -297,6 +297,44 @@ test.describe('accessibility', () => {
     expect(playing).toBe(0);
   });
 
+  test('the cord pull works once the visitor opts back into motion', async ({
+    page,
+  }, testInfo) => {
+    /*
+     * The gap between "the CSS allows it" and "anything starts it".
+     *
+     * The reduced-motion block is nested under
+     * `:root:not([data-motion='full'])`, so opting in releases the cord pull at
+     * the CSS level — and the click handler still read
+     * `matchMedia('(prefers-reduced-motion: reduce)')` on its own and refused
+     * to bump the key. Nothing started, so there was nothing for the CSS to
+     * allow. Arvind reported the pull working on his phone and dead on his
+     * desktop; Windows had reduced motion on, and pressing "Turn animation on"
+     * did not reach the one control the button is attached to.
+     *
+     * The test above proves the pull stays off when the OS asks and the visitor
+     * has not overridden. This proves the override actually arrives.
+     */
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+
+    await openAppearance(page, testInfo.project.use.viewport?.width ?? 1440);
+    await page.getByTestId('motion-toggle').click();
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'full');
+    await page.keyboard.press('Escape');
+
+    await page.getByTestId('bulb-switch').click();
+
+    const playing = await page.evaluate(
+      () =>
+        document
+          .getAnimations()
+          .filter((a) => (a as CSSAnimation).animationName?.includes('yank')).length,
+    );
+
+    expect(playing, 'opting into motion did not reach the bulb').toBeGreaterThan(0);
+  });
+
   test('every image and icon-only control has an accessible name', async ({ page }) => {
     await page.goto('/');
 
