@@ -20,7 +20,7 @@ const getSiteUrl = (): string => {
       : `https://${vercelUrl}`;
   }
 
-  return 'http://localhost:3000';
+  return 'https://arvindsportfolio.vercel.app';
 };
 
 export const siteConfig = {
