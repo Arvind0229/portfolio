@@ -5,13 +5,31 @@ import type {
   ThemeDefinition,
 } from '@/types';
 
+const getSiteUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (envUrl) {
+    return envUrl.startsWith('http://') || envUrl.startsWith('https://')
+      ? envUrl
+      : `https://${envUrl}`;
+  }
+
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+  if (vercelUrl) {
+    return vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://')
+      ? vercelUrl
+      : `https://${vercelUrl}`;
+  }
+
+  return 'http://localhost:3000';
+};
+
 export const siteConfig = {
   name: 'Arvind Gupta — RPA Developer',
   shortName: 'Arvind Gupta',
   description:
     'RPA Developer automating banking, NBFC and retail lending operations. 80+ production automations built end to end with TruBot, SQL/PL-SQL, Python and Power BI — with a grounded AI assistant that answers questions about the work.',
-  /** Overridden at build time by NEXT_PUBLIC_SITE_URL when deployed. */
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  /** Overridden at build time by NEXT_PUBLIC_SITE_URL or VERCEL_URL when deployed. */
+  url: getSiteUrl(),
   locale: 'en_IN',
 } as const;
 
