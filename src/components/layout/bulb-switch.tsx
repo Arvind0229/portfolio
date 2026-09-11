@@ -202,18 +202,31 @@ export function BulbSwitch({ compact = false }: { compact?: boolean }) {
           )}
           style={{ height: `${cordLength}px` }}
         >
+          {/*
+            One element, two background layers — not two elements.
+
+            The twist used to be its own 1px-wide span placed with
+            `left: 50%` and `translateX(-50%)` inside a 3px parent. That lands
+            it on a half-pixel, and a half-pixel line is antialiased slightly
+            differently on each repaint; with the ambient background animating
+            continuously, that region repaints constantly, and the result is a
+            hairline flickering beside the cord for as long as the page is open.
+
+            Painted as a background layer on the strand itself there is no
+            separate box to misalign and no transform to round: the stripe is
+            rasterised with the element that owns it. `background-size: 1px`
+            with `center` keeps it centred without arithmetic.
+          */}
           <span
             className="absolute inset-0 block rounded-full"
             style={{
-              background:
+              backgroundImage: [
+                'repeating-linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 45%, transparent) 0 2px, transparent 2px 5px)',
                 'linear-gradient(180deg, color-mix(in srgb, var(--text-subtle) 50%, transparent), color-mix(in srgb, var(--text-subtle) 90%, transparent))',
-            }}
-          />
-          <span
-            className="absolute inset-y-0 left-1/2 block w-px -translate-x-1/2 opacity-45"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(180deg, var(--bg-primary) 0 2px, transparent 2px 5px)',
+              ].join(', '),
+              backgroundSize: '1px 100%, 100% 100%',
+              backgroundPosition: 'center, center',
+              backgroundRepeat: 'no-repeat, no-repeat',
             }}
           />
         </span>

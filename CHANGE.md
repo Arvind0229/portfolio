@@ -9,6 +9,32 @@ A backup of the code as it stood before each session's changes is kept under
 
 ---
 
+## 2026-09-11 (later still) — the hairline flickering beside the bulb cord
+
+Reported as flickering "kab se" — for a long time, which fits: it was there from
+the first build.
+
+The cord is a 3px strand. The braid on it was a **separate 1px-wide span**
+placed with `left: 50%` and `translateX(-50%)`. In a 3px box that lands on a
+half-pixel, and a half-pixel hairline is antialiased slightly differently on
+each repaint. The ambient background animates continuously, so that region
+repaints constantly — and the line shimmers for as long as the page is open.
+
+Fixed by removing the element rather than nudging it. The braid is now a
+background layer on the strand itself (`background-size: 1px 100%`, centred),
+so there is no separate box to misalign and no transform to round: the stripe
+is rasterised with the element that owns it.
+
+**Not measured.** The obvious experiment — count changing pixels in the cord
+region before and after — is confounded by the animated background behind it,
+and the harness written for it kept failing on clip geometry. The cause is a
+known one and the fix removes it outright, but the number that would prove it
+is not in hand, and saying so is better than quoting one that means nothing.
+
+262 unit and API tests, 25 e2e on the accessibility and responsive specs.
+
+---
+
 ## 2026-09-11 (later) — WhatsApp contact, and a QR that scans to the chat
 
 ### Asked
