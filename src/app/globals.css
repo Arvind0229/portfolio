@@ -606,16 +606,26 @@ h1 {
    */
   @supports (backdrop-filter: blur(1px)) {
     .glass {
-      backdrop-filter: blur(var(--glass-blur)) saturate(var(--panel-saturate));
-      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--panel-saturate));
+      backdrop-filter: blur(8px) saturate(120%);
+      -webkit-backdrop-filter: blur(8px) saturate(120%);
     }
 
     .glass-elevated {
-      backdrop-filter: blur(calc(var(--glass-blur) * 1.3)) saturate(160%);
-      -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.3)) saturate(160%);
+      backdrop-filter: blur(10px) saturate(130%);
+      -webkit-backdrop-filter: blur(10px) saturate(130%);
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
+      .glass {
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--panel-saturate));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--panel-saturate));
+      }
+
+      .glass-elevated {
+        backdrop-filter: blur(calc(var(--glass-blur) * 1.3)) saturate(160%);
+        -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.3)) saturate(160%);
+      }
+
       .surface-card {
         backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturate));
         -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(var(--panel-saturate));

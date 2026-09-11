@@ -19,22 +19,24 @@ export function Backdrop() {
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       {/* Ambient light — every theme, tuned by --glow-opacity. */}
       <div
-        className="orb-drift-a absolute -left-[18%] -top-[22%] h-[46rem] w-[46rem] rounded-full blur-[120px]"
+        className="orb-drift-a absolute -left-[18%] -top-[22%] h-[24rem] w-[24rem] sm:h-[42rem] sm:w-[42rem] rounded-full blur-[40px] sm:blur-[70px]"
         style={{
           background:
             'radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 55%, transparent) 0%, transparent 68%)',
           opacity: 'var(--glow-opacity)',
+          willChange: 'transform',
         }}
       />
       {/* Both glows are anchored to the top of the page. An ambient blob sitting
           behind the middle of the document tints the text that scrolls over it,
           which costs contrast for decoration nobody asked for. */}
       <div
-        className="orb-drift-b absolute -right-[16%] -top-[10%] h-[38rem] w-[38rem] rounded-full blur-[130px]"
+        className="orb-drift-b absolute -right-[16%] -top-[10%] h-[20rem] w-[20rem] sm:h-[34rem] sm:w-[34rem] rounded-full blur-[40px] sm:blur-[70px]"
         style={{
           background:
             'radial-gradient(circle, color-mix(in srgb, var(--accent-secondary) 50%, transparent) 0%, transparent 70%)',
           opacity: 'calc(var(--glow-opacity) * 0.7)',
+          willChange: 'transform',
         }}
       />
 
