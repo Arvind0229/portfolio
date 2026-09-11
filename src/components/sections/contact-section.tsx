@@ -5,6 +5,7 @@ import { IconTile, type IconName } from '@/components/icons';
 import { PortraitAvatar } from '@/components/profile/portrait';
 import { Button, LinkButton, Reveal } from '@/components/ui';
 import { profile } from '@/data/profile';
+import { whatsappLink, whatsappQrTarget } from '@/lib/contact/whatsapp';
 
 const SUBJECT = encodeURIComponent('Opportunity for Arvind Gupta — RPA Developer');
 
@@ -45,6 +46,23 @@ export function ContactSection() {
             hint="Mumbai time, IST (UTC+5:30)."
           />
         </Reveal>
+        {/*
+          The same number as the card above, offered a second way on purpose.
+          A recruiter reading on a phone at 9pm will not ring a stranger, and
+          will send a message. Showing the number twice is not duplication —
+          it is the same fact with two different costs to act on.
+        */}
+        <Reveal delay={120}>
+          <ContactCard
+            icon="whatsapp"
+            label="WhatsApp"
+            value={profile.phone}
+            href={whatsappLink()}
+            action="Open WhatsApp"
+            hint="Opens a chat with the first line already written."
+            external
+          />
+        </Reveal>
         {linkedin ? (
           <Reveal delay={160}>
             <ContactCard
@@ -77,15 +95,48 @@ export function ContactSection() {
               </p>
             </div>
           </div>
-          <LinkButton href={`mailto:${profile.email}?subject=${SUBJECT}`} size="lg">
-            Get in touch
-            <span
-              aria-hidden="true"
-              className="transition-transform duration-[var(--motion-fast)] group-hover:translate-x-1"
+          <div className="flex items-center gap-5">
+            {/*
+              The QR is for the visitor who is *not* on this device — someone
+              reading over a shoulder, or looking at this on a laptop with their
+              phone in hand. It is hidden below `sm` for the same reason: you
+              cannot scan your own screen with the phone you are holding it on,
+              so on a phone it would be a picture that does nothing while the
+              button beside it already works.
+
+              `currentColor` on the code means it follows the theme, and the
+              file is a committed SVG — about a kilobyte, no script, and it
+              still scans off a printed page.
+            */}
+            <a
+              href={whatsappQrTarget()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden shrink-0 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5 text-[var(--text-primary)] transition-colors hover:border-[var(--accent-primary)] sm:block"
             >
-              →
-            </span>
-          </LinkButton>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/whatsapp-qr.svg"
+                alt="Scan to open a WhatsApp chat"
+                width={96}
+                height={96}
+                className="h-24 w-24"
+              />
+              <span className="mt-1.5 block text-center text-[0.66rem] text-[var(--text-muted)]">
+                Scan to chat
+              </span>
+            </a>
+
+            <LinkButton href={`mailto:${profile.email}?subject=${SUBJECT}`} size="lg">
+              Get in touch
+              <span
+                aria-hidden="true"
+                className="transition-transform duration-[var(--motion-fast)] group-hover:translate-x-1"
+              >
+                →
+              </span>
+            </LinkButton>
+          </div>
         </div>
       </Reveal>
     </>

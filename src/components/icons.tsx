@@ -31,6 +31,7 @@ export type IconName =
   | 'chart'
   | 'mail'
   | 'phone'
+  | 'whatsapp'
   | 'linkedin'
   | 'github'
   | 'pin'
@@ -88,6 +89,20 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   phone: (
     <path d="M21 16.6v2.6a1.8 1.8 0 0 1-2 1.8 17.6 17.6 0 0 1-7.7-2.7 17.3 17.3 0 0 1-5.3-5.3A17.6 17.6 0 0 1 3.3 5.2 1.8 1.8 0 0 1 5.1 3.2h2.6a1.8 1.8 0 0 1 1.8 1.6c.1.9.3 1.7.6 2.5a1.8 1.8 0 0 1-.4 1.9L8.6 10.3a14.2 14.2 0 0 0 5.1 5.1l1.1-1.1a1.8 1.8 0 0 1 1.9-.4c.8.3 1.6.5 2.5.6a1.8 1.8 0 0 1 1.6 1.9Z" />
+  ),
+  /*
+     Drawn in the same single-stroke style as every other icon here rather than
+     pasted from WhatsApp's brand kit. Two reasons: the official mark is a
+     filled glyph with its own green, which would be the one icon in the set
+     that ignores the theme; and a brand asset carries usage terms that a
+     portfolio has no need to take on. This is a speech bubble with a handset
+     in it — recognisable in context, and unmistakably part of this icon set.
+  */
+  whatsapp: (
+    <>
+      <path d="M20.5 11.7a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.4-4.6a8.4 8.4 0 1 1 15.6-4.2Z" />
+      <path d="M9.3 8.6c.2-.5.4-.5.6-.5h.5c.2 0 .4 0 .6.4l.8 1.8c.1.2 0 .4-.1.5l-.4.5c-.1.2-.3.3-.1.6a6 6 0 0 0 2.8 2.4c.3.1.5.1.6-.1l.5-.6c.2-.2.3-.2.5-.1l1.7.9c.2.1.4.2.4.4v.5c0 .3-.2.7-.6.9a2.6 2.6 0 0 1-1.6.3 8.5 8.5 0 0 1-5.6-4.5 3.3 3.3 0 0 1-.6-1.8c0-.7.3-1.2.6-1.5Z" />
+    </>
   ),
   linkedin: (
     <>

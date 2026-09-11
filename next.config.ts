@@ -48,7 +48,31 @@ const nextConfig: NextConfig = {
    * Listing both spellings costs nothing and is development-only — it has no
    * effect on a production build.
    */
-  allowedDevOrigins: ['localhost', '127.0.0.1'],
+  /*
+   * Private network ranges are listed so the dev server can be opened from a
+   * phone on the same Wi-Fi — the only way to check a touch-scroll fault on the
+   * device that actually has it. An emulated viewport has the right shape and
+   * the wrong scrolling.
+   *
+   * Worth knowing when you use it: Next prints a `Network:` address chosen from
+   * whatever adapter it finds first, and on a machine with a VPN that is
+   * usually the VPN. Here it advertised 172.16.0.2 — the CloudflareWARP
+   * adapter, mask 255.255.255.255, reachable by nothing. The real Wi-Fi address
+   * was 192.168.1.105. `ipconfig` under "Wireless LAN adapter Wi-Fi" is the one
+   * to trust.
+   *
+   * Dev only. `allowedDevOrigins` has no effect on a production build, so this
+   * widens nothing that is deployed.
+   */
+  allowedDevOrigins: [
+    'localhost',
+    '127.0.0.1',
+    '192.168.*.*',
+    '10.*.*.*',
+    '172.16.*.*',
+    '172.17.*.*',
+    '172.18.*.*',
+  ],
   poweredByHeader: false,
   // `standalone` keeps the Docker image small and makes the app portable
   // beyond Vercel without changing a line of application code.

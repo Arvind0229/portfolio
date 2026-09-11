@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { LinkButton, Reveal } from '@/components/ui';
 import { profile } from '@/data/profile';
 import { impactMetrics } from '@/data/impact';
+import { whatsappLink } from '@/lib/contact/whatsapp';
 
 export function ResumeSection() {
   return (
@@ -30,6 +31,26 @@ export function ResumeSection() {
               View in browser
             </LinkButton>
           </div>
+
+          {/*
+            Placed here because this is the moment someone has just read the
+            resume and formed a question. Sending them back up to the contact
+            section to ask it loses most of them. A quiet line rather than a
+            fourth button: the downloads are what this panel is for, and a
+            second call to action of equal weight would compete with them.
+          */}
+          <p className="text-[0.86rem] text-[var(--text-muted)]">
+            Read it and have a question?{' '}
+            <a
+              href={whatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[var(--accent-primary)] underline-offset-4 hover:underline"
+            >
+              Message me on WhatsApp
+            </a>
+            .
+          </p>
         </div>
       </Reveal>
 
