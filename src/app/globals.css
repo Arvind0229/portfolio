@@ -133,6 +133,35 @@
      themes stay flat. */
   --panel-sheen: transparent;
   --panel-sheen-strong: transparent;
+
+  /*
+   * WhatsApp green — the one colour on this site that is not ours.
+   *
+   * Arvind asked for the mark to carry its own colour, and he is right that a
+   * monochrome glyph is one more grey icon in a row of grey icons: the green is
+   * how people recognise WhatsApp without reading the label. The glyph itself
+   * is still ours, drawn in the house stroke style, so no brand asset is
+   * redistributed here — only the colour, on a control that really does open
+   * WhatsApp, which is the use the colour is for.
+   *
+   * Two values, because one does not work. Measured against every surface in
+   * all six theme/mode combinations, WCAG 1.4.11 wanting 3:1 for a graphic
+   * that carries meaning:
+   *
+   *   #25D366 on the dark backgrounds   7.95:1  — the brand green, as-is
+   *   #25D366 on the light backgrounds  1.81:1  — fails, badly
+   *   #128C7E on the light backgrounds  3.78:1  — passes
+   *
+   * #128C7E is WhatsApp's own darker green, so the light theme is still the
+   * brand's colour rather than a guess at one. It is set by `data-mode` and not
+   * per theme: this green does not belong to Enterprise or Studio, it belongs
+   * to WhatsApp, and the only thing that changes it is how dark the page is.
+   */
+  --whatsapp: #128c7e;
+}
+
+[data-mode='dark'] {
+  --whatsapp: #25d366;
 }
 
 /* --------------------------- ENTERPRISE ---------------------------- */
@@ -1359,29 +1388,46 @@ a {
 }
 
 /*
- * The search field opening out of its icon.
+ * The search panel arriving.
  *
- * `clip-path` and `opacity`, not `width`. Animating width relayouts the row on
- * every frame and pushes the heading beside it around; an inset clip is a paint
- * on a box whose size never changes, so nothing else on the line moves.
+ * Two animations, not one. The scrim fades on its own while the panel drops a
+ * short distance and scales up from 97% — the panel has to look like it came
+ * *from* the header button rather than like a page that replaced this one, and
+ * a single fade on the whole overlay reads as the latter.
  *
- * It runs once, on open, and there is no closing animation: the field collapses
- * only when it is empty, which means the person has already looked away from
- * it. Holding an empty box on screen to play it out would be 200ms of nothing.
+ * `transform` and `opacity` only, so both run entirely on the compositor. The
+ * distance is small on purpose: this opens on a keystroke, and a long entrance
+ * puts the field under the cursor a beat after the person has started typing.
+ *
+ * There is no closing animation. Escape means gone, and 150ms of a dialog
+ * politely receding is 150ms of a person waiting to see the page again.
  */
-@keyframes search-open {
+@keyframes search-scrim-in {
   from {
-    clip-path: inset(0 92% 0 0 round var(--radius-md));
-    opacity: 0.4;
+    opacity: 0;
   }
   to {
-    clip-path: inset(0 0 0 0 round var(--radius-md));
     opacity: 1;
   }
 }
 
-.skill-search-field {
-  animation: search-open calc(var(--motion-base) * var(--motion-scale)) var(--ease-out) both;
+@keyframes search-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.search-overlay {
+  animation: search-scrim-in calc(var(--motion-fast) * var(--motion-scale)) var(--ease-out) both;
+}
+
+.search-panel {
+  animation: search-panel-in calc(var(--motion-base) * var(--motion-scale)) var(--ease-out) both;
 }
 
 /* --- Run monitor --- */
@@ -1575,6 +1621,110 @@ a {
     opacity: 0;
     transform: translateY(392px);
   }
+}
+
+/*
+ * The peek.
+ *
+ * Arvind asked for hide-and-seek: someone leaning out from the side of the
+ * page to look, then pulling back. What was there before was a figure standing
+ * permanently at the right margin — present, but doing nothing, and after ten
+ * seconds the eye stops seeing it at all.
+ *
+ * ## Every frame leans *into* the page, never out of it — and that is measured
+ *
+ * The first version had it hide further right and lean in. It made the document
+ * 9px wider at 1440, which the responsive suite caught. The fix was not to trim
+ * the number until that one viewport passed, because the geometry says the
+ * whole direction is unsafe:
+ *
+ *   viewport   room to the right of the 76rem container
+ *       1280     8px      <- xl, -right-6
+ *       1366    51px
+ *       1440    88px
+ *       1536    64px      <- 2xl, -right-24
+ *       1920   256px
+ *
+ * Eight pixels at 1280 — one of the most common laptop widths, and not one the
+ * E2E projects cover, so a tuned-down number would have passed here and
+ * overflowed on a real machine. So the resting pose is exactly where the figure
+ * already sat, with zero overflow, and all the motion is leftward.
+ *
+ * ## What makes it read as hiding anyway
+ *
+ * Two things the eye reads as recessed, neither of which needs space to the
+ * right: the pivot and the dimming. `transform-origin: bottom right` means the
+ * feet stay at the edge and the body swings in around it — a lean around a
+ * doorframe rather than a slide along a rail. And `.robot-peek-body` takes the
+ * figure down to 55% while it waits and up to full while it looks, so the
+ * "looking" frames are the bright ones. Tucked and dim, then forward and lit.
+ *
+ * ## Cost
+ *
+ * `transform` and `opacity` only, on two elements — the compositor handles both
+ * and layout never runs. No `will-change`: an animated transform is promoted
+ * automatically, and declaring it would pin a permanent GPU layer for a
+ * decoration, which is the thing that was stripped off ninety-one elements two
+ * commits ago.
+ *
+ * Twenty-two seconds, and only from `xl` up — the wrapper is `hidden xl:block`,
+ * so no phone ever runs this.
+ */
+@keyframes robot-peek {
+  /* Tucked at the edge, turned away. */
+  0%,
+  10% {
+    transform: translateX(0) rotate(5deg);
+  }
+  /* Leans in and looks. */
+  24%,
+  38% {
+    transform: translateX(-11%) rotate(-3deg);
+  }
+  /* A second glance, the other way — the small asymmetry that stops the loop
+     reading as a loop. */
+  46% {
+    transform: translateX(-7%) rotate(1deg);
+  }
+  54%,
+  62% {
+    transform: translateX(-11%) rotate(-3deg);
+  }
+  /* Withdraws, and waits out the rest of the cycle. */
+  76%,
+  100% {
+    transform: translateX(0) rotate(5deg);
+  }
+}
+
+@keyframes robot-peek-body {
+  0%,
+  10% {
+    opacity: 0.55;
+  }
+  24%,
+  62% {
+    opacity: 1;
+  }
+  76%,
+  100% {
+    opacity: 0.55;
+  }
+}
+
+.robot-peek {
+  transform-origin: bottom right;
+  animation: robot-peek calc(22s * var(--motion-scale)) var(--ease-in-out) infinite;
+}
+
+/*
+ * On the figure itself, not the wrapper. The wrapper carries a theme-dependent
+ * opacity set inline (0.95 dark, 0.5 light); keyframing opacity there would
+ * overwrite it and make the light theme as heavy as the dark one. Two elements,
+ * two opacities, multiplied — which is what nesting them already does.
+ */
+.robot-peek-body {
+  animation: robot-peek-body calc(22s * var(--motion-scale)) var(--ease-in-out) infinite;
 }
 
 .robot-float {
@@ -2384,6 +2534,19 @@ a {
       animation: none !important;
       transform: none !important;
       stroke-dashoffset: 0 !important;
+    }
+
+    /* The search panel and the robot's peek. Both carry content that must end
+       up visible, so they are forced to their finished state rather than
+       hidden: a dialog that never arrives is a dialog nobody can use, and a
+       robot frozen mid-withdrawal is a robot half off the page. */
+    & .search-overlay,
+    & .search-panel,
+    & .robot-peek,
+    & .robot-peek-body {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
     }
 
     & .theme-wash,

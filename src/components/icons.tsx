@@ -93,11 +93,19 @@ const PATHS: Record<IconName, React.ReactNode> = {
   ),
   /*
      Drawn in the same single-stroke style as every other icon here rather than
-     pasted from WhatsApp's brand kit. Two reasons: the official mark is a
-     filled glyph with its own green, which would be the one icon in the set
-     that ignores the theme; and a brand asset carries usage terms that a
-     portfolio has no need to take on. This is a speech bubble with a handset
-     in it — recognisable in context, and unmistakably part of this icon set.
+     pasted from WhatsApp's brand kit: a brand asset carries usage terms a
+     portfolio has no need to take on, and a filled glyph would be the one shape
+     in this set that is not a stroke. It is a speech bubble with a handset in
+     it — recognisable in context, and unmistakably part of this icon set.
+
+     The *colour* is a separate question, and the answer changed. This glyph
+     used to inherit the theme's text colour on the grounds that one green icon
+     would break the set. In place that made it just another grey mark in a row
+     of grey marks, and green is the whole reason people recognise WhatsApp
+     without reading the label. It now takes `--whatsapp` at its two call sites
+     — the resume button and the contact card — while every other use of this
+     path still inherits. See that token in globals.css for the two values and
+     what each was measured against.
   */
   search: (
     <>
@@ -195,15 +203,22 @@ export function IconTile({
   name,
   size = 'md',
   className,
+  style,
 }: {
   name: IconName;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  /**
+   * For setting `--icon-tint` on a single tile — a service that owns a colour,
+   * such as WhatsApp. Going through the token the stylesheet already reads
+   * keeps one rule in charge of the glyph colour.
+   */
+  style?: React.CSSProperties;
 }) {
   const box = size === 'sm' ? 'h-8 w-8' : size === 'lg' ? 'h-12 w-12' : 'h-10 w-10';
   const glyph = size === 'sm' ? 15 : size === 'lg' ? 22 : 18;
   return (
-    <span className={['icon-tile', box, className].filter(Boolean).join(' ')}>
+    <span className={['icon-tile', box, className].filter(Boolean).join(' ')} style={style}>
       <Icon name={name} size={glyph} />
     </span>
   );

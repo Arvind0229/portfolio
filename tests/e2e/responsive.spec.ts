@@ -149,6 +149,62 @@ test.describe('responsive layout', () => {
    * exact condition, and it is checked at whatever viewport the project is
    * running, which is how the 1440 and 1280 cases both get covered.
    */
+  /**
+   * The hero robot, at every frame of its peek and at every width it runs at.
+   *
+   * This is the test the last change needed and did not have. The peek was
+   * written to hide the figure further right and lean it in, which made the
+   * document 9px wider at 1440 — caught, but only by luck of the viewport list.
+   * At 1280 there are eight pixels between the 76rem container and the screen
+   * edge, and 1280 is not one of the projects above, so a version tuned until
+   * 1440 passed would have shipped broken on one of the commonest laptops.
+   *
+   * Two things make this deterministic rather than a 22-second wait. The
+   * animation is driven by `currentTime` instead of the clock, and the widths
+   * are swept inside the test instead of relying on which project is running —
+   * `getComputedStyle().transform` is compositor-driven and lies, but
+   * `getAnimations()` is the live object and does not.
+   */
+  test('the hero robot never leans off the page, at any width or any frame', async ({ page }) => {
+    for (const width of [1280, 1366, 1440, 1536, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/');
+
+      const worst = await page.evaluate(() => {
+        const robot = document.querySelector('[data-testid="hero-robot"]');
+        if (!robot || getComputedStyle(robot).display === 'none') return null;
+
+        const animation = robot.getAnimations()[0];
+        if (!animation) return { past: 0, noAnimation: true };
+
+        const timing = animation.effect?.getComputedTiming();
+        const duration = Number(timing?.duration ?? 0);
+        if (!duration) return { past: 0, noDuration: true };
+
+        animation.pause();
+        let past = -Infinity;
+        let at = 0;
+        for (let step = 0; step <= 44; step += 1) {
+          animation.currentTime = (duration * step) / 44;
+          const box = robot.getBoundingClientRect();
+          const over = box.right - document.documentElement.clientWidth;
+          if (over > past) {
+            past = over;
+            at = step / 44;
+          }
+        }
+        animation.play();
+        return { past: Math.round(past), at };
+      });
+
+      if (worst === null) continue;
+      expect(
+        worst.past,
+        `the robot reaches ${worst.past}px past the right edge at ${width}px wide (${Math.round((worst.at ?? 0) * 100)}% through the cycle)`,
+      ).toBeLessThanOrEqual(0);
+    }
+  });
+
   test('the primary nav never overflows the header bar', async ({ page }) => {
     await page.goto('/');
 

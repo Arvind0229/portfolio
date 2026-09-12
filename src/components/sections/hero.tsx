@@ -112,14 +112,32 @@ export function Hero() {
       */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-2 -right-6 hidden h-[19rem] w-[12.5rem] xl:block 2xl:-bottom-12 2xl:-right-24 2xl:h-[22rem] 2xl:w-[14.5rem]"
+        data-testid="hero-robot"
+        /*
+          `robot-peek` leans the figure in from the edge on a long cycle and
+          tucks it back — the hide-and-seek look Arvind asked for.
+
+          It is on this element, not on a wrapper inside it, so the mask below
+          travels with the figure: a stationary mask over a moving child would
+          repeat its gradient outside the box and tear a band across the robot
+          as it passed.
+
+          Every frame of that animation moves *left*. The paragraph above ends
+          with a warning about `-right-14` making the document wider than the
+          viewport; the first cut of this animation walked straight back into it
+          from the other direction, adding 9px of overflow at 1440. The keyframes
+          in globals.css carry the width-by-width table that says why leftward is
+          the only safe direction — at 1280 there are eight pixels of room, and
+          1280 is not one of the viewports the E2E projects cover.
+        */
+        className="robot-peek pointer-events-none absolute -bottom-2 -right-6 hidden h-[19rem] w-[12.5rem] xl:block 2xl:-bottom-12 2xl:-right-24 2xl:h-[22rem] 2xl:w-[14.5rem]"
         style={{
           opacity: mode === 'dark' ? 0.95 : 0.5,
           maskImage: 'linear-gradient(to left, #000 0%, #000 42%, transparent 88%)',
           WebkitMaskImage: 'linear-gradient(to left, #000 0%, #000 42%, transparent 88%)',
         }}
       >
-        <RobotFigure className="h-full w-full" />
+        <RobotFigure className="robot-peek-body h-full w-full" />
       </div>
 
         <div>

@@ -54,7 +54,16 @@ export function ResumeSection() {
               rel="noopener noreferrer"
               data-testid="resume-whatsapp"
               aria-label="Message Arvind on WhatsApp"
-              className="wa-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-secondary)] transition-colors duration-[var(--motion-fast)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
+              /*
+                The green is the point — see `--whatsapp` in globals.css for
+                why there are two values and what each was measured against.
+                The border picks it up at 38% so the button reads as one object
+                rather than a green glyph sitting in a grey ring, and hover
+                takes the border to full strength instead of switching to the
+                site accent, which would have made a WhatsApp button turn blue
+                under the cursor.
+              */
+              className="wa-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--whatsapp)_38%,var(--border))] text-[var(--whatsapp)] transition-[border-color,box-shadow] duration-[var(--motion-fast)] hover:border-[var(--whatsapp)] hover:shadow-[0_0_0_3px_color-mix(in_srgb,var(--whatsapp)_16%,transparent)]"
             >
               <Icon name="whatsapp" size={20} aria-hidden="true" />
             </a>

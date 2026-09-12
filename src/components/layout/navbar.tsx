@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppearanceControls } from '@/components/layout/appearance-controls';
 import { BulbSwitch } from '@/components/layout/bulb-switch';
+import { CommandPalette } from '@/components/search/command-palette';
 import { navigation } from '@/data/site';
 import { useScrollSpy } from '@/hooks/use-scroll-spy';
 import { profile } from '@/data/profile';
@@ -240,6 +241,26 @@ export function Navbar() {
             </ul>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              {/*
+                Search sits here, not inside a section.
+
+                It is one control for the whole site — technologies, projects
+                and sections — replacing the two section-level boxes that each
+                only knew about their own half. The header is where people look
+                for search, and it is the one part of the page that is on screen
+                whatever they are reading.
+
+                It shows at every width, phone included: with the section boxes
+                gone this is the only way to search, and hiding it behind the
+                hamburger would mean searching required two taps and prior
+                knowledge of where it went.
+
+                Room was measured before adding it rather than assumed — the bar
+                had 135px spare at 1024 and 278px at 1280, against the 36px this
+                takes. The nav-overflow test in tests/e2e/responsive.spec.ts is
+                what holds that true as items are added.
+              */}
+              <CommandPalette />
               <div className="hidden sm:block">
                 <AppearanceControls />
               </div>

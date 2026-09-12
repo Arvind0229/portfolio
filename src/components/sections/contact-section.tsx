@@ -60,6 +60,7 @@ export function ContactSection() {
             href={whatsappLink()}
             action="Open WhatsApp"
             hint="Opens a chat with the first line already written."
+            tint="var(--whatsapp)"
             external
           />
         </Reveal>
@@ -151,6 +152,7 @@ function ContactCard({
   action,
   hint,
   external = false,
+  tint,
 }: {
   icon: IconName;
   label: string;
@@ -160,6 +162,18 @@ function ContactCard({
   hint: string;
   /** Opens in a new tab, with the referrer withheld. */
   external?: boolean;
+  /**
+   * Overrides the tile's glyph colour for a card whose service owns a colour —
+   * today only WhatsApp. Set as `--icon-tint` rather than as a text utility so
+   * it goes through the same token `.icon-tile` already reads, instead of
+   * starting a specificity argument with it.
+   *
+   * The tile's background stays neutral deliberately. A green glyph says
+   * "WhatsApp"; a green tile in a row of grey ones says "this card matters more
+   * than the others", which is not true — the email beside it is the channel
+   * most recruiters will use.
+   */
+  tint?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -179,7 +193,11 @@ function ContactCard({
     <div className="surface-card card-reactive flex h-full flex-col justify-between gap-5 p-6">
       <div>
         <div className="flex items-center gap-3">
-          <IconTile name={icon} size="sm" />
+          <IconTile
+            name={icon}
+            size="sm"
+            {...(tint ? { style: { ['--icon-tint' as string]: tint } } : {})}
+          />
           <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-muted)]">
             {label}
           </p>

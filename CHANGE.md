@@ -9,6 +9,159 @@ A backup of the code as it stood before each session's changes is kept under
 
 ---
 
+## 2026-09-12 — one search instead of two, a green WhatsApp mark, and a robot that peeks
+
+### Two search boxes became one, in the header
+
+Arvind's question was the right one: *"do jage search wala q diya hai"* — why is
+there a search in two places. There was one over the technology chips and one
+over the project cards, and the answer was that each had been added where it
+was needed without anyone stepping back.
+
+Two boxes for one verb is worse than it sounds. It is not only that the visitor
+has to guess which half of the site a word lives in. Each box **only ever knew
+about its own section**, so typing "Redshift" into the box beside the project
+cards returned nothing — while Redshift sat in the stack two sections down.
+That is a false negative about a man's actual experience, produced by the
+site's own search, and it is the worst class of bug this project can ship.
+
+**Now:** one icon in the header. Click it (or `Ctrl`/`⌘ K`, or `/`) and a panel
+opens over the page with one field that searches **technologies, projects and
+sections together**.
+
+Why a panel rather than the field expanding in the header: the results need
+somewhere to go. A field that grows sideways in the bar has nowhere to put ten
+rows, and a dropdown hanging off a fixed header is clipped the moment the
+window is short.
+
+Picking a result:
+
+| Result | Goes to |
+| --- | --- |
+| a technology | the stack, with every matching chip highlighted |
+| a project | that project's own case study page |
+| a section | that section |
+
+The stack still filters — it just no longer owns the control that does it. The
+term arrives from the palette through a small store (`useSyncExternalStore`,
+not context: a provider would have to wrap the whole document and would
+re-render every consumer on every keystroke). The filtered state **names itself
+and can be cleared**, because a filtered grid with no visible control is a
+trap — the visitor comes back later, finds three groups of nine, and has
+nothing to click for the rest.
+
+The highlight is deliberately **not** in the URL. A query string on a one-page
+site survives in history and in shared links long after it meant anything, and
+makes one page look like many to a crawler — the mistake `sitemapRoutes`
+already exists to avoid.
+
+**Measured before building, not assumed.** The header comment warned that the
+bar had overflowed twice before, so the free space was measured rather than
+guessed: 135px spare at 1024 and 278px at 1280, against the 36px the icon
+takes. That was with seven nav items; the warning dated from when there were
+ten.
+
+Keyboard behaviour is covered by an E2E test, including the step most
+implementations skip — **Escape returns focus to the button that opened the
+panel**. Without it a keyboard visitor closes the dialog and lands back at the
+top of the document, having lost their place.
+
+Matching is deliberately not fuzzy. "Oracle" must not return "OCR". With tens
+of entries rather than millions, a fuzzy matcher buys nothing and costs the
+visitor their trust in the first wrong answer they see — pinned by a test.
+
+### The WhatsApp mark now carries WhatsApp's green
+
+It used to inherit the theme's text colour, and there was a comment in
+`icons.tsx` defending that. The comment gave two reasons; only one of them
+still held. Not taking on a brand asset's usage terms is real — so the glyph is
+still ours, drawn in the house stroke style. "One green icon would break the
+set" was not: in place it just made the mark one more grey shape in a row of
+grey shapes, and green is the entire reason people recognise WhatsApp without
+reading the label.
+
+One colour does not work for six theme/mode combinations. Measured against
+every surface, against the 3:1 WCAG 1.4.11 asks of a graphic that carries
+meaning:
+
+| Colour | on dark | on light |
+| --- | --- | --- |
+| `#25D366` — WhatsApp brand green | **7.95:1** | 1.81:1 ✗ |
+| `#128C7E` — WhatsApp's darker green | 3.81:1 | **3.78:1** |
+
+So `--whatsapp` is the brand green in dark mode and WhatsApp's own darker green
+in light. It is keyed to `data-mode` rather than to a theme: this green does not
+belong to Enterprise or Studio, it belongs to WhatsApp, and the only thing that
+changes it is how dark the page is. The axe contrast pass runs over every theme
+and mode and is green.
+
+The tile behind the glyph on the contact card stays neutral on purpose. A green
+glyph says "WhatsApp"; a green tile in a row of grey ones says "this card
+matters more than the others", which is not true — email is the channel most
+recruiters use.
+
+### The robot peeks now
+
+It stood at the right margin doing nothing, and after ten seconds the eye stops
+seeing it. It now leans in from the edge on a 22-second cycle, holds, glances
+the other way, and tucks back — dimmed to 55% while it waits, full strength
+while it looks.
+
+**The first version of this was wrong and the suite caught it.** It hid the
+figure further right and leaned it in, which made the document 9px wider at
+1440. The fix was *not* to trim the number until 1440 passed, because the
+geometry says the whole direction is unsafe:
+
+| viewport | room right of the 76rem container |
+| --- | --- |
+| 1280 | **8px** |
+| 1366 | 51px |
+| 1440 | 88px |
+| 1536 | 64px |
+| 1920 | 256px |
+
+Eight pixels at 1280 — one of the commonest laptop widths, and **not one of the
+four viewports the E2E projects cover**. A number tuned until 1440 went green
+would have passed here and overflowed on a real machine. So the resting pose is
+exactly where the figure already sat, with zero overflow, and every frame of
+the animation moves left, into the page.
+
+What makes it still read as hiding is the pivot, not the position:
+`transform-origin: bottom right`, so the feet stay at the edge and the body
+swings in around it — a lean around a doorframe rather than a slide along a
+rail.
+
+A new test drives the animation by `currentTime` and sweeps 1280 / 1366 / 1440 /
+1536 / 1920, asserting the figure never crosses the right edge at any frame at
+any width. That is the test the previous change needed and did not have.
+
+### Note to self: killing the test server
+
+The stale `next start` on port 3100 produced false failures for the **fourth**
+time this session — a whole block of tests failing with "element(s) not found"
+because the old server was serving a build whose asset hashes no longer
+existed, so every stylesheet and script 404'd and nothing had any layout.
+
+`pgrep -f next-server` does not find it; `pgrep -a node` shows nothing at all.
+`fuser 3100/tcp` does. **Kill by port, not by process name.**
+
+### Verified
+
+- TypeScript: clean
+- ESLint: clean
+- Production build: clean
+- Unit / API: 277 passed (was 262)
+- E2E: 409 passed, 3 skipped, 0 failed (412 across 1440 / 768 / 390 / 320)
+
+### Not done
+
+- No Lighthouse run. Still never executed by the agent, here or anywhere.
+- The robot peek was not measured for compositor cost; it is `transform` and
+  `opacity` on two elements, which is the cheap path by construction, but no
+  frame timings were taken.
+
+---
+
 ## 2026-09-11 (evening) — the search control, and a WhatsApp button on the resume
 
 ### The search box

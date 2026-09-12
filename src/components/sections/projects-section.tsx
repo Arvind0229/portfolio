@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge, Button, Reveal } from '@/components/ui';
 import { projectCategories, projects } from '@/data/projects';
 import { filterProjects } from '@/lib/utils/filter-projects';
@@ -24,11 +24,18 @@ type View = 'business' | 'technical';
  */
 export function ProjectsSection() {
   const [category, setCategory] = useState<string>('All');
-  const [query, setQuery] = useState('');
   const [view, setView] = useState<View>('business');
-  const searchId = useId();
 
-  const visible = useMemo(() => filterProjects(projects, { category, query }), [category, query]);
+  /*
+   * `filterProjects` still takes a query and is still unit tested with one —
+   * it is the function behind the header search's project results. This
+   * section only ever narrows by category now, so it passes an empty one
+   * rather than the function growing a second shape for one caller.
+   */
+  const visible = useMemo(
+    () => filterProjects(projects, { category, query: '' }),
+    [category],
+  );
 
   return (
     <>
@@ -54,21 +61,18 @@ export function ProjectsSection() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <label htmlFor={searchId} className="sr-only">
-              Search projects
-            </label>
-            <input
-              id={searchId}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search projects or tech…"
-              data-testid="project-search"
-              className="w-full min-w-[13rem] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-[0.82rem] text-[var(--text-primary)] placeholder:text-[var(--text-subtle)] focus-visible:border-[var(--accent-primary)]"
-            />
-          </div>
+          {/*
+            The text field that used to sit here is gone. It searched only
+            projects, which meant typing a technology name into the box next to
+            the project cards could return nothing while that same technology
+            sat in the stack two sections down — a false negative about a man's
+            actual experience, which is the worst kind of bug this site can have.
 
+            Search is now one control in the header, covering projects,
+            technologies and sections together. What stays here is filtering:
+            the category chips and the audience toggle, which narrow a list
+            someone is already looking at rather than finding things.
+          */}
           <div
             className="flex rounded-[var(--radius-md)] border border-[var(--border)] p-0.5"
             role="group"
@@ -102,17 +106,10 @@ export function ProjectsSection() {
       {visible.length === 0 ? (
         <div className="surface-card mt-8 p-10 text-center">
           <p className="text-[0.95rem] text-[var(--text-secondary)]">
-            No projects match “{query}”{category !== 'All' ? ` in ${category}` : ''}.
+            No projects in {category}.
           </p>
-          <Button
-            variant="ghost"
-            className="mt-4"
-            onClick={() => {
-              setQuery('');
-              setCategory('All');
-            }}
-          >
-            Clear filters
+          <Button variant="ghost" className="mt-4" onClick={() => setCategory('All')}>
+            Show every project
           </Button>
         </div>
       ) : (

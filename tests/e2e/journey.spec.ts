@@ -590,10 +590,13 @@ test.describe('portfolio journey', () => {
     await expect(page.getByTestId('project-card-hr-process-automation')).toHaveCount(0);
 
     await page.getByTestId('project-filter-all').click();
-    await page.getByTestId('project-search').fill('power bi');
     await expect(page.getByTestId('project-card-multi-product-mis')).toBeVisible();
 
-    await page.getByTestId('project-search').fill('');
+    // Searching projects moved to the one control in the header. The box that
+    // used to sit here only knew about projects, so a technology name typed
+    // into it returned nothing while that technology sat in the stack below.
+    await expect(page.getByTestId('project-search')).toHaveCount(0);
+
     await page.getByTestId('project-link-compliance-tracking').click();
 
     await expect(page).toHaveURL(/\/projects\/compliance-tracking$/);
@@ -617,61 +620,106 @@ test.describe('portfolio journey', () => {
     expect(technical).not.toBe(business);
   });
 
-  test('the stack is searchable', async ({ page }) => {
-    // The field opens out of an icon now, so the search starts with a click.
-    // The test does what a visitor does rather than reaching past the control.
-    await page.goto('/#skills');
-    await page.getByTestId('skill-search-open').click();
+  test('one search covers technologies, projects and sections', async ({ page }) => {
+    /*
+     * The reason this control exists.
+     *
+     * There used to be two boxes — one over the chips, one over the cards —
+     * and each admitted only to what was beside it. The assertion that matters
+     * is the third one: a technology query returns the technology *and* the
+     * project it was used on, from a single field, which is the thing neither
+     * old box could do.
+     */
+    await page.goto('/');
+    await page.getByTestId('site-search-open').click();
+    await expect(page.getByTestId('site-search')).toBeFocused();
 
-    await page.getByTestId('skill-search').fill('redshift');
-    await expect(page.getByText('Redshift', { exact: true }).first()).toBeVisible();
+    await page.getByTestId('site-search').fill('redshift');
+    await expect(page.getByTestId('site-search-hit-tech-data-Redshift')).toBeVisible();
 
-    await page.getByTestId('skill-search').fill('kubernetes');
-    await expect(page.getByText(/it is not something the resume can claim/i)).toBeVisible();
+    await page.getByTestId('site-search').fill('power bi');
+    const results = page.getByTestId('site-search-results');
+    await expect(results).toContainText('Power BI');
+    await expect(results).toContainText('Project');
+
+    await page.getByTestId('site-search').fill('contact');
+    await expect(results).toContainText('Go to');
   });
 
-  test('the search opens, focuses itself, and closes on Escape', async ({ page }) => {
-    /*
-     * The three things a collapsing control gets wrong.
-     *
-     * Opening it must move the cursor into it — otherwise the click has
-     * produced a box the person now has to click again. Escape must close it,
-     * because that is what Escape does everywhere else. And it must not throw
-     * away a query the person is still reading the results of: closing happens
-     * on blur only when the field is empty.
-     */
-    await page.goto('/#skills');
-    await page.getByTestId('skill-search-open').click();
+  test('the search is honest about what it cannot find', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('site-search-open').click();
+    await page.getByTestId('site-search').fill('kubernetes');
 
-    const field = page.getByTestId('skill-search');
+    await expect(page.getByTestId('site-search-empty')).toBeVisible();
+    await expect(page.getByTestId('site-search-results')).toHaveCount(0);
+  });
+
+  test('picking a technology filters the stack and says so', async ({ page }) => {
+    /*
+     * A filtered grid with no visible control is a trap: the visitor comes
+     * back to the section later, finds three groups of nine, and has nothing
+     * to click for the rest. So the filter names itself and can be cleared.
+     */
+    await page.goto('/');
+    await page.getByTestId('site-search-open').click();
+    await page.getByTestId('site-search').fill('redshift');
+    await page.getByTestId('site-search-hit-tech-data-Redshift').click();
+
+    await expect(page.getByTestId('site-search-overlay')).toHaveCount(0);
+
+    const clear = page.getByTestId('skill-filter-clear');
+    await expect(clear).toBeVisible();
+    await expect(clear).toContainText('Redshift');
+
+    await clear.click();
+    await expect(page.getByTestId('skill-filter-clear')).toHaveCount(0);
+  });
+
+  test('the search works from the keyboard alone', async ({ page }) => {
+    /*
+     * Opening must move the cursor into the field, arrows must move the
+     * selection, Enter must act on it, and Escape must give focus back to the
+     * button that opened it — that last one is the step most implementations
+     * skip, and without it a keyboard visitor closes the dialog and lands at
+     * the top of the document having lost their place.
+     */
+    await page.goto('/');
+    // The shortcut is a document listener attached on hydration, so it does not
+    // exist for the first moment the button is on screen. Waiting for the
+    // component to say it is live is the deterministic version of a sleep.
+    await expect(page.getByTestId('site-search-open')).toHaveAttribute('data-ready', 'true');
+    await page.keyboard.press('Control+k');
+
+    const field = page.getByTestId('site-search');
     await expect(field).toBeFocused();
 
-    await field.fill('python');
-    // Clicking away with a query in it leaves the filter alone.
-    await page.getByRole('heading', { level: 3 }).first().click();
-    await expect(field).toBeVisible();
-    await expect(field).toHaveValue('python');
+    await field.fill('power');
+    await expect(page.getByTestId('site-search-results')).toBeVisible();
 
-    await field.focus();
+    const first = page.getByRole('option').first();
+    await expect(first).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('ArrowDown');
+    await expect(first).toHaveAttribute('aria-selected', 'false');
+
     await page.keyboard.press('Escape');
-    await expect(page.getByTestId('skill-search-open')).toBeVisible();
-    await expect(field).toBeHidden();
+    await expect(page.getByTestId('site-search-overlay')).toHaveCount(0);
+    await expect(page.getByTestId('site-search-open')).toBeFocused();
   });
 
-  test('the search field is never wider than a small phone', async ({ page }, testInfo) => {
+  test('the search panel fits a small phone', async ({ page }, testInfo) => {
     // The old field carried a 240px min-width, so on a 320px screen the
     // placeholder was clipped inside a box that could not shrink. Arvind
-    // reported it; this pins it.
+    // reported it; this pins the replacement against the same failure.
     const width = testInfo.project.use.viewport?.width ?? 1440;
-    await page.goto('/#skills');
-    await page.getByTestId('skill-search-open').click();
+    await page.goto('/');
+    await page.getByTestId('site-search-open').click();
 
-    const box = await page.getByTestId('skill-search').boundingBox();
+    const box = await page.getByTestId('site-search').boundingBox();
     expect(box, 'the search field did not open').not.toBeNull();
     expect(box!.width).toBeLessThanOrEqual(width - 16);
 
-    // And the placeholder must fit the box it is in, not be cut off by it.
-    const clipped = await page.getByTestId('skill-search').evaluate((el) => {
+    const clipped = await page.getByTestId('site-search').evaluate((el) => {
       const input = el as HTMLInputElement;
       return input.scrollWidth > input.clientWidth + 1;
     });
@@ -800,7 +848,7 @@ test.describe('portfolio journey', () => {
       await expect(page.locator(`#${id}`), `#${id} is missing`).toBeAttached();
     }
 
-    await expect(page.getByTestId('skill-search-open')).toBeAttached();
+    await expect(page.getByTestId('site-search-open')).toBeAttached();
     await expect(page.getByRole('link', { name: /download pdf/i })).toBeAttached();
     await expect(page.getByTestId('metric-automations').first()).toBeAttached();
   });

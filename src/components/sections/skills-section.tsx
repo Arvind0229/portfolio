@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { SkillChip, SkillExplainerProvider } from '@/components/skills/skill-explainer';
-import { SkillSearch } from '@/components/skills/skill-search';
 import { Reveal } from '@/components/ui';
 import { skillGroups } from '@/data/skills';
+import { clearHighlightTerm, useHighlightTerm } from '@/lib/search/highlight-store';
 import { cn } from '@/lib/utils/cn';
 
 /**
@@ -12,14 +12,32 @@ import { cn } from '@/lib/utils/cn';
  *
  * No proficiency bars and no percentages: they are invented numbers, and a
  * reviewer who has seen a hundred portfolios discounts them immediately. The
- * groups mirror the resume, and search exists because a recruiter with a job
- * description in hand wants to check one specific word.
+ * groups mirror the resume.
+ *
+ * ## Where the search went
+ *
+ * This section used to own a search box. It no longer does — there is one
+ * search for the whole site, in the header, and it covers the stack along with
+ * the projects and the sections. Two boxes meant a visitor had to know which
+ * half of the site a word lived in before they could look for it.
+ *
+ * What is left here is the *result* of that search: when someone picks a
+ * technology in the palette, the term arrives through the highlight store and
+ * this section filters to the groups that contain it.
+ *
+ * ## Why the filter announces itself
+ *
+ * A filtered grid with no visible control is a trap: the visitor scrolls back
+ * later, finds three of nine groups, and has nothing to click to get the rest.
+ * So a filtered state shows what it is filtered by and how to clear it. The
+ * control appears only when there is something to clear — an always-present
+ * "clear" button implies a filter is always on.
  */
 export function SkillsSection() {
-  const [query, setQuery] = useState('');
+  const term = useHighlightTerm();
+  const needle = term.trim().toLowerCase();
 
   const groups = useMemo(() => {
-    const needle = query.trim().toLowerCase();
     if (!needle) return skillGroups.map((group) => ({ group, matches: group.skills }));
     return skillGroups
       .map((group) => ({
@@ -27,36 +45,49 @@ export function SkillsSection() {
         matches: group.skills.filter((skill) => skill.toLowerCase().includes(needle)),
       }))
       .filter((entry) => entry.matches.length > 0);
-  }, [query]);
+  }, [needle]);
 
   const total = groups.reduce((sum, entry) => sum + entry.matches.length, 0);
 
   return (
     <SkillExplainerProvider>
       <section className="scroll-mt-24">
-        {/*
-          A row with a purpose, rather than a box floating between two grids.
-
-          The heading names what the search searches, which is what the old
-          layout was missing: the field sat alone between the expertise cards
-          and the stack cards, belonging to neither. Now the label and the
-          control are one line, and the grid below is plainly what they act on.
-        */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-[var(--border-subtle)] pb-4">
           <h3 className="font-mono text-[0.68rem] uppercase tracking-[0.2em] text-[var(--text-muted)]">
             The stack, by group
           </h3>
-          <SkillSearch
-            value={query}
-            onChange={setQuery}
-            resultCount={total}
-            className="w-full sm:w-auto"
-          />
+
+          {needle ? (
+            <button
+              type="button"
+              onClick={clearHighlightTerm}
+              data-testid="skill-filter-clear"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-primary)] bg-[color-mix(in_srgb,var(--accent-primary)_10%,transparent)] px-3 py-1.5 text-[0.78rem] text-[var(--accent-primary)] transition-colors duration-[var(--motion-fast)] hover:bg-[color-mix(in_srgb,var(--accent-primary)_18%,transparent)]"
+            >
+              <span>
+                Filtered by “{term}” — {total} shown
+              </span>
+              <span aria-hidden="true">×</span>
+              <span className="sr-only">Clear the filter and show the whole stack</span>
+            </button>
+          ) : (
+            <p className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-[var(--text-subtle)]">
+              {total} technologies
+            </p>
+          )}
         </div>
 
+        {/* Announced, not drawn: a sighted visitor sees the grid change. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {total} technologies shown
+        </p>
+
         {groups.length === 0 ? (
-          <p className="surface-card mt-10 p-10 text-center text-[0.95rem] text-[var(--text-secondary)]">
-            Nothing in the stack matches “{query}”. That does not mean he could not learn
+          <p
+            className="surface-card mt-10 p-10 text-center text-[0.95rem] text-[var(--text-secondary)]"
+            data-testid="skill-filter-empty"
+          >
+            Nothing in the stack matches “{term}”. That does not mean he could not learn
             it — it means it is not something the resume can claim.
           </p>
         ) : (
@@ -69,24 +100,23 @@ export function SkillsSection() {
                     {group.description}
                   </p>
                   <ul className="mt-4 flex flex-wrap gap-1.5">
-                    {matches.map((skill) => (
-                      <li key={skill}>
-                        <SkillChip
-                          skill={skill}
-                          highlighted={Boolean(
-                            query &&
-                            skill.toLowerCase().includes(query.trim().toLowerCase()),
-                          )}
-                          className={cn(
-                            'rounded-[var(--radius-sm)] border px-2.5 py-1 text-[0.76rem]',
-                            query &&
-                              skill.toLowerCase().includes(query.trim().toLowerCase())
-                              ? ''
-                              : 'border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)]',
-                          )}
-                        />
-                      </li>
-                    ))}
+                    {matches.map((skill) => {
+                      const hit = Boolean(needle && skill.toLowerCase().includes(needle));
+                      return (
+                        <li key={skill}>
+                          <SkillChip
+                            skill={skill}
+                            highlighted={hit}
+                            className={cn(
+                              'rounded-[var(--radius-sm)] border px-2.5 py-1 text-[0.76rem]',
+                              hit
+                                ? ''
+                                : 'border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)]',
+                            )}
+                          />
+                        </li>
+                      );
+                    })}
                   </ul>
                 </article>
               </Reveal>
