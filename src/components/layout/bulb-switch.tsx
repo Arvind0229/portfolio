@@ -378,12 +378,31 @@ export function BulbSwitch({ compact = false }: { compact?: boolean }) {
           className="flex flex-col items-center"
           style={{ transform: `translateY(${pull}px)` }}
         >
+          {/*
+            The second hairline, and the one Arvind actually pointed at — the
+            chain just above the brass knob.
+
+            Same fault as the cord braid, reached a different way. This was a
+            `w-px` box centred by flexbox inside a 44px-wide button: 1px
+            centred in 44 sits at 21.5, a half-pixel, and a half-pixel line is
+            antialiased differently on each repaint. The ambient background
+            animates continuously, so that corner repaints constantly and the
+            line shimmers the whole time the page is open.
+
+            Fixed the same way: a 3px-wide box carrying a 1px background
+            stripe. The box has width to land on, and the stripe is rasterised
+            with the element that owns it rather than being positioned against
+            it, so there is nothing left to round.
+          */}
           <span
-            className="block w-px"
+            className="block w-[3px]"
             style={{
               height: compact ? '9px' : '12px',
-              background:
+              backgroundImage:
                 'linear-gradient(180deg, color-mix(in srgb, var(--text-subtle) 70%, transparent), color-mix(in srgb, var(--text-subtle) 40%, transparent))',
+              backgroundSize: '1px 100%',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
             }}
           />
           <span

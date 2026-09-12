@@ -1,7 +1,8 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { SkillChip, SkillExplainerProvider } from '@/components/skills/skill-explainer';
+import { SkillSearch } from '@/components/skills/skill-search';
 import { Reveal } from '@/components/ui';
 import { skillGroups } from '@/data/skills';
 import { cn } from '@/lib/utils/cn';
@@ -16,7 +17,6 @@ import { cn } from '@/lib/utils/cn';
  */
 export function SkillsSection() {
   const [query, setQuery] = useState('');
-  const searchId = useId();
 
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -34,26 +34,25 @@ export function SkillsSection() {
   return (
     <SkillExplainerProvider>
       <section className="scroll-mt-24">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="lg:pb-2">
-            <label htmlFor={searchId} className="sr-only">
-              Search the technology stack
-            </label>
-            <input
-              id={searchId}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search a technology…"
-              data-testid="skill-search"
-              className="w-full min-w-[15rem] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2.5 text-[0.85rem] text-[var(--text-primary)] placeholder:text-[var(--text-subtle)] focus-visible:border-[var(--accent-primary)]"
-            />
-          </div>
-        </div>
+        {/*
+          A row with a purpose, rather than a box floating between two grids.
 
-        <p className="sr-only" role="status" aria-live="polite">
-          {total} technologies shown
-        </p>
+          The heading names what the search searches, which is what the old
+          layout was missing: the field sat alone between the expertise cards
+          and the stack cards, belonging to neither. Now the label and the
+          control are one line, and the grid below is plainly what they act on.
+        */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-[var(--border-subtle)] pb-4">
+          <h3 className="font-mono text-[0.68rem] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            The stack, by group
+          </h3>
+          <SkillSearch
+            value={query}
+            onChange={setQuery}
+            resultCount={total}
+            className="w-full sm:w-auto"
+          />
+        </div>
 
         {groups.length === 0 ? (
           <p className="surface-card mt-10 p-10 text-center text-[0.95rem] text-[var(--text-secondary)]">

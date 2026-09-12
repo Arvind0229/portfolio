@@ -379,9 +379,19 @@ export function AutomationFlow({ className }: { className?: string }) {
               </span>
             </div>
             {index < flowStages.length - 1 ? (
+              /*
+                3px wide with a 1px stripe painted inside, not a 1px box.
+
+                `mx-auto` on a 1px element centres it on a half-pixel whenever
+                the parent's width is even, and a half-pixel hairline is
+                antialiased differently on each repaint — which is a permanent
+                shimmer on an element that also animates. The same fault was
+                reported on the bulb's chain; this is the other place it lives.
+                See `bulb-switch.tsx` for the longer note.
+              */
               <span
                 aria-hidden="true"
-                className="flow-rail relative mx-auto my-1 block h-4 w-px bg-[var(--border)]"
+                className="flow-rail relative mx-auto my-1 block h-4 w-[3px]"
                 style={{ animationDelay: `${index * 0.5}s`, animationPlayState: play }}
               />
             ) : null}

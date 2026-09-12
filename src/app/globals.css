@@ -1325,6 +1325,65 @@ a {
   animation: flow-node-active 3.6s var(--ease-in-out) infinite;
 }
 
+/*
+ * The WhatsApp button's press.
+ *
+ * A ring that expands out of the button and fades, on `:active` only. This is
+ * feedback for a click that hands off to another application — WhatsApp takes
+ * a moment to come up, and without a response the button looks like it did
+ * nothing and gets pressed again.
+ *
+ * On the pseudo-element rather than the button so the button's own size never
+ * changes: a control that grows under the finger moves the thing you are
+ * trying to hit.
+ */
+@keyframes wa-ring {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-primary) 45%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+.wa-press {
+  position: relative;
+}
+
+.wa-press:active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: wa-ring calc(var(--motion-slow) * var(--motion-scale)) var(--ease-out) forwards;
+}
+
+/*
+ * The search field opening out of its icon.
+ *
+ * `clip-path` and `opacity`, not `width`. Animating width relayouts the row on
+ * every frame and pushes the heading beside it around; an inset clip is a paint
+ * on a box whose size never changes, so nothing else on the line moves.
+ *
+ * It runs once, on open, and there is no closing animation: the field collapses
+ * only when it is empty, which means the person has already looked away from
+ * it. Holding an empty box on screen to play it out would be 200ms of nothing.
+ */
+@keyframes search-open {
+  from {
+    clip-path: inset(0 92% 0 0 round var(--radius-md));
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0 0 0 0 round var(--radius-md));
+    opacity: 1;
+  }
+}
+
+.skill-search-field {
+  animation: search-open calc(var(--motion-base) * var(--motion-scale)) var(--ease-out) both;
+}
+
 /* --- Run monitor --- */
 @keyframes run-pip {
   0%,
@@ -1358,24 +1417,52 @@ a {
 
 /* The phone layout's rail: charge running down the vertical connector. */
 @keyframes flow-rail {
+  /* Only the first layer moves. The second is the rail itself and stays put —
+     naming both positions in every keyframe is what keeps it there, because a
+     shorthand that lists one layer resets the other. */
   0% {
-    background-position: 0 -16px;
+    background-position:
+      center -16px,
+      center;
   }
   100% {
-    background-position: 0 16px;
+    background-position:
+      center 16px,
+      center;
   }
 }
 
 .flow-rail {
-  background-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    var(--accent-tertiary) 45%,
-    var(--accent-tertiary) 55%,
-    transparent 100%
-  );
-  background-size: 100% 16px;
-  background-repeat: no-repeat;
+  /*
+   * A 3px box carrying two 1px stripes, rather than a 1px box.
+   *
+   * `mx-auto` on a 1px element centres it on a half-pixel whenever the
+   * parent's width is even, and a half-pixel hairline is antialiased
+   * differently on each repaint — a permanent shimmer on an element that also
+   * animates. Painted as background layers there is nothing to position
+   * against the box, so nothing to round. Same fix as the bulb's cord and
+   * chain; see the note in bulb-switch.tsx.
+   *
+   * Layer one is the charge that travels; layer two is the rail it travels
+   * along, which used to be a Tailwind `bg-` class and now lives here so both
+   * stripes are described in one place.
+   */
+  background-image:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--accent-tertiary) 45%,
+      var(--accent-tertiary) 55%,
+      transparent 100%
+    ),
+    linear-gradient(var(--border), var(--border));
+  background-size:
+    1px 16px,
+    1px 100%;
+  background-position:
+    center -16px,
+    center;
+  background-repeat: no-repeat, no-repeat;
   animation: flow-rail 2.4s linear infinite;
 }
 

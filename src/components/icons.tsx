@@ -32,6 +32,7 @@ export type IconName =
   | 'mail'
   | 'phone'
   | 'whatsapp'
+  | 'search'
   | 'linkedin'
   | 'github'
   | 'pin'
@@ -98,6 +99,12 @@ const PATHS: Record<IconName, React.ReactNode> = {
      portfolio has no need to take on. This is a speech bubble with a handset
      in it — recognisable in context, and unmistakably part of this icon set.
   */
+  search: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m15.5 15.5 4.5 4.5" />
+    </>
+  ),
   whatsapp: (
     <>
       <path d="M20.5 11.7a8.4 8.4 0 0 1-12.3 7.5L3.5 20.5l1.4-4.6a8.4 8.4 0 1 1 15.6-4.2Z" />

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Icon } from '@/components/icons';
 import { LinkButton, Reveal } from '@/components/ui';
 import { profile } from '@/data/profile';
 import { impactMetrics } from '@/data/impact';
@@ -33,24 +34,34 @@ export function ResumeSection() {
           </div>
 
           {/*
-            Placed here because this is the moment someone has just read the
-            resume and formed a question. Sending them back up to the contact
-            section to ask it loses most of them. A quiet line rather than a
-            fourth button: the downloads are what this panel is for, and a
-            second call to action of equal weight would compete with them.
+            A logo button in the row with the downloads, not a line of text
+            below them.
+
+            This is the moment a question forms — someone has just read the
+            resume — and sending them back up to the contact section to ask it
+            loses most of them. It is deliberately icon-only and outlined, so
+            it reads as a third way to act rather than competing with the two
+            downloads that are what this panel is for.
+
+            The press animation is feedback for a click that opens a different
+            application: WhatsApp takes a moment to come up, and without it the
+            button looks like it did nothing.
           */}
-          <p className="text-[0.86rem] text-[var(--text-muted)]">
-            Read it and have a question?{' '}
+          <div className="mt-5 flex items-center gap-3">
             <a
               href={whatsappLink()}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-[var(--accent-primary)] underline-offset-4 hover:underline"
+              data-testid="resume-whatsapp"
+              aria-label="Message Arvind on WhatsApp"
+              className="wa-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-secondary)] transition-colors duration-[var(--motion-fast)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
             >
-              Message me on WhatsApp
+              <Icon name="whatsapp" size={20} aria-hidden="true" />
             </a>
-            .
-          </p>
+            <p className="text-[0.86rem] text-[var(--text-muted)]">
+              Read it and have a question? Message me.
+            </p>
+          </div>
         </div>
       </Reveal>
 

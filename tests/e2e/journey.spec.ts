@@ -618,12 +618,64 @@ test.describe('portfolio journey', () => {
   });
 
   test('the stack is searchable', async ({ page }) => {
+    // The field opens out of an icon now, so the search starts with a click.
+    // The test does what a visitor does rather than reaching past the control.
     await page.goto('/#skills');
+    await page.getByTestId('skill-search-open').click();
+
     await page.getByTestId('skill-search').fill('redshift');
     await expect(page.getByText('Redshift', { exact: true }).first()).toBeVisible();
 
     await page.getByTestId('skill-search').fill('kubernetes');
     await expect(page.getByText(/it is not something the resume can claim/i)).toBeVisible();
+  });
+
+  test('the search opens, focuses itself, and closes on Escape', async ({ page }) => {
+    /*
+     * The three things a collapsing control gets wrong.
+     *
+     * Opening it must move the cursor into it — otherwise the click has
+     * produced a box the person now has to click again. Escape must close it,
+     * because that is what Escape does everywhere else. And it must not throw
+     * away a query the person is still reading the results of: closing happens
+     * on blur only when the field is empty.
+     */
+    await page.goto('/#skills');
+    await page.getByTestId('skill-search-open').click();
+
+    const field = page.getByTestId('skill-search');
+    await expect(field).toBeFocused();
+
+    await field.fill('python');
+    // Clicking away with a query in it leaves the filter alone.
+    await page.getByRole('heading', { level: 3 }).first().click();
+    await expect(field).toBeVisible();
+    await expect(field).toHaveValue('python');
+
+    await field.focus();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('skill-search-open')).toBeVisible();
+    await expect(field).toBeHidden();
+  });
+
+  test('the search field is never wider than a small phone', async ({ page }, testInfo) => {
+    // The old field carried a 240px min-width, so on a 320px screen the
+    // placeholder was clipped inside a box that could not shrink. Arvind
+    // reported it; this pins it.
+    const width = testInfo.project.use.viewport?.width ?? 1440;
+    await page.goto('/#skills');
+    await page.getByTestId('skill-search-open').click();
+
+    const box = await page.getByTestId('skill-search').boundingBox();
+    expect(box, 'the search field did not open').not.toBeNull();
+    expect(box!.width).toBeLessThanOrEqual(width - 16);
+
+    // And the placeholder must fit the box it is in, not be cut off by it.
+    const clipped = await page.getByTestId('skill-search').evaluate((el) => {
+      const input = el as HTMLInputElement;
+      return input.scrollWidth > input.clientWidth + 1;
+    });
+    expect(clipped, 'the placeholder is clipped inside the field').toBe(false);
   });
 
   test('architecture views switch and are honestly labelled', async ({ page }) => {
@@ -748,7 +800,7 @@ test.describe('portfolio journey', () => {
       await expect(page.locator(`#${id}`), `#${id} is missing`).toBeAttached();
     }
 
-    await expect(page.getByTestId('skill-search')).toBeAttached();
+    await expect(page.getByTestId('skill-search-open')).toBeAttached();
     await expect(page.getByRole('link', { name: /download pdf/i })).toBeAttached();
     await expect(page.getByTestId('metric-automations').first()).toBeAttached();
   });

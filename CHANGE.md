@@ -9,7 +9,127 @@ A backup of the code as it stood before each session's changes is kept under
 
 ---
 
-## 2026-09-11 (later still) — the hairline flickering beside the bulb cord
+## 2026-09-11 (evening) — the search control, and a WhatsApp button on the resume
+
+### The search box
+
+Reported as "wrongly placed", and the screenshot showed why: a permanently-open
+input sitting between the expertise cards and the stack cards, left-aligned
+with nothing beside it. It belonged to neither grid. The row it lived in used
+`justify-between` with a single child, so the alignment did nothing.
+
+It is also the wrong weight. Most visitors read the groups; only a recruiter
+with a job description in hand types a word. A control that is always open
+claims the space of a primary action while being a secondary one.
+
+**Now:** an icon that opens into a field, on a row with a heading that names
+what the search searches, above the grid it filters.
+
+The parts that are easy to get wrong, and were not skipped — the collapsed
+state is a real `button` with a real label; the expanded state is a real
+`input` with a real `<label>`; focus moves into the field on open; Escape
+closes it; and it collapses on blur **only when empty**, because closing a
+field that still holds a query throws away the filter whose results the person
+is reading.
+
+The open animation is `clip-path` and `opacity`, not `width`. Animating width
+relayouts the row every frame and pushes the heading beside it around.
+
+### The phone problem, which was separate
+
+The old field carried `min-w-[15rem]` — 240px it could not go below. On a 320px
+screen that is a box wider than the space it has, and the placeholder inside it
+was clipped. It is `w-full` below `sm` now and a fixed width above.
+
+`type="search"` also became `type="text"`: the search type adds a
+browser-drawn clear button in a style no theme here can reach, and on iOS it
+reserves space the placeholder then has to fit around. The clear button is
+drawn here instead, so it matches.
+
+**Pinned by a test** that opens the field at every viewport, asserts it is never
+wider than the screen, and asserts `scrollWidth` does not exceed `clientWidth`
+— which is what "the placeholder is cut off" actually is.
+
+### The WhatsApp button on the resume
+
+Asked for as a logo beside the resume with an animation on click. It was a line
+of text before; it is an icon button in the row with the downloads now —
+outlined and icon-only, so it reads as a third way to act rather than competing
+with the two downloads the panel exists for.
+
+The press draws a ring that expands and fades, on `:active`. That is feedback
+for a click which hands off to another application: WhatsApp takes a moment to
+open, and without a response the button looks like it did nothing and gets
+pressed twice. The ring is on a pseudo-element, so the button's own size never
+changes — a control that grows under the finger moves the thing you are aiming
+at.
+
+### Verified
+
+262 unit and API tests. **397 end-to-end across four viewports, 3 skipped, 0
+failed** — up from 389, the new ones covering the search opening, focusing,
+closing on Escape, keeping a query on blur, and fitting a 320px screen.
+
+---
+
+## 2026-09-11 (later still) — hairlines flickering: three of them, one fault
+
+### The fault
+
+A hairline positioned on a **half-pixel** is antialiased slightly differently
+on each repaint. The ambient background animates continuously, so those regions
+repaint constantly — and the line shimmers for as long as the page is open.
+
+Two ways to land on a half-pixel, both present:
+
+- **A 1px box centred with `translateX(-50%)`** inside a 3px parent.
+- **A 1px box centred by flexbox or `mx-auto`** inside a parent of even width:
+  1px centred in 44px sits at 21.5.
+
+### The three places
+
+| Where | How it was centred | Notes |
+| --- | --- | --- |
+| The braid on the bulb's cord | `left: 50%` + `translateX(-50%)` in a 3px box | fixed first |
+| **The chain above the brass knob** | flexbox, in a 44px button | **the one Arvind pointed at** |
+| The phone-layout rail in the hero graph | `mx-auto` | found by looking for the rest of the class, not reported |
+
+The first fix went to the cord because that is where "the string" seemed to
+point. It was the wrong one — the screenshot showed the *knob*, and the line
+inside it. Both were real; only the second was the complaint.
+
+### The fix, applied identically in all three
+
+A box with width to land on (3px), carrying the hairline as a **background
+stripe** — `background-size: 1px 100%`, centred. A background is rasterised
+with the element that owns it, so there is no separate box to misalign and no
+transform to round. The stripe cannot drift from its parent because it is not
+positioned against it.
+
+The hero rail needed its resting colour moved out of a Tailwind `bg-` class and
+into the same rule, so both its layers — the travelling charge and the rail it
+travels along — are described together. Its keyframes now name the position of
+**both** layers at every step: a `background-position` shorthand that lists one
+layer resets the other, which would have parked the rail.
+
+### Everything else with a hairline was checked and is fine
+
+`w-px` / `h-px` elsewhere is either full-width (`inset-x-0`, `w-full`, where the
+horizontal position is the parent's own) or offset by a whole number of pixels
+(`left-8` = 32px, `left-[0.4375rem]` = 7px). No other element combines a 1px
+dimension with fractional centring.
+
+### Verified
+
+262 unit and API tests, 10 dev-server checks, and the full end-to-end run below.
+**The pixel measurement was still not taken** — the region contains the animated
+background, so counting changed pixels there measures the backdrop as much as
+the hairline, and the harness written for it kept failing on clip geometry. The
+cause is named and removed; the confirmation is Arvind's eye.
+
+---
+
+## (superseded note) the first pass, cord only
 
 Reported as flickering "kab se" — for a long time, which fits: it was there from
 the first build.
