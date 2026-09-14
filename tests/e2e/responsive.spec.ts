@@ -107,6 +107,66 @@ test.describe('responsive layout', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'studio');
   });
 
+  test('the theme and typography cards stay inside their panel', async ({ page }, testInfo) => {
+    /*
+     * The test that was missing, and the reason Arvind found this before a test
+     * did.
+     *
+     * Every responsive assertion in this suite measured *document* overflow.
+     * This panel overflowed inside a container that clips or scrolls, so the
+     * document stayed exactly 0px over while the theme cards hung off the glass
+     * at 1440 and ran off the screen entirely at 320. Measuring the document is
+     * necessary and not sufficient: a component can be broken inside a box that
+     * is itself fine.
+     *
+     * Root cause was `fieldset { min-inline-size: min-content }` from the UA
+     * stylesheet, which makes a fieldset grow past its parent rather than let
+     * its non-wrapping content truncate. Reset once in globals.css.
+     */
+    await page.goto('/');
+    const width = testInfo.project.use.viewport?.width ?? 1440;
+    const isNarrow = width < 640;
+
+    if (isNarrow) {
+      await page.getByTestId('menu-toggle').click();
+    } else {
+      await page.getByTestId('appearance-trigger').first().click();
+    }
+
+    const panel = page.getByTestId(isNarrow ? 'appearance-inline' : 'appearance-panel');
+    await expect(panel).toBeVisible();
+
+    const report = await panel.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      const contentRight = box.right - parseFloat(style.paddingRight || '0');
+      return {
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        // A row wider than the box it sits in is the visible symptom.
+        spilling: [...el.querySelectorAll('button')]
+          .map((row) => {
+            const r = row.getBoundingClientRect();
+            return {
+              label: (row.textContent ?? '').trim().slice(0, 20),
+              over: Math.round(r.right - contentRight),
+              offscreen: Math.round(r.right - window.innerWidth),
+            };
+          })
+          .filter((row) => row.over > 1 || row.offscreen > 0),
+      };
+    });
+
+    expect(
+      report.spilling,
+      `rows outside the panel or off screen at ${width}px`,
+    ).toEqual([]);
+    expect(
+      report.scrollWidth,
+      `panel content overflows its own box at ${width}px`,
+    ).toBeLessThanOrEqual(report.clientWidth);
+  });
+
   test('the assistant is usable at every size', async ({ page }) => {
     await page.goto('/assistant');
     await expect(page.getByTestId('assistant-input')).toBeVisible();

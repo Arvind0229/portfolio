@@ -513,6 +513,34 @@ h1 {
   line-height: var(--leading-display);
 }
 
+/*
+ * `fieldset` refuses to shrink, and it is the only element that does.
+ *
+ * The UA stylesheet gives every fieldset `min-inline-size: min-content`. That
+ * is a legacy quirk, not a design choice, and it means a fieldset ignores the
+ * width of its parent whenever its own content cannot wrap — it grows instead.
+ *
+ * Measured in the appearance popover, which groups Theme and Typography in
+ * fieldsets and truncates each tagline (`truncate` sets `white-space: nowrap`,
+ * so min-content is the *entire* untruncated line):
+ *
+ *   panel content box   304px
+ *   theme fieldset      337px   →  33px outside the panel
+ *   typography fieldset 416px   → 112px outside the panel
+ *   inline panel @320   246px box, 416px content → 170px outside
+ *
+ * The rows are `w-full`, so they resolved against the inflated fieldset rather
+ * than the panel, and the cards visibly hung off the glass. `truncate` never
+ * got a chance to truncate, because nothing ever constrained the box.
+ *
+ * Tailwind's preflight does not reset this. One rule here fixes it everywhere
+ * and keeps `fieldset`/`legend` available as the correct grouping semantics for
+ * a set of radio-like options — which is why the markup uses them.
+ */
+fieldset {
+  min-inline-size: 0;
+}
+
 /* ============================ UTILITIES ============================ */
 /*
  * These live in Tailwind's `components` layer, deliberately.
