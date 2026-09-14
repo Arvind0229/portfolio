@@ -1,5 +1,7 @@
-import type { EducationItem, Profile } from '@/types';
+import type { EducationItem, Profile, SocialLink } from '@/types';
 import { activeResume } from '@/data/resume-registry';
+import rawProfile from '@/data/profile.json';
+import { isRecord, safeUrl, str, strList } from '@/lib/content/validate';
 
 /**
  * Source of truth: Arvind Gupta — RPA Developer resume.
@@ -13,35 +15,33 @@ import { activeResume } from '@/data/resume-registry';
  * rounded figure a reader can check against the dates below and find wrong is
  * worse than a precise one.
  */
+/**
+ * Everything the site says about him.
+ *
+ * ## What is editable and what is not
+ *
+ * The prose, the contact details and the social links come from
+ * `profile.json`, which the admin panel writes. The **photo does not**, and
+ * that is a deliberate line rather than an omission.
+ *
+ * `photo.width`, `photo.height` and `blurDataURL` are measured properties of a
+ * specific file — a unit test opens the JPEG and asserts the numbers match. Put
+ * them in a text box and a save can silently cause layout shift, or fail the
+ * build, with nothing on screen to explain why. They are derived data, not
+ * content, and they belong with the photo-upload feature that will compute them
+ * rather than with a form that asks a person to type them.
+ *
+ * The resume is absent for the same reason, one step further along: it already
+ * has its own registry, and `resolveResume()` reads it.
+ *
+ * ## Why the shape is unchanged
+ *
+ * `Profile` is what forty-odd components and the whole AI knowledge layer read.
+ * Moving the *source* of these values behind a validator changed no consumer,
+ * which is the entire point of doing it this way.
+ */
 export const profile: Profile = {
-  name: 'Arvind Gupta',
-  shortName: 'Arvind',
-  title: 'RPA Developer',
-  positioning:
-    'I automate high-volume banking, NBFC and retail lending processes — end to end, from the requirement conversation to the bot running in production.',
-  // The page speaks in Arvind's voice; the assistant speaks about him. Same
-  // facts, two voices — `summaryThirdPerson` and `positioningThirdPerson` are
-  // what the AI knowledge layer quotes, so an answer never says "I started as
-  // an IT Executive" over an assistant byline. A data-integrity test asserts
-  // both carry the same anchor facts and no first-person pronouns.
-  summary:
-    'RPA Developer with 2.9 years of experience automating high-volume business processes across the Banking, NBFC and Retail Lending space at SBFC Finance Limited. I started as an IT Executive and was absorbed on-role as an RPA Developer on the strength of delivery performance. I have built 80+ production automations independently across LOS, LMS and reporting/operations workflows using TruBot (Datamatics), with recent hands-on in Automation Edge and working knowledge of UiPath. I own the full delivery cycle — requirement discussions, BRD authoring, development, testing, UAT, deployment and production support — and work daily with SQL/PL-SQL, Python, multi-database integration, Power BI and Excel/MIS automation, plus API-based compliance automation. I currently mentor 3 interns who now work as independent RPA developers.',
-  summaryThirdPerson:
-    'Arvind is an RPA Developer with 2.9 years of experience automating high-volume business processes across the Banking, NBFC and Retail Lending space at SBFC Finance Limited. He started as an IT Executive and was absorbed on-role as an RPA Developer on the strength of delivery performance. He has built 80+ production automations independently across LOS, LMS and reporting/operations workflows using TruBot (Datamatics), with recent hands-on in Automation Edge and working knowledge of UiPath. He owns the full delivery cycle — requirement discussions, BRD authoring, development, testing, UAT, deployment and production support — and works daily with SQL/PL-SQL, Python, multi-database integration, Power BI and Excel/MIS automation, plus API-based compliance automation. He currently mentors 3 interns who now work as independent RPA developers.',
-  positioningThirdPerson:
-    'He automates high-volume banking, NBFC and retail lending processes end to end, from the requirement conversation to the bot running in production.',
-  location: 'Mumbai, India — 400101',
-  email: 'guptaarvind29042000@gmail.com',
-  phone: '+91 82913 98844',
-  availability: 'Open to larger automation and process-transformation challenges',
-  focusAreas: [
-    'Robotic Process Automation',
-    'Retail Lending · LOS & LMS',
-    'SQL / PL-SQL across 5 databases',
-    'Python automation & reporting',
-    'Power BI & MIS dashboards',
-    'API-based compliance automation',
-  ],
+  ...parseProfileContent(rawProfile),
   // The portrait. One entry, read by every component that shows his face, so
   // a new photograph is a one-line change rather than a hunt through JSX.
   // The file is a 4:5 crop of the studio headshot he supplied, re-encoded from
@@ -60,65 +60,8 @@ export const profile: Profile = {
     facePosition: '50% 8%',
   },
 
-  // Only channels present in the resume are listed. Add profiles here when
-  // they exist — every component reads this array, nothing is hard-coded.
-  socials: [
-    {
-      id: 'email',
-      label: 'Email',
-      href: 'mailto:guptaarvind29042000@gmail.com',
-      handle: 'guptaarvind29042000@gmail.com',
-    },
-    {
-      id: 'phone',
-      label: 'Phone',
-      href: 'tel:+918291398844',
-      handle: '+91 82913 98844',
-    },
-    {
-      id: 'linkedin',
-      label: 'LinkedIn',
-      // Stored without the share tracking parameters it was copied with
-      // (`utm_source`, `utm_content`, `utm_medium`). Those describe how the
-      // link was shared once, not where the profile lives, and shipping them
-      // on a public page hands the analytics to whoever reads it.
-      href: 'https://www.linkedin.com/in/arvind-gupta-774996216',
-      handle: 'in/arvind-gupta-774996216',
-    },
-  ],
-  /*
-   * Read from the registry, not written here.
-   *
-   * These three values used to be literals, and the admin upload wrote to a
-   * different path entirely — so replacing the resume changed nothing a visitor
-   * could see. The fix is not a corrected string: it is that there is now one
-   * place that answers "which file is the resume", and both the uploader and
-   * the download buttons read it.
-   *
-   * The shape is unchanged, deliberately. Every consumer of `profile.resume`
-   * — the resume section, the hero, the footer — keeps working untouched.
-   */
   resume: resolveResume(),
 };
-
-function resolveResume(): Profile['resume'] {
-  const current = activeResume();
-  if (current) {
-    return {
-      pdf: current.pdf,
-      ...(current.docx ? { docx: current.docx } : {}),
-      fileLabel: current.label,
-    };
-  }
-
-  /*
-   * No active version. This is reachable only if the registry is emptied or
-   * corrupted, and the honest answer is an empty path rather than a stale
-   * literal that pretends a file is there. The resume section renders an
-   * unavailable state from this; see the empty-state handling there.
-   */
-  return { pdf: '', fileLabel: 'Résumé' };
-}
 
 export const education: readonly EducationItem[] = [
   {
@@ -158,3 +101,110 @@ export const domainKnowledge: readonly string[] = [
   'Loan Documentation',
   'Banking Operations & Compliance',
 ];
+
+/* ------------------------------------------------------------------ */
+/* Validation                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The resume the site currently serves.
+ *
+ * Read from the registry rather than written here. These three values used to
+ * be literals while the admin upload wrote to a different path entirely, so
+ * replacing the resume changed nothing a visitor could see. See
+ * `src/data/resume-registry.ts` for the whole story.
+ */
+function resolveResume(): Profile['resume'] {
+  const current = activeResume();
+  if (current) {
+    return {
+      pdf: current.pdf,
+      ...(current.docx ? { docx: current.docx } : {}),
+      fileLabel: current.label,
+    };
+  }
+
+  /*
+   * No active version. Reachable only if the registry is emptied or corrupted,
+   * and the honest answer is an empty path rather than a stale literal that
+   * pretends a file is there. The resume section renders an unavailable state
+   * from this.
+   */
+  return { pdf: '', fileLabel: 'Résumé' };
+}
+
+/**
+ * The editable half of the profile, checked on the way in.
+ *
+ * Same contract as `parseDepth`: drop what is malformed, never throw. A save
+ * that would otherwise take the public site down instead loses one field.
+ *
+ * The one place that is not true is a **field the site cannot render without**.
+ * `name` and `title` appear in the `<h1>`, the page metadata and the JSON-LD;
+ * an empty one is not a degraded page, it is a broken one. Those fall back to
+ * the value shipped in the repository, which is always a real value because it
+ * is what the file was seeded with.
+ */
+type EditableProfile = Omit<Profile, 'photo' | 'resume'>;
+
+const PROFILE_FALLBACK = {
+  name: 'Arvind Gupta',
+  shortName: 'Arvind',
+  title: 'RPA Developer',
+} as const;
+
+function parseSocial(value: unknown): SocialLink | null {
+  if (!isRecord(value)) return null;
+  const label = str(value.label, 40);
+  const href = safeUrl(value.href);
+  // A link with no destination is not a link, and an unlabelled one is an
+  // anchor a screen reader announces as "link".
+  if (!label || !href) return null;
+
+  /*
+   * The id is derived from the label rather than typed.
+   *
+   * It exists to be a React key and a test handle — it is not content, and
+   * asking a person to invent a slug is asking them to get it wrong. Deriving
+   * it means one less field in the form and one less thing a save can break.
+   */
+  const slug =
+    str(value.id, 64)?.toLowerCase().replace(/[^a-z0-9]+/g, '-') ??
+    label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+  return {
+    id: slug || 'link',
+    label,
+    href,
+    handle: str(value.handle, 120) ?? label,
+  };
+}
+
+export function parseProfileContent(value: unknown): EditableProfile {
+  const raw = isRecord(value) ? value : {};
+
+  const socials: SocialLink[] = [];
+  if (Array.isArray(raw.socials)) {
+    for (const entry of raw.socials) {
+      const social = parseSocial(entry);
+      if (social) socials.push(social);
+      if (socials.length >= 12) break;
+    }
+  }
+
+  return {
+    name: str(raw.name, 80) ?? PROFILE_FALLBACK.name,
+    shortName: str(raw.shortName, 40) ?? PROFILE_FALLBACK.shortName,
+    title: str(raw.title, 80) ?? PROFILE_FALLBACK.title,
+    positioning: str(raw.positioning) ?? '',
+    positioningThirdPerson: str(raw.positioningThirdPerson) ?? '',
+    summary: str(raw.summary) ?? '',
+    summaryThirdPerson: str(raw.summaryThirdPerson) ?? '',
+    location: str(raw.location, 120) ?? '',
+    email: str(raw.email, 254) ?? '',
+    phone: str(raw.phone, 40) ?? '',
+    availability: str(raw.availability, 200) ?? '',
+    focusAreas: strList(raw.focusAreas, 120, 12),
+    socials,
+  };
+}

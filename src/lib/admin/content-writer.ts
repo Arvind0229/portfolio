@@ -32,6 +32,8 @@ import path from 'node:path';
 export const WRITABLE = {
   projectDepth: 'src/data/project-depth.json',
   resumeRegistry: 'src/data/resume-registry.json',
+  profile: 'src/data/profile.json',
+  skills: 'src/data/skills.json',
 } as const;
 
 export type WritableKey = keyof typeof WRITABLE;

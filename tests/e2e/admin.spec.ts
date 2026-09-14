@@ -96,6 +96,14 @@ test.describe('admin', () => {
     await page.getByTestId('admin-signin').click();
 
     await expect(page.getByTestId('admin-panel')).toBeVisible();
+
+    /*
+     * The panel opens on Profile now, so reaching a project tab is a click
+     * rather than a given. Kept rather than dropped: the point of the
+     * assertion is that real content loaded behind the sign-in, and a project
+     * tab is still the cheapest proof of that.
+     */
+    await page.getByTestId('admin-section-projects').click();
     await expect(page.getByTestId('admin-tab-compliance-tracking')).toBeVisible();
 
     // The cookie, not client state, is what holds the session. A reload is the
@@ -104,6 +112,35 @@ test.describe('admin', () => {
     await page.reload();
     await expect(page.getByTestId('admin-panel')).toBeVisible();
     await expect(page.getByTestId('admin-code')).toHaveCount(0);
+  });
+
+  test('every section is reachable, and sign out is reachable from all of them', async ({
+    page,
+  }) => {
+    /*
+     * Added after the save bar became section-scoped and took the sign-out
+     * button with it — three of the four sections were left with no way to end
+     * the session, and nothing failed.
+     */
+    await page.goto('/admin');
+    await page.getByTestId('admin-code').fill(currentCode());
+    await page.getByTestId('admin-signin').click();
+    await expect(page.getByTestId('admin-panel')).toBeVisible();
+
+    for (const section of ['profile', 'skills', 'resume', 'projects']) {
+      await page.getByTestId(`admin-section-${section}`).click();
+      await expect(
+        page.getByTestId('admin-signout'),
+        `no way to sign out from the ${section} section`,
+      ).toBeVisible();
+    }
+
+    // And the save button belongs to projects alone — it saves project depth
+    // and nothing else, so offering it over the bio form is a lie.
+    await page.getByTestId('admin-section-profile').click();
+    await expect(page.getByTestId('admin-save')).toBeHidden();
+    await page.getByTestId('admin-section-projects').click();
+    await expect(page.getByTestId('admin-save')).toBeVisible();
   });
 
   test('signing out really ends the session', async ({ page }) => {
@@ -127,13 +164,21 @@ test.describe('admin', () => {
      * name the missing variables rather than showing an empty form that
      * silently fails to save — a form that looks ready and is not is worse than
      * a clear refusal.
+     *
+     * Asserted at panel level rather than on the projects save bar, because the
+     * fact is true of every section: the panel opens on Profile, and a warning
+     * that only appears on the projects tab is one the person never sees.
      */
     await page.goto('/admin');
     await page.getByTestId('admin-code').fill(currentCode());
     await page.getByTestId('admin-signin').click();
 
     await expect(page.getByTestId('admin-panel')).toBeVisible();
-    await expect(page.getByTestId('admin-status')).toContainText(/ADMIN_GITHUB_REPO/);
+    await expect(page.getByTestId('admin-config-warning')).toContainText(/ADMIN_GITHUB_REPO/);
+
+    // Still visible after moving away from the section it was raised on.
+    await page.getByTestId('admin-section-skills').click();
+    await expect(page.getByTestId('admin-config-warning')).toContainText(/ADMIN_GITHUB_REPO/);
   });
 
   test('is kept out of search results and out of the sitemap', async ({ page, request }) => {

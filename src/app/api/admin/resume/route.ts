@@ -295,3 +295,104 @@ export async function POST(request: Request): Promise<NextResponse<UploadRespons
     200,
   );
 }
+
+/**
+ * Roll back to a previous version, or re-activate one.
+ *
+ * This is the whole rollback mechanism: nothing is overwritten on upload, so
+ * the older file is still there byte for byte and switching to it is repointing
+ * `active`. No restore procedure to write, and none to forget to test.
+ *
+ * Separate from `POST` because it moves no bytes — a `PATCH` that changes one
+ * field has no business accepting a multipart body, and keeping them apart
+ * means the upload's size caps and magic-byte checks cannot be reached with an
+ * empty request.
+ */
+export async function PATCH(request: Request): Promise<NextResponse<UploadResponse>> {
+  const access = checkAdminAccess(request);
+  if (!access.allowed) {
+    if (access.reason === 'misconfigured') {
+      return json({ ok: false, error: 'Admin sign-in is not configured on this deployment.' }, 503);
+    }
+    if (access.reason === 'cross_origin') return json({ ok: false, error: 'Request rejected.' }, 403);
+    return json({ ok: false, error: 'Sign in first.' }, 401);
+  }
+
+  const limit = uploadLimiter.check(clientKeyFromHeaders(request.headers));
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Too many changes in a short time. Wait a moment and try again.',
+        retryAfterSeconds: limit.retryAfterSeconds,
+      },
+      { status: 429, headers: { 'retry-after': String(limit.retryAfterSeconds) } },
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: 'Expected JSON.' }, 400);
+  }
+
+  const wanted = (body as { active?: unknown } | null)?.active;
+  if (typeof wanted !== 'string') {
+    return json({ ok: false, error: 'Expected an "active" version id.' }, 400);
+  }
+
+  const { writer, reason } = getContentWriter();
+  if (!writer) return json({ ok: false, error: reason }, 503);
+
+  let registry: ResumeRegistry;
+  let registryVersion: string | undefined;
+  try {
+    const read = await readRegistry(writer);
+    registry = read.registry;
+    registryVersion = read.version;
+  } catch {
+    return json({ ok: false, error: 'Could not read the saved resume list.' }, 502);
+  }
+
+  const target = registry.versions.find((version) => version.id === wanted);
+  // The id must name a version that exists *and* has a PDF — activating one
+  // without would advertise a download pointing at nothing.
+  if (!target) return json({ ok: false, error: 'That version is not in the list.' }, 404);
+  if (target.pdf.length === 0) {
+    return json({ ok: false, error: 'That version has no PDF, so it cannot be the live one.' }, 400);
+  }
+
+  const next: ResumeRegistry = { active: target.id, versions: registry.versions };
+
+  try {
+    await writer.write(
+      'resumeRegistry',
+      Buffer.from(`${JSON.stringify(next, null, 2)}\n`, 'utf8'),
+      `Roll back active resume to ${target.id}`,
+      registryVersion,
+    );
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return json(
+        {
+          ok: false,
+          error: 'The resume list changed while this was saving. Reload and try again.',
+        },
+        409,
+      );
+    }
+    return json({ ok: false, error: writeFailure(writer.mode) }, 502);
+  }
+
+  return json(
+    {
+      ok: true,
+      mode: writer.mode,
+      pendingDeploy: writer.mode === 'github',
+      active: next.active,
+      versions: next.versions,
+    },
+    200,
+  );
+}

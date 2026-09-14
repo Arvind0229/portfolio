@@ -1,79 +1,68 @@
 import type { SkillGroup } from '@/types';
+import raw from '@/data/skills.json';
+import { id, isRecord, str, strList } from '@/lib/content/validate';
 
 /**
  * Grouped exactly as the resume groups them. No proficiency percentages —
  * invented numbers are worse than no numbers, and the projects section already
  * shows where each technology was actually used.
  */
-export const skillGroups: readonly SkillGroup[] = [
-  {
-    id: 'rpa',
-    name: 'RPA & Automation',
-    description: 'The core craft — building bots that survive contact with production.',
-    skills: [
-      'TruBot (Datamatics)',
-      'Automation Edge',
-      'UiPath (Basic)',
-      'Intelligent Automation',
-      'OCR',
-      'Queues & Triggers',
-      'RE Framework',
-      'UI / Recorder-based Front-End Automation',
-      'Workflow & Business Process Automation',
-    ],
-  },
-  {
-    id: 'programming',
-    name: 'Programming & Scripting',
-    description: 'Used where native RPA alone is not the right tool.',
-    skills: ['SQL', 'PL/SQL', 'Python', 'VBA'],
-  },
-  {
-    id: 'data',
-    name: 'Databases & Cloud',
-    description: 'Five database engines in daily use, plus secure file movement.',
-    skills: [
-      'Oracle',
-      'MS SQL Server',
-      'MySQL',
-      'PostgreSQL',
-      'Redshift',
-      'Amazon S3',
-      'SFTP / FTP',
-    ],
-  },
-  {
-    id: 'bi',
-    name: 'Reporting & BI',
-    description: 'Turning operational data into something a manager can act on.',
-    skills: [
-      'Power BI',
-      'Advanced Excel',
-      'Pivot Tables',
-      'MIS & Dashboard Automation',
-      'HTML Mail-Body / Mailer Automation',
-    ],
-  },
-  {
-    id: 'integrations',
-    name: 'Integrations & Tools',
-    description: 'Where automations meet the outside world.',
-    skills: [
-      'SMS API Integration',
-      'WhatsApp API Integration',
-      'AI-Assisted Development (ChatGPT, Claude)',
-      'Git (Basic)',
-    ],
-  },
-  {
-    id: 'applications',
-    name: 'Banking Applications & Platform',
-    description: 'The systems the automations run against.',
-    skills: ['LOS', 'LMS', 'CRM', 'ERP', 'Windows'],
-  },
-];
+/**
+ * The stack, grouped as the resume groups it.
+ *
+ * Read from `skills.json`, which the admin panel writes. The shape is unchanged
+ * — `skillGroups` is what the skills section, the search index and the AI
+ * knowledge layer all consume, so moving the source behind a validator changed
+ * no consumer.
+ */
+export const skillGroups: readonly SkillGroup[] = parseSkillGroups(raw);
 
-/** Flat, de-duplicated list used by search, filters and the AI skill tool. */
 export const allSkills: readonly string[] = Array.from(
   new Set(skillGroups.flatMap((group) => group.skills)),
 );
+
+/* ------------------------------------------------------------------ */
+/* Validation                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Validate and drop, never throw — the contract every content file follows.
+ *
+ * A group with no skills in it is dropped rather than rendered: an empty card
+ * with a heading and nothing under it reads as a loading state that never
+ * finished, which is worse than the group being absent.
+ *
+ * Duplicate ids are refused because the id is a React key and a test handle,
+ * and two cards sharing one is a rendering bug that only shows up when the
+ * list reorders.
+ */
+export function parseSkillGroups(value: unknown): readonly SkillGroup[] {
+  const source = isRecord(value) ? value.groups : null;
+  if (!Array.isArray(source)) return [];
+
+  const out: SkillGroup[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of source) {
+    if (!isRecord(entry)) continue;
+
+    const groupId = id(entry.id);
+    const name = str(entry.name, 80);
+    if (!groupId || !name || seen.has(groupId)) continue;
+
+    const skills = strList(entry.skills, 80, 40);
+    if (skills.length === 0) continue;
+
+    seen.add(groupId);
+    out.push({
+      id: groupId,
+      name,
+      description: str(entry.description, 300) ?? '',
+      skills,
+    });
+
+    if (out.length >= 20) break;
+  }
+
+  return out;
+}

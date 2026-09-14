@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils/cn';
-import type { ProjectDepth } from '@/types';
+import {
+  ProfileEditor,
+  ResumeVersions,
+  SkillsEditor,
+} from '@/components/admin/content-editors';
+import type { ProjectDepth, ResumeVersion } from '@/types';
 
 /**
  * The editor.
@@ -50,10 +55,41 @@ interface Props {
 /* Small field primitives                                              */
 /* ------------------------------------------------------------------ */
 
-const inputClass =
+/**
+ * The panel's top-level sections.
+ *
+ * Profile first because it is what changes most often and what a person opens
+ * the panel to change. Project details last because it is the longest form and
+ * the one edited least.
+ */
+type Section = 'profile' | 'skills' | 'resume' | 'projects';
+
+const SECTIONS: readonly { id: Section; label: string }[] = [
+  { id: 'profile', label: 'Profile' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'resume', label: 'Resume' },
+  { id: 'projects', label: 'Project details' },
+];
+
+/**
+ * The server's explanation for a failed response, if it sent one.
+ *
+ * Never throws: an error path that can itself throw turns a message the person
+ * could have acted on into a blank screen.
+ */
+async function reasonFrom(response: Response): Promise<string | null> {
+  try {
+    const body = (await response.json()) as { error?: unknown };
+    return typeof body.error === 'string' && body.error.trim() ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
+export const inputClass =
   'w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[0.9rem] text-[var(--text-primary)] placeholder:text-[var(--text-subtle)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-primary)]';
 
-function Field({
+export function Field({
   label,
   hint,
   children,
@@ -75,7 +111,7 @@ function Field({
   );
 }
 
-function TextArea({
+export function TextArea({
   value,
   onChange,
   rows = 3,
@@ -101,10 +137,10 @@ function TextArea({
 }
 
 /** A list of short lines, edited as one textarea. */
-function lines(value: readonly string[] | undefined): string {
+export function lines(value: readonly string[] | undefined): string {
   return (value ?? []).join('\n');
 }
-function toLines(value: string): string[] {
+export function toLines(value: string): string[] {
   return value
     .split('\n')
     .map((line) => line.trim())
@@ -125,7 +161,7 @@ function toLines(value: string): string[] {
  * checked as a `ProjectChallenge[]` editor and a mismatched field name is a
  * build error instead of a field that silently never saves.
  */
-function PairList<T extends Record<string, string | undefined>>({
+export function PairList<T extends Record<string, string | undefined>>({
   items,
   fields,
   addLabel,
@@ -216,6 +252,15 @@ export function AdminPanel({ projects, localMode }: Props) {
   const [depth, setDepth] = useState<DepthMap>({});
   const [activeId, setActiveId] = useState(projects[0]?.id ?? '');
   const [status, setStatus] = useState<string | null>(null);
+  /**
+   * Why this deployment cannot save anything, if it cannot.
+   *
+   * Separate from `status` on purpose. `status` is the result of the last
+   * action on the projects tab; this is a standing fact about the deployment
+   * that applies to every section, so it is rendered above the section tabs
+   * where a person who lands on Profile still sees it.
+   */
+  const [configWarning, setConfigWarning] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -224,11 +269,59 @@ export function AdminPanel({ projects, localMode }: Props) {
   // src/app/api/admin/depth/route.ts.
   const versionRef = useRef<string | undefined>(undefined);
 
+  /*
+   * Which section is open. Four now rather than two, so the panel is a small
+   * CMS rather than one long page — and a person editing their bio should not
+   * have to scroll past five project tabs to reach it.
+   */
+  const [section, setSection] = useState<Section>('profile');
+
+  // Resume versions, so rollback is a click rather than a redeploy.
+  const [resume, setResume] = useState<{ active: string | null; versions: ResumeVersion[] }>({
+    active: null,
+    versions: [],
+  });
+
   const load = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/depth', { cache: 'no-store' });
       if (response.status === 401) {
         setAuthed(false);
+        return;
+      }
+      /*
+       * Only a 200 proves a session.
+       *
+       * This used to set `authed` on anything that was not a 401, so a 503 from
+       * a deployment with no write credentials — or a 429 from the rate limiter
+       * — put the panel into a signed-in state it had not earned, showing an
+       * editor over content it had failed to load. Found in UAT.
+       */
+      if (!response.ok) {
+        setAuthed(true);
+        if (response.status === 429) {
+          setStatus('Too many requests just now. Wait a moment and reload.');
+          return;
+        }
+        /*
+         * Prefer the server's own words.
+         *
+         * A 503 here is the deployment naming the configuration it is missing,
+         * and the first version of this branch threw that away for a generic
+         * "could not be loaded", which tells the person nothing they can act
+         * on. Caught by the E2E that exists for exactly this state.
+         *
+         * The names themselves are deliberately not written here: a unit test
+         * scans every `'use client'` module for them, and it does not care
+         * whether the occurrence is code or a comment. That bluntness is the
+         * point — the day someone moves this sentence into a string is the day
+         * it would ship.
+         */
+        const reason = await reasonFrom(response);
+        setStatus(reason ?? 'Signed in, but the saved details could not be loaded.');
+        // Panel-level, because it is true from whichever section is on screen:
+        // saving is unavailable everywhere, not only on the projects tab.
+        if (response.status === 503) setConfigWarning(reason);
         return;
       }
       setAuthed(true);
@@ -247,6 +340,26 @@ export function AdminPanel({ projects, localMode }: Props) {
       versionRef.current = body.version;
       if (body.ok && body.projects) setDepth(body.projects);
       else if (!body.ok) setStatus(body.error ?? 'Could not load the saved details.');
+
+      /*
+       * The resume list comes from the same place the upload writes, read
+       * through the writer rather than the bundle — so a version uploaded five
+       * minutes ago on the live site is in the list even though the deployment
+       * that would bundle it has not finished.
+       */
+      try {
+        const registry = await fetch('/api/admin/content/resume-registry', { cache: 'no-store' });
+        if (registry.ok) {
+          const parsed = (await registry.json()) as {
+            ok: boolean;
+            data?: { active: string | null; versions: ResumeVersion[] };
+          };
+          if (parsed.ok && parsed.data) setResume(parsed.data);
+        }
+      } catch {
+        // The resume list is a convenience; failing to load it must not stop
+        // the rest of the panel from working.
+      }
     } catch {
       // A network failure is not a signed-out state. Assuming it is would drop
       // whatever is typed into the form and demand a code over a dropped Wi-Fi
@@ -337,6 +450,40 @@ export function AdminPanel({ projects, localMode }: Props) {
     }
   }
 
+  /** Roll back to a previous version — repoints `active`, moves no bytes. */
+  async function activateResume(id: string) {
+    setBusy(true);
+    setStatus(null);
+    try {
+      const response = await fetch('/api/admin/resume', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: id }),
+      });
+      const body = (await response.json()) as {
+        ok: boolean;
+        error?: string;
+        active?: string | null;
+        versions?: ResumeVersion[];
+        pendingDeploy?: boolean;
+      };
+      if (body.ok && body.versions) {
+        setResume({ active: body.active ?? null, versions: body.versions });
+        setStatus(
+          body.pendingDeploy
+            ? 'Switched. The live site updates when the deployment finishes.'
+            : 'Switched. Refresh the site to see it.',
+        );
+      } else {
+        setStatus(body.error ?? 'Could not switch version.');
+      }
+    } catch {
+      setStatus('Could not reach the server.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function uploadResume(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -344,6 +491,9 @@ export function AdminPanel({ projects, localMode }: Props) {
     setStatus(null);
     try {
       const form = new FormData();
+      // Declared rather than sniffed from the filename, so choosing PDF and
+      // attaching a Word file is reported as a mismatch instead of guessed at.
+      form.append('format', file.name.toLowerCase().endsWith('.docx') ? 'docx' : 'pdf');
       form.append('resume', file);
       const response = await fetch('/api/admin/resume', { method: 'POST', body: form });
       const body = (await response.json()) as {
@@ -422,22 +572,104 @@ export function AdminPanel({ projects, localMode }: Props) {
 
   return (
     <div className="space-y-8" data-testid="admin-panel">
-      <section className="surface-card p-5">
+      {/*
+        Above the tabs, because it is true on all of them. A deployment with no
+        write credentials can show every form and save none of them, and a form
+        that looks ready and is not is worse than a clear refusal — so say it
+        once, at the top, before anything is typed.
+      */}
+      {configWarning ? (
+        <p
+          role="status"
+          data-testid="admin-config-warning"
+          className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[0.82rem] leading-relaxed text-[var(--text-secondary)]"
+        >
+          {configWarning}
+        </p>
+      ) : null}
+
+      {/*
+        Four sections rather than one long page. A person editing their bio
+        should not have to scroll past five project tabs to reach it.
+      */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border-subtle)] pb-4">
+        <div
+          role="tablist"
+          aria-label="Admin sections"
+          data-testid="admin-sections"
+          className="flex flex-wrap gap-2"
+        >
+          {SECTIONS.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              role="tab"
+              aria-selected={section === entry.id}
+              onClick={() => setSection(entry.id)}
+              data-testid={`admin-section-${entry.id}`}
+              className={cn(
+                'rounded-[var(--radius-md)] px-3.5 py-2 text-[0.85rem] transition-colors',
+                section === entry.id
+                  ? 'bg-[var(--accent-primary)] text-[var(--accent-contrast)]'
+                  : 'border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+              )}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
+        {/*
+          Beside the tablist, not inside it. A `tablist` is supposed to contain
+          tabs, so a sign-out button in there is either announced as a tab it is
+          not, or hidden from assistive technology to avoid that — and it used
+          to live in the projects save bar, which became section-scoped, leaving
+          three of four sections with no way out of the session.
+        */}
+        {!localMode ? (
+          <button
+            type="button"
+            onClick={signOut}
+            data-testid="admin-signout"
+            className="ml-auto text-[0.8rem] text-[var(--text-muted)] underline-offset-4 hover:text-[var(--text-primary)] hover:underline"
+          >
+            Sign out
+          </button>
+        ) : null}
+      </div>
+
+      {section === 'profile' ? <ProfileEditor /> : null}
+      {section === 'skills' ? <SkillsEditor /> : null}
+
+      <section className="surface-card p-5" hidden={section !== 'resume'}>
         <h2 className="font-display text-[1.05rem] text-[var(--text-primary)]">Resume</h2>
         <p className="mt-1.5 text-[0.82rem] leading-relaxed text-[var(--text-secondary)]">
-          Replaces the file people download from the site. PDF only, up to 8 MB.
+          Replaces the file people download from the site. PDF or DOCX, up to 8 MB.
+          Nothing is overwritten — every upload is kept, so switching back is one click.
         </p>
         <input
           type="file"
-          accept="application/pdf"
+          accept="application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           onChange={uploadResume}
           disabled={busy}
           data-testid="admin-resume-input"
           className="mt-3 block w-full text-[0.85rem] text-[var(--text-secondary)] file:mr-3 file:rounded-[var(--radius-sm)] file:border file:border-[var(--border)] file:bg-transparent file:px-3 file:py-1.5 file:text-[var(--text-primary)]"
         />
+
+        <div className="mt-6">
+          <h3 className="text-[0.85rem] font-medium text-[var(--text-primary)]">Versions</h3>
+          <p className="mb-3 mt-1 text-[0.78rem] text-[var(--text-muted)]">
+            The live one is what every Download button on the site points at.
+          </p>
+          <ResumeVersions
+            active={resume.active}
+            versions={resume.versions}
+            busy={busy}
+            onActivate={(id) => void activateResume(id)}
+          />
+        </div>
       </section>
 
-      <section>
+      <section hidden={section !== 'projects'}>
         <h2 className="font-display text-[1.05rem] text-[var(--text-primary)]">Project details</h2>
         <p className="mt-1.5 max-w-2xl text-[0.82rem] leading-relaxed text-[var(--text-secondary)]">
           Whatever you write here is what the assistant can say. Leave a field blank and it will
@@ -622,7 +854,20 @@ export function AdminPanel({ projects, localMode }: Props) {
         )}
       </section>
 
-      <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-[var(--border-subtle)] bg-[var(--bg-primary)] py-4">
+      {/*
+        Scoped to its own section. It reads "Save all projects" and saves only
+        the project depth, so leaving it on screen while someone edits their
+        bio offers a button that does nothing for the form in front of them —
+        and, worse, looks like the button that would.
+
+        `hidden` rather than unmounting, to match the section above it: the
+        status line is a live region, and a region that disappears from the
+        tree between renders does not always get announced.
+      */}
+      <div
+        hidden={section !== 'projects'}
+        className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-[var(--border-subtle)] bg-[var(--bg-primary)] py-4"
+      >
         <button
           type="button"
           onClick={save}
@@ -636,16 +881,6 @@ export function AdminPanel({ projects, localMode }: Props) {
           <p role="status" data-testid="admin-status" className="text-[0.82rem] text-[var(--text-secondary)]">
             {status}
           </p>
-        ) : null}
-        {!localMode ? (
-          <button
-            type="button"
-            onClick={signOut}
-            data-testid="admin-signout"
-            className="ml-auto text-[0.8rem] text-[var(--text-muted)] underline-offset-4 hover:text-[var(--text-primary)] hover:underline"
-          >
-            Sign out
-          </button>
         ) : null}
       </div>
     </div>

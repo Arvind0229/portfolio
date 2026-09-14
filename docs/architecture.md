@@ -4,7 +4,9 @@ For whoever picks this project up next, human or agent. It answers the questions
 you would otherwise spend an hour of reading to answer, and it names the things
 that will bite you.
 
-**Last verified:** 2026-09-14, against `main` after CHANGE-002.
+**Last verified:** 2026-09-14, against `main` after CHANGE-003 — types, lint,
+357 unit tests, production build and 416 E2E tests all green, plus 41 browser
+UAT scenarios.
 If something below contradicts the code, the code is right and this file is
 stale — fix it.
 
@@ -31,18 +33,27 @@ runtime content fetch on any public page.
 
 | File | Holds | Editable from admin? |
 |---|---|---|
-| `profile.ts` | name, title, bio, contact, socials | Not yet |
-| `projects.ts` | the five case studies | Not yet |
+| `profile.json` + `profile.ts` | name, title, bio, contact, socials | **Yes** |
+| `skills.json` + `skills.ts` | the stack, grouped | **Yes** |
 | `project-depth.json` | the deep per-project detail layer | **Yes** |
 | `resume-registry.json` | which resume the site serves + history | **Yes** |
-| `skills.ts`, `skill-notes.ts` | the stack, and per-skill notes | Not yet |
+| `projects.ts` | the five case studies | Not yet |
+| `skill-notes.ts` | per-skill explainer notes | Not yet |
 | `experience.ts`, `impact.ts` | roles and headline numbers | Not yet |
 | `site.ts` | nav, themes, font sets, assistant modes | Not yet |
 | `reporting.ts` | **invented demo data.** See §8 | No, and must not be |
 
 Migrating the rest of these to admin-editable JSON is the in-progress work. The
-pattern to copy is `resume-registry.{json,ts}` — a JSON file, a validator beside
-it, and a typed accessor.
+pattern to copy is `profile.{json,ts}` — a JSON file, a validator beside it, a
+typed accessor, and an entry in `src/lib/content/registry.ts`. Adding a file to
+that registry is what gives it auth, rate limiting, a size cap, optimistic
+concurrency and conflict handling; there is no second route to write.
+
+**Two fields stay out of the editable layer deliberately.** `profile.photo` is
+measured from a specific JPEG (`width`, `height`, `blurDataURL`) — derived data,
+not content, and a text box around it is a save away from layout shift.
+`profile.resume` has its own registry with version history that a profile form
+has no business overwriting. Both are merged back in by `profile.ts`.
 
 ---
 
@@ -116,8 +127,15 @@ built yet. Follow the same shape: cap, magic-byte check, server-minted name.
 - **Session**: a stateless HMAC-signed cookie `ag_admin`, 2 hours, `HttpOnly`,
   `SameSite=Strict`, `Secure` in production. Not a JWT. Signature is verified
   *before* the payload is parsed.
-- **Guarding**: `checkAdminAccess(request)` in every admin route. **There is no
-  `middleware.ts`** — each route guards itself.
+- **Guarding is two layers.** `src/middleware.ts` runs at the edge over
+  `/admin/:path*` and `/api/admin/:path*` and checks that a session cookie is
+  **present**; it cannot check that the cookie is *valid*, because the edge
+  runtime has no `node:crypto` and the signature needs HMAC. So every route
+  still calls `checkAdminAccess(request)` and verifies for itself. The
+  middleware is a cheap early rejection, never the security boundary — do not
+  remove a route's own guard because "middleware covers it".
+  `/api/admin/login` is excluded (you cannot have a cookie before signing in),
+  and `/admin` is allowed through so the sign-in form can render.
 - **The local bypass needs two conditions**: `NODE_ENV !== 'production'` **and**
   `ADMIN_LOCAL_BYPASS=1`. Set the second in `.env.local` or a dev server will ask
   for a TOTP code. It used to be `NODE_ENV` alone, which meant any `test` build
@@ -216,7 +234,7 @@ Each of these is load-bearing and each has cost someone real time:
   is written so the next person does not repeat a debugging session. Match that.
 - **Every claim in a comment should be checkable.** Prefer "measured X at 1440"
   over "should be fast".
-- **Tests are the safety net for everything above** — 303 unit/API, 412 E2E
+- **Tests are the safety net for everything above** — 357 unit/API, 416 E2E
   across four viewports. Run them; never report results you did not run.
 - **Before adding a dependency**: does existing code solve it? Does the platform?
   Is it maintained? What does it cost the bundle? The answer has been "no
@@ -238,6 +256,19 @@ failures whose only symptom is that CSS and JS 404. `pgrep -f next-server` does
 not find it. `fuser 3100/tcp` does. **Kill by port, not by name.** This has cost
 four debugging sessions.
 
+**The shared-`.next` trap:** `next dev` and `next start` write to the *same*
+`.next` directory. Running a dev server while an E2E or UAT run is using a
+production build overwrites the production middleware manifest with the dev one
+— every `/api/admin/*` route then 404s against a build that is otherwise fine.
+Symptom: the build is clean, the tests say the routes do not exist. **Run one
+server at a time**, or give each its own `distDir`.
+
+**The missing-browser trap:** the container ships a pinned Chromium that does
+not always match the build Playwright wants. `playwright.config.ts` honours
+`PLAYWRIGHT_CHROMIUM_PATH` for exactly this. It is a shell variable, so it does
+not survive between commands — export it in the same command that runs the
+suite, or every test fails in ~3 ms with "Executable doesn't exist".
+
 ---
 
 ## 10. Known limitations and open defects
@@ -253,10 +284,13 @@ Honest list. None of these is hypothetical.
 | ~~5~~ | ~~`/api/admin/depth` has no rate limit~~ | **Fixed, CHANGE-002** |
 | 6 | **The portrait is a 167 KB unoptimised JPG**, no WebP, no responsive sizes | Largest asset on the site |
 | 7 | **`createGitHubWriter` has no unit test**; E2E only covers the no-credentials path | **The live save path has never been executed by a test** |
-| 8 | **No admin UI for resume rollback** | The API and data model support it; the panel does not expose it |
+| ~~8~~ | ~~No admin UI for resume rollback~~ | **Fixed, CHANGE-003.** The Resume section lists every version, marks the live one and switches with one click |
 | 9 | **No global loading / error / offline / 404 system** | Individual states exist; there is no shared infrastructure |
 | 10 | **`skill-notes.ts` is 16 KB of data in the client bundle** for one component | Bundle weight |
 | 11 | **Lighthouse has never been run** on this project | Every performance figure in the docs is a target, not a measurement, unless it says otherwise |
+| 12 | **`tests/unit/data-integrity.test.ts` asserts the *order* of social links** | Now that socials are admin-editable, reordering them in the panel fails the unit suite even though the site is correct. The assertion's real intent is "no invented links". Relax it to a set comparison |
+| 13 | **The content editors have no dirty-state guard** | Navigating between sections with unsaved changes in a form discards them silently |
+| 14 | **Nothing rebuilds the site after a content save** | A save commits to the repository; the public page shows it on the next deployment. The deploy hook is not wired up (Phase 2) |
 
 ---
 

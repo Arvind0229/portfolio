@@ -1,0 +1,81 @@
+{
+  "$comment": "Written by the admin panel, not by hand. Validated by src/data/skills.ts.",
+  "groups": [
+    {
+      "id": "rpa",
+      "name": "RPA & Automation",
+      "description": "The core craft — building bots that survive contact with production.",
+      "skills": [
+        "TruBot (Datamatics)",
+        "Automation Edge",
+        "UiPath (Basic)",
+        "Intelligent Automation",
+        "OCR",
+        "Queues & Triggers",
+        "RE Framework",
+        "UI / Recorder-based Front-End Automation",
+        "Workflow & Business Process Automation"
+      ]
+    },
+    {
+      "id": "programming",
+      "name": "Programming & Scripting",
+      "description": "Used where native RPA alone is not the right tool.",
+      "skills": [
+        "SQL",
+        "PL/SQL",
+        "Python",
+        "VBA"
+      ]
+    },
+    {
+      "id": "data",
+      "name": "Databases & Cloud",
+      "description": "Five database engines in daily use, plus secure file movement.",
+      "skills": [
+        "Oracle",
+        "MS SQL Server",
+        "MySQL",
+        "PostgreSQL",
+        "Redshift",
+        "Amazon S3",
+        "SFTP / FTP"
+      ]
+    },
+    {
+      "id": "bi",
+      "name": "Reporting & BI",
+      "description": "Turning operational data into something a manager can act on.",
+      "skills": [
+        "Power BI",
+        "Advanced Excel",
+        "Pivot Tables",
+        "MIS & Dashboard Automation",
+        "HTML Mail-Body / Mailer Automation"
+      ]
+    },
+    {
+      "id": "integrations",
+      "name": "Integrations & Tools",
+      "description": "Where automations meet the outside world.",
+      "skills": [
+        "SMS API Integration",
+        "WhatsApp API Integration",
+        "AI-Assisted Development (ChatGPT, Claude)",
+        "Git (Basic)"
+      ]
+    },
+    {
+      "id": "applications",
+      "name": "Banking Applications & Platform",
+      "description": "The systems the automations run against.",
+      "skills": [
+        "LOS",
+        "LMS",
+        "CRM",
+        "ERP",
+        "Windows"
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { profile } from '@/data/profile';
+import qrMeta from '@/data/whatsapp-qr.json';
 
 /**
  * The WhatsApp link, derived from the one phone number in `profile.ts`.
@@ -65,4 +66,19 @@ export function whatsappLink(
  */
 export function whatsappQrTarget(phone: string = profile.phone): string {
   return `https://wa.me/${whatsappNumber(phone)}`;
+}
+
+/**
+ * Whether the committed QR still encodes the number the profile now carries.
+ *
+ * The phone number became admin-editable; the QR is a committed SVG that only
+ * changes when `npm run qr` is run. So a save can leave a code that scans
+ * perfectly and opens a chat with whoever holds the old number — a failure with
+ * no visible symptom, which is the kind this project has been bitten by before.
+ *
+ * The contact section hides the QR when this is false. No QR is better than a
+ * QR to the wrong person, and the link beside it still works.
+ */
+export function qrMatchesProfile(): boolean {
+  return qrMeta.encodes === whatsappNumber(profile.phone);
 }

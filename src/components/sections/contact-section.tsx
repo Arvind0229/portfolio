@@ -5,7 +5,7 @@ import { IconTile, type IconName } from '@/components/icons';
 import { PortraitAvatar } from '@/components/profile/portrait';
 import { Button, LinkButton, Reveal } from '@/components/ui';
 import { profile } from '@/data/profile';
-import { whatsappLink, whatsappQrTarget } from '@/lib/contact/whatsapp';
+import { qrMatchesProfile, whatsappLink, whatsappQrTarget } from '@/lib/contact/whatsapp';
 
 const SUBJECT = encodeURIComponent('Opportunity for Arvind Gupta — RPA Developer');
 
@@ -109,7 +109,13 @@ export function ContactSection() {
               file is a committed SVG — about a kilobyte, no script, and it
               still scans off a printed page.
             */}
+            {/*
+              Hidden when the committed code no longer matches the profile's
+              number — see `qrMatchesProfile`. A QR that opens a chat with the
+              wrong person is worse than no QR, and it fails silently.
+            */}
             <a
+              hidden={!qrMatchesProfile()}
               href={whatsappQrTarget()}
               target="_blank"
               rel="noopener noreferrer"
