@@ -21,50 +21,107 @@
  * ## Paths are not accepted from the client
  *
  * `WRITABLE` is the complete list of files this system can touch, and callers
- * choose by key, never by path. Path traversal is not filtered here — it is
+ * choose a target, never a path. Path traversal is not filtered here — it is
  * unreachable, because no string from a request is ever used to build a
  * filesystem path or an API URL.
  */
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export const WRITABLE = {
   projectDepth: 'src/data/project-depth.json',
-  resume: 'public/resume.pdf',
+  resumeRegistry: 'src/data/resume-registry.json',
 } as const;
 
 export type WritableKey = keyof typeof WRITABLE;
 
+/**
+ * Resume files are the one target whose path is not fixed, because keeping
+ * every uploaded version is what makes rollback possible: a single fixed path
+ * would mean each upload destroyed the one before it.
+ *
+ * So the path is parameterised — and that is exactly the shape the docblock
+ * above says is dangerous. The guarantee is preserved a different way:
+ *
+ *   - the id is **generated on the server** from a timestamp, never taken from
+ *     the request, and never derived from the uploaded filename;
+ *   - `resumeFileTarget` re-validates it against `RESUME_ID` anyway, so a
+ *     future caller that forgets the first rule is rejected here rather than
+ *     relied upon to have been careful;
+ *   - the extension comes from a two-value union, not from a string.
+ *
+ * Belt and braces, because the cost of being wrong here is writing an arbitrary
+ * file into the repository that then gets served from his domain.
+ */
+const RESUME_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const RESUME_DIR = 'public/resume';
+
+export interface ResumeFileTarget {
+  readonly family: 'resumeFile';
+  readonly id: string;
+  readonly format: 'pdf' | 'docx';
+}
+
+export function resumeFileTarget(id: string, format: 'pdf' | 'docx'): ResumeFileTarget {
+  if (!RESUME_ID.test(id)) {
+    throw new Error(`Refusing to build a resume path from ${JSON.stringify(id)}`);
+  }
+  return { family: 'resumeFile', id, format };
+}
+
+/** The public URL a committed resume file is served from. */
+export function resumeFileUrl(target: ResumeFileTarget): string {
+  return `/resume/${target.id}.${target.format}`;
+}
+
+export type WriteTarget = WritableKey | ResumeFileTarget;
+
+/** The single place a target becomes a path, for both writers. */
+export function targetPath(target: WriteTarget): string {
+  if (typeof target === 'string') return WRITABLE[target];
+  // Re-validated rather than trusted: this function is the last gate before a
+  // string becomes a filesystem path or an API URL.
+  if (!RESUME_ID.test(target.id)) {
+    throw new Error('Invalid resume file id');
+  }
+  return `${RESUME_DIR}/${target.id}.${target.format}`;
+}
+
 export interface ContentWriter {
   readonly mode: 'local' | 'github';
-  read(key: WritableKey): Promise<Buffer | null>;
-  write(key: WritableKey, content: Buffer, message: string): Promise<void>;
+  read(target: WriteTarget): Promise<Buffer | null>;
+  write(target: WriteTarget, content: Buffer, message: string): Promise<void>;
 }
 
 /* ------------------------------------------------------------------ */
 /* Local                                                               */
 /* ------------------------------------------------------------------ */
 
-function localPath(key: WritableKey): string {
+function localPath(target: WriteTarget): string {
   // `process.cwd()` is the project root under `next dev`. This writer is only
   // ever constructed in development (see `getContentWriter`), where that holds.
-  return path.join(process.cwd(), WRITABLE[key]);
+  return path.join(process.cwd(), targetPath(target));
 }
 
 export function createLocalWriter(): ContentWriter {
   return {
     mode: 'local',
-    async read(key) {
+    async read(target) {
       try {
-        return await readFile(localPath(key));
+        return await readFile(localPath(target));
       } catch {
         // Absent is a legitimate state — no resume uploaded yet, no depth file
         // on a fresh clone. The caller decides what that means.
         return null;
       }
     },
-    async write(key, content) {
-      await writeFile(localPath(key), content);
+    async write(target, content) {
+      const file = localPath(target);
+      // Resume files live in a folder that exists today but need not exist in a
+      // fresh clone, and a write that fails on a missing directory reads to the
+      // admin as "upload failed" with no clue why.
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, content);
     },
   };
 }
@@ -113,8 +170,8 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
     'User-Agent': 'arvind-portfolio-admin',
   };
 
-  async function fetchMeta(key: WritableKey): Promise<ContentsResponse | null> {
-    const url = `${base}/${WRITABLE[key]}?ref=${encodeURIComponent(config.branch)}`;
+  async function fetchMeta(target: WriteTarget): Promise<ContentsResponse | null> {
+    const url = `${base}/${targetPath(target)}?ref=${encodeURIComponent(config.branch)}`;
     const response = await fetch(url, { headers, cache: 'no-store' });
     if (response.status === 404) return null;
     if (!response.ok) {
@@ -126,13 +183,13 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
   return {
     mode: 'github',
 
-    async read(key) {
-      const meta = await fetchMeta(key);
+    async read(target) {
+      const meta = await fetchMeta(target);
       if (!meta?.content) return null;
       return Buffer.from(meta.content, (meta.encoding as BufferEncoding) ?? 'base64');
     },
 
-    async write(key, content, message) {
+    async write(target, content, message) {
       /*
        * The `sha` of the current file is required by the Contents API for an
        * update and must be omitted for a create. It is also the concurrency
@@ -141,9 +198,9 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
        * single user that is rare, but "rare" and "cannot happen" are different,
        * and the difference here is a lost edit.
        */
-      const existing = await fetchMeta(key);
+      const existing = await fetchMeta(target);
 
-      const response = await fetch(`${base}/${WRITABLE[key]}`, {
+      const response = await fetch(`${base}/${targetPath(target)}`, {
         method: 'PUT',
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({

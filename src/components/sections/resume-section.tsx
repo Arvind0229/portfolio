@@ -6,6 +6,19 @@ import { impactMetrics } from '@/data/impact';
 import { whatsappLink } from '@/lib/contact/whatsapp';
 
 export function ResumeSection() {
+  /*
+   * The resume is admin-managed now, so "there isn't one" is a state this
+   * component has to render rather than a case that cannot happen. It is
+   * reachable if the registry is emptied or a save goes wrong, and the failure
+   * it replaces is the worse one: a Download button that 404s in front of a
+   * recruiter, with nothing on screen to say why.
+   *
+   * `docx` is separately optional — a version can be PDF-only — so that button
+   * is present or absent rather than pointing at an empty string.
+   */
+  const { pdf, docx, fileLabel } = profile.resume;
+  const hasResume = pdf.length > 0;
+
   return (
     <div className="mt-12 grid gap-4 lg:grid-cols-[1.35fr_1fr]">
       <Reveal>
@@ -14,24 +27,48 @@ export function ResumeSection() {
             <p className="font-mono text-[0.68rem] uppercase tracking-[0.2em] text-[var(--accent-primary)]">
               Download or view
             </p>
-            <p className="mt-3 font-display text-[1.6rem]">{profile.resume.fileLabel}</p>
+            <p className="mt-3 font-display text-[1.6rem]">{fileLabel}</p>
             <p className="mt-2 max-w-md text-[0.92rem] leading-relaxed text-[var(--text-secondary)]">
-              PDF and Word versions — same content, pick whichever your workflow prefers. Both are
-              the exact file every page on this site is generated from.
+              {hasResume
+                ? docx
+                  ? 'PDF and Word versions — same content, pick whichever your workflow prefers. Both are the exact file every page on this site is generated from.'
+                  : 'The exact file every page on this site is generated from.'
+                : 'The resume is being updated right now. Everything it contains is on this page, and you can ask the assistant anything it would have told you.'}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <LinkButton href={profile.resume.pdf} download size="lg">
-              Download PDF
-            </LinkButton>
-            <LinkButton href={profile.resume.docx} download variant="secondary" size="lg">
-              Download DOCX
-            </LinkButton>
-            <LinkButton href={profile.resume.pdf} target="_blank" variant="ghost" size="lg">
-              View in browser
-            </LinkButton>
-          </div>
+          {hasResume ? (
+            <div className="flex flex-wrap gap-3" data-testid="resume-downloads">
+              <LinkButton href={pdf} download size="lg">
+                Download PDF
+              </LinkButton>
+              {docx ? (
+                <LinkButton href={docx} download variant="secondary" size="lg">
+                  Download DOCX
+                </LinkButton>
+              ) : null}
+              <LinkButton href={pdf} target="_blank" variant="ghost" size="lg">
+                View in browser
+              </LinkButton>
+            </div>
+          ) : (
+            /*
+              Not a dead end. The two things that still work are offered, so
+              a visitor who came here for the resume leaves with something.
+            */
+            <div
+              className="surface-card flex flex-wrap items-center gap-3 p-4"
+              data-testid="resume-unavailable"
+              role="status"
+            >
+              <p className="text-[0.9rem] text-[var(--text-secondary)]">
+                Résumé temporarily unavailable.
+              </p>
+              <LinkButton href="/assistant" variant="secondary" size="sm">
+                Ask the assistant instead
+              </LinkButton>
+            </div>
+          )}
 
           {/*
             A logo button in the row with the downloads, not a line of text

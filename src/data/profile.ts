@@ -1,4 +1,5 @@
 import type { EducationItem, Profile } from '@/types';
+import { activeResume } from '@/data/resume-registry';
 
 /**
  * Source of truth: Arvind Gupta — RPA Developer resume.
@@ -85,12 +86,39 @@ export const profile: Profile = {
       handle: 'in/arvind-gupta-774996216',
     },
   ],
-  resume: {
-    pdf: '/resume/Arvind-Gupta-RPA-Developer.pdf',
-    docx: '/resume/Arvind-Gupta-RPA-Developer.docx',
-    fileLabel: 'Arvind Gupta — RPA Developer',
-  },
+  /*
+   * Read from the registry, not written here.
+   *
+   * These three values used to be literals, and the admin upload wrote to a
+   * different path entirely — so replacing the resume changed nothing a visitor
+   * could see. The fix is not a corrected string: it is that there is now one
+   * place that answers "which file is the resume", and both the uploader and
+   * the download buttons read it.
+   *
+   * The shape is unchanged, deliberately. Every consumer of `profile.resume`
+   * — the resume section, the hero, the footer — keeps working untouched.
+   */
+  resume: resolveResume(),
 };
+
+function resolveResume(): Profile['resume'] {
+  const current = activeResume();
+  if (current) {
+    return {
+      pdf: current.pdf,
+      ...(current.docx ? { docx: current.docx } : {}),
+      fileLabel: current.label,
+    };
+  }
+
+  /*
+   * No active version. This is reachable only if the registry is emptied or
+   * corrupted, and the honest answer is an empty path rather than a stale
+   * literal that pretends a file is there. The resume section renders an
+   * unavailable state from this; see the empty-state handling there.
+   */
+  return { pdf: '', fileLabel: 'Résumé' };
+}
 
 export const education: readonly EducationItem[] = [
   {

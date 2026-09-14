@@ -96,9 +96,16 @@ export interface Profile {
   focusAreas: readonly string[];
   photo: ProfilePhoto;
   socials: readonly SocialLink[];
+  /**
+   * Resolved from the resume registry at build time, not written by hand.
+   *
+   * `docx` became optional when uploads started managing this: a version can be
+   * PDF-only, and the alternative — an empty string that renders as a download
+   * link to nowhere — is the bug this whole change exists to remove.
+   */
   resume: {
     pdf: string;
-    docx: string;
+    docx?: string;
     fileLabel: string;
   };
 }
@@ -280,6 +287,30 @@ export interface ArchitectureFlow {
     label: string;
     detail: string;
   }[];
+}
+
+/**
+ * One uploaded resume. `pdf` is required — a version nobody can download as a
+ * PDF is not a resume — and `docx` is optional, because it is a convenience
+ * that has not always existed.
+ */
+export interface ResumeVersion {
+  id: string;
+  label: string;
+  pdf: string;
+  docx?: string;
+  uploadedAt?: string;
+  bytes?: number;
+}
+
+/**
+ * `active` is the only field that decides what the site serves. Nothing is
+ * overwritten on upload, so rolling back is repointing this at an older id —
+ * the file it names is still there, unchanged.
+ */
+export interface ResumeRegistry {
+  active: string | null;
+  versions: readonly ResumeVersion[];
 }
 
 export interface EducationItem {
