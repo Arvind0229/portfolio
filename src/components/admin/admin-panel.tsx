@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import type { ProjectDepth } from '@/types';
 
@@ -219,6 +219,11 @@ export function AdminPanel({ projects, localMode }: Props) {
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
+  // What the last load saw, sent back on save so the server can refuse a write
+  // that would overwrite someone else's — see the conflict handling in
+  // src/app/api/admin/depth/route.ts.
+  const versionRef = useRef<string | undefined>(undefined);
+
   const load = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/depth', { cache: 'no-store' });
@@ -227,7 +232,19 @@ export function AdminPanel({ projects, localMode }: Props) {
         return;
       }
       setAuthed(true);
-      const body = (await response.json()) as { ok: boolean; projects?: DepthMap; error?: string };
+      const body = (await response.json()) as {
+        ok: boolean;
+        projects?: DepthMap;
+        error?: string;
+        version?: string;
+      };
+      /*
+       * The version travels with the data and comes back on save. Holding it in
+       * a ref rather than state on purpose: it must not trigger a re-render, and
+       * a save reads the value at the moment of the click rather than whatever
+       * a render happened to close over.
+       */
+      versionRef.current = body.version;
       if (body.ok && body.projects) setDepth(body.projects);
       else if (!body.ok) setStatus(body.error ?? 'Could not load the saved details.');
     } catch {
@@ -292,13 +309,20 @@ export function AdminPanel({ projects, localMode }: Props) {
       const response = await fetch('/api/admin/depth', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projects: depth }),
+        body: JSON.stringify({ projects: depth, version: versionRef.current }),
       });
       const body = (await response.json()) as {
         ok: boolean;
         error?: string;
+        code?: 'conflict';
+        version?: string;
         pendingDeploy?: boolean;
       };
+      // Carry the new version forward, or the next save from this same open
+      // form would quote a superseded one and be refused as a conflict with
+      // its own previous save.
+      if (body.ok && body.version) versionRef.current = body.version;
+
       setStatus(
         body.ok
           ? body.pendingDeploy
@@ -325,6 +349,8 @@ export function AdminPanel({ projects, localMode }: Props) {
       const body = (await response.json()) as {
         ok: boolean;
         error?: string;
+        code?: 'conflict';
+        version?: string;
         pendingDeploy?: boolean;
       };
       setStatus(

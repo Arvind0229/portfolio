@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/admin/guard';
 import {
+  ConflictError,
   type ContentWriter,
   getContentWriter,
   resumeFileTarget,
@@ -77,11 +78,16 @@ const UPLOAD_RATE_LIMIT = {
 const uploadLimiter = createRateLimiter(UPLOAD_RATE_LIMIT);
 
 /** Reads through the writer so a live edit is never stale against the bundle. */
-async function readRegistry(writer: ContentWriter): Promise<ResumeRegistry> {
+async function readRegistry(
+  writer: ContentWriter,
+): Promise<{ registry: ResumeRegistry; version?: string }> {
   try {
     const raw = await writer.read('resumeRegistry');
-    if (!raw) return { active: null, versions: [] };
-    return parseResumeRegistry(JSON.parse(raw.toString('utf8')));
+    if (!raw) return { registry: { active: null, versions: [] } };
+    return {
+      registry: parseResumeRegistry(JSON.parse(raw.content.toString('utf8'))),
+      version: raw.version,
+    };
   } catch {
     // Unreadable or unparseable. Starting from empty would silently discard his
     // history, so refuse instead — the caller turns this into a 502.
@@ -113,9 +119,13 @@ function json(body: UploadResponse, status: number) {
 export async function POST(request: Request): Promise<NextResponse<UploadResponse>> {
   const access = checkAdminAccess(request);
   if (!access.allowed) {
-    return access.reason === 'misconfigured'
-      ? json({ ok: false, error: 'Admin sign-in is not configured on this deployment.' }, 503)
-      : json({ ok: false, error: 'Sign in first.' }, 401);
+    if (access.reason === 'misconfigured') {
+      return json({ ok: false, error: 'Admin sign-in is not configured on this deployment.' }, 503);
+    }
+    if (access.reason === 'cross_origin') {
+      return json({ ok: false, error: 'Request rejected.' }, 403);
+    }
+    return json({ ok: false, error: 'Sign in first.' }, 401);
   }
 
   const limit = uploadLimiter.check(clientKeyFromHeaders(request.headers));
@@ -196,8 +206,11 @@ export async function POST(request: Request): Promise<NextResponse<UploadRespons
    * cached copy serve the wrong resume.
    */
   let registry: ResumeRegistry;
+  let registryVersion: string | undefined;
   try {
-    registry = await readRegistry(writer);
+    const read = await readRegistry(writer);
+    registry = read.registry;
+    registryVersion = read.version;
   } catch {
     return json(
       {
@@ -232,12 +245,29 @@ export async function POST(request: Request): Promise<NextResponse<UploadRespons
   const next = applyUpload(registry, { id, label, format, url: resumeFileUrl(target), bytes: content.length });
 
   try {
+    /*
+     * Conditional on the version read a moment ago. Two uploads racing would
+     * otherwise leave one file committed and unreferenced while the other's
+     * pointer won — the second upload's registry write built on a snapshot
+     * that no longer existed.
+     */
     await writer.write(
       'resumeRegistry',
       Buffer.from(`${JSON.stringify(next, null, 2)}\n`, 'utf8'),
       `Set active resume to ${id}`,
+      registryVersion,
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return json(
+        {
+          ok: false,
+          error:
+            'Another resume was uploaded while this one was saving. The file was kept but not activated — reload and try again.',
+        },
+        409,
+      );
+    }
     /*
      * The file is committed but the pointer is not, so the site still serves
      * the previous resume — the safe direction. Say so precisely rather than

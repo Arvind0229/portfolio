@@ -30,6 +30,19 @@ let ipCounter = 0;
  */
 function setNodeEnv(value: string): void {
   vi.stubEnv('NODE_ENV', value);
+  /*
+   * The local bypass now needs a second, explicit condition.
+   *
+   * These tests used to assert that any non-production build skipped the login
+   * — which is exactly the behaviour that let `NODE_ENV=test` serve an
+   * unauthenticated admin panel. Setting the opt-in alongside the environment
+   * keeps each case testing what it meant ("a developer on their own machine")
+   * rather than "any build that is not production".
+   *
+   * The bypass's own boundaries are tested directly in
+   * tests/unit/admin-security.test.ts, where they belong.
+   */
+  vi.stubEnv('ADMIN_LOCAL_BYPASS', value === 'production' ? '' : '1');
 }
 
 function currentCode(): string {

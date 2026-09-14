@@ -4,7 +4,7 @@ For whoever picks this project up next, human or agent. It answers the questions
 you would otherwise spend an hour of reading to answer, and it names the things
 that will bite you.
 
-**Last verified:** 2026-09-14, against commit on `main` after CHANGE-001.
+**Last verified:** 2026-09-14, against `main` after CHANGE-002.
 If something below contradicts the code, the code is right and this file is
 stale — fix it.
 
@@ -51,11 +51,14 @@ it, and a typed accessor.
 ```
 Admin panel (browser)
     ↓ fetch, session cookie
-/api/admin/*  →  checkAdminAccess  →  rate limit  →  validate
+middleware (edge: is a session cookie present?)
+    ↓
+/api/admin/*  →  origin check  →  checkAdminAccess  →  rate limit  →  validate
     ↓
 ContentWriter          src/lib/admin/content-writer.ts
     ├─ local  (NODE_ENV !== production)  →  fs write
     └─ github (production)               →  GitHub Contents API commit
+                                            conditional on the caller's sha
     ↓
 push to main  →  Vercel rebuild  →  live in ~90s
 ```
@@ -75,8 +78,14 @@ resume files, and its id is minted server-side and re-validated at resolution.
   the commit landed and Vercel is rebuilding.
 - **The local writer is chosen by `NODE_ENV`**, deliberately, even if GitHub
   credentials are present. There is a test for it.
-- **GitHub 409 conflicts are currently swallowed** into a generic 502. Two admin
-  tabs can still clobber each other. This is a known open defect — see §10.
+- **Writes are conditional and you must pass the version through.** `read()`
+  returns `{ content, version }`; the route sends `version` to the client; the
+  client sends it back; `write()` quotes it. Skip any link in that chain and the
+  write becomes an unconditional overwrite — which is what it silently was
+  before CHANGE-002, when the writer fetched a fresh sha itself and the conflict
+  could never fire.
+- **`write()` returns the new version**, and the route must pass it back, or a
+  second save from the same open form conflicts with its own first save.
 
 ---
 
@@ -109,8 +118,13 @@ built yet. Follow the same shape: cap, magic-byte check, server-minted name.
   *before* the payload is parsed.
 - **Guarding**: `checkAdminAccess(request)` in every admin route. **There is no
   `middleware.ts`** — each route guards itself.
-- **`NODE_ENV !== 'production'` disables auth entirely.** That is the whole
-  local-development story and it is also a sharp edge — see §10.
+- **The local bypass needs two conditions**: `NODE_ENV !== 'production'` **and**
+  `ADMIN_LOCAL_BYPASS=1`. Set the second in `.env.local` or a dev server will ask
+  for a TOTP code. It used to be `NODE_ENV` alone, which meant any `test` build
+  served an unauthenticated admin panel.
+- **Origin is checked on every admin route**, before the bypass.
+- **Writes are conditional.** `read()` returns a `version`; `write()` takes it back
+  and raises `ConflictError` if anything landed in between.
 - Secrets: `ADMIN_TOTP_SECRET`, `ADMIN_SESSION_SECRET` (≥32 chars),
   `ADMIN_GITHUB_TOKEN`, `ADMIN_GITHUB_REPO`. All server-only.
 
@@ -232,11 +246,11 @@ Honest list. None of these is hypothetical.
 
 | # | Issue | Impact |
 |---|---|---|
-| 1 | **GitHub 409 conflicts are swallowed** into a generic 502 | Two admin tabs silently clobber each other. Must be fixed before more content moves to admin control |
-| 2 | **`NODE_ENV=test` serves an unauthenticated admin panel** — `isLocalAdmin()` keys off `!== 'production'` | A non-production build exposes admin. Narrow to an explicit opt-in |
-| 3 | **`DELETE /api/admin/login` is unauthenticated** and never receives the request | Low — it only clears a cookie |
-| 4 | **No `middleware.ts`** | Every route guards itself; a new route that forgets is unprotected |
-| 5 | **`/api/admin/depth` has no rate limit** | The resume route now does; depth does not |
+| ~~1~~ | ~~GitHub 409 conflicts swallowed~~ | **Fixed, CHANGE-002.** The 409 could never fire — the writer fetched a fresh sha before every write. The caller's sha is now sent |
+| ~~2~~ | ~~`NODE_ENV=test` serves an unauthenticated admin~~ | **Fixed, CHANGE-002.** Requires `ADMIN_LOCAL_BYPASS=1` as well |
+| ~~3~~ | ~~`DELETE /api/admin/login` unauthenticated~~ | **Fixed, CHANGE-002.** Origin-checked (not authenticated — logging out with an expired cookie must work) |
+| ~~4~~ | ~~No `middleware.ts`~~ | **Fixed, CHANGE-002.** Edge presence check; routes still verify |
+| ~~5~~ | ~~`/api/admin/depth` has no rate limit~~ | **Fixed, CHANGE-002** |
 | 6 | **The portrait is a 167 KB unoptimised JPG**, no WebP, no responsive sizes | Largest asset on the site |
 | 7 | **`createGitHubWriter` has no unit test**; E2E only covers the no-credentials path | **The live save path has never been executed by a test** |
 | 8 | **No admin UI for resume rollback** | The API and data model support it; the panel does not expose it |

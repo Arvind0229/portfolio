@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { clearSessionCookie, createAdminSession, sessionCookie } from '@/lib/admin/session';
-import { isLocalAdmin } from '@/lib/admin/guard';
+import { isLocalAdmin, isSameOrigin } from '@/lib/admin/guard';
 import { verifyTotp } from '@/lib/admin/totp';
 import { clientKeyFromHeaders, createRateLimiter } from '@/lib/security/rate-limit';
 
@@ -41,6 +41,12 @@ function json(body: LoginBody, status: number, headers?: Record<string, string>)
 }
 
 export async function POST(request: Request): Promise<NextResponse<LoginBody>> {
+  // Before the rate limiter, so a cross-origin attempt cannot burn a real
+  // person's allowance and lock them out of their own sign-in.
+  if (!isSameOrigin(request)) {
+    return json({ ok: false, error: 'Request rejected.' }, 403);
+  }
+
   if (isLocalAdmin()) {
     // Nothing to sign in to: the local page never asks. Returning success
     // rather than 404 keeps one client for both modes.
@@ -89,6 +95,22 @@ export async function POST(request: Request): Promise<NextResponse<LoginBody>> {
   return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(createAdminSession()) });
 }
 
-export async function DELETE(): Promise<NextResponse<LoginBody>> {
+/**
+ * Sign out.
+ *
+ * It used to take no `request` at all, which made it the one admin handler that
+ * could not check anything about its caller. Harmless in effect — the worst a
+ * forged call achieves is logging someone out — but it was also the one place a
+ * cross-origin request reached an admin endpoint unexamined, and "harmless
+ * today" is a property of the current implementation rather than of the route.
+ *
+ * It still cannot require a valid session: signing out with an expired cookie
+ * has to work, or the only way to clear a stale session is to wait for it.
+ * So the check is origin, not authentication.
+ */
+export async function DELETE(request: Request): Promise<NextResponse<LoginBody>> {
+  if (!isSameOrigin(request)) {
+    return json({ ok: false, error: 'Request rejected.' }, 403);
+  }
   return json({ ok: true }, 200, { 'Set-Cookie': clearSessionCookie() });
 }

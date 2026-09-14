@@ -25,6 +25,7 @@
  * unreachable, because no string from a request is ever used to build a
  * filesystem path or an API URL.
  */
+import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -87,10 +88,53 @@ export function targetPath(target: WriteTarget): string {
   return `${RESUME_DIR}/${target.id}.${target.format}`;
 }
 
+/**
+ * What a read saw, so a later write can prove it has not been overtaken.
+ *
+ * `version` is opaque on purpose — a GitHub blob sha in the deployed case, a
+ * content hash locally. Callers pass it back, they never interpret it.
+ */
+export interface ContentRead {
+  content: Buffer;
+  version: string;
+}
+
+/**
+ * Raised when the stored content changed between a read and the write that
+ * quoted it. Its own class so a route can answer 409 rather than folding a lost
+ * edit into a generic 502.
+ */
+export class ConflictError extends Error {
+  constructor(message = 'The saved content changed since it was read.') {
+    super(message);
+    this.name = 'ConflictError';
+  }
+}
+
 export interface ContentWriter {
   readonly mode: 'local' | 'github';
-  read(target: WriteTarget): Promise<Buffer | null>;
-  write(target: WriteTarget, content: Buffer, message: string): Promise<void>;
+  read(target: WriteTarget): Promise<ContentRead | null>;
+  /**
+   * `expectedVersion` is the `version` from the read this write is based on.
+   *
+   * Passing it makes the write conditional: it applies only if nothing else has
+   * written since, and raises `ConflictError` otherwise. Omitting it is an
+   * unconditional overwrite, which is correct only for content this process
+   * just created and nobody else could be holding.
+   */
+  /**
+   * Returns the version of what was just written, so the caller can hand it
+   * straight back to the client. Without that, a second save from the same open
+   * form would quote the version from *before* the first save and be refused as
+   * a conflict with itself — the failure mode that makes optimistic concurrency
+   * feel broken rather than protective.
+   */
+  write(
+    target: WriteTarget,
+    content: Buffer,
+    message: string,
+    expectedVersion?: string,
+  ): Promise<string>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -108,20 +152,40 @@ export function createLocalWriter(): ContentWriter {
     mode: 'local',
     async read(target) {
       try {
-        return await readFile(localPath(target));
+        const content = await readFile(localPath(target));
+        return { content, version: hashVersion(content) };
       } catch {
         // Absent is a legitimate state — no resume uploaded yet, no depth file
         // on a fresh clone. The caller decides what that means.
         return null;
       }
     },
-    async write(target, content) {
+    async write(target, content, _message, expectedVersion) {
       const file = localPath(target);
+
+      /*
+       * Locally there is no compare-and-swap, so this re-reads and compares.
+       * That leaves a window between the check and the write — acceptable here
+       * and nowhere else: this writer only ever runs on one developer's machine
+       * against their own filesystem. The deployed path uses GitHub's atomic
+       * sha check and does not rely on this.
+       */
+      if (expectedVersion !== undefined) {
+        try {
+          const current = await readFile(file);
+          if (hashVersion(current) !== expectedVersion) throw new ConflictError();
+        } catch (error) {
+          if (error instanceof ConflictError) throw error;
+          // Not there yet: a create, and nothing to conflict with.
+        }
+      }
+
       // Resume files live in a folder that exists today but need not exist in a
       // fresh clone, and a write that fails on a missing directory reads to the
       // admin as "upload failed" with no clue why.
       await mkdir(path.dirname(file), { recursive: true });
       await writeFile(file, content);
+      return hashVersion(content);
     },
   };
 }
@@ -185,20 +249,39 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
 
     async read(target) {
       const meta = await fetchMeta(target);
-      if (!meta?.content) return null;
-      return Buffer.from(meta.content, (meta.encoding as BufferEncoding) ?? 'base64');
+      // Content without a sha would be a read we cannot safely write back
+      // against, so it is treated as absent rather than as unversioned.
+      if (!meta?.content || !meta.sha) return null;
+      return {
+        content: Buffer.from(meta.content, (meta.encoding as BufferEncoding) ?? 'base64'),
+        version: meta.sha,
+      };
     },
 
-    async write(target, content, message) {
+    async write(target, content, message, expectedVersion) {
       /*
-       * The `sha` of the current file is required by the Contents API for an
-       * update and must be omitted for a create. It is also the concurrency
-       * check: if the file changed between this read and this write, GitHub
-       * rejects the request with 409 rather than silently overwriting. For a
-       * single user that is rare, but "rare" and "cannot happen" are different,
-       * and the difference here is a lost edit.
+       * The `sha` is what makes this a compare-and-swap, and which sha is sent
+       * decides whether there is any concurrency control at all.
+       *
+       * This used to fetch the current sha immediately before writing and send
+       * that. It reads like a concurrency check and is the opposite of one: the
+       * sha is always current by construction, so GitHub's comparison always
+       * succeeds and a second admin's save overwrote the first cleanly. The 409
+       * the old comment described could not occur. The failure was silent, and
+       * the only evidence was a commit history where one person's edit
+       * disappeared.
+       *
+       * Now the **caller's** sha is sent — the one from the read their edit was
+       * based on. GitHub compares atomically and answers 409 if anything landed
+       * in between, which is a real lost-update check rather than the appearance
+       * of one.
+       *
+       * `expectedVersion === undefined` is still an unconditional write, and the
+       * fallback fetch below exists only for that case: the Contents API
+       * requires a sha to update an existing file and forbids one on create.
        */
-      const existing = await fetchMeta(target);
+      const existing = expectedVersion === undefined ? await fetchMeta(target) : null;
+      const sha = expectedVersion ?? existing?.sha;
 
       const response = await fetch(`${base}/${targetPath(target)}`, {
         method: 'PUT',
@@ -208,9 +291,19 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
           content: content.toString('base64'),
           branch: config.branch,
           committer: { name: config.authorName, email: config.authorEmail },
-          ...(existing?.sha ? { sha: existing.sha } : {}),
+          ...(sha ? { sha } : {}),
         }),
       });
+
+      /*
+       * 409 is a lost update, 422 is GitHub's answer when the sha does not match
+       * the file it names. Both mean "somebody else wrote since you read", and
+       * both must reach the person as that rather than as a generic failure —
+       * the whole point of the change above.
+       */
+      if (response.status === 409 || response.status === 422) {
+        throw new ConflictError();
+      }
 
       if (!response.ok) {
         // The body can carry the token in an echoed request under some error
@@ -218,6 +311,16 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
         // user-facing message that says what to do, not what broke internally.
         throw new Error(`GitHub write failed (${response.status})`);
       }
+
+      /*
+       * The commit response carries the new blob sha. Reading it here avoids a
+       * second round trip, and a missing one is not an error worth failing a
+       * successful write over — the caller's next read will supply it.
+       */
+      const written = (await response.json().catch(() => null)) as {
+        content?: { sha?: string };
+      } | null;
+      return written?.content?.sha ?? '';
     },
   };
 }
@@ -255,4 +358,15 @@ export function getContentWriter(): WriterSelection {
   }
 
   return { writer: createGitHubWriter(config) };
+}
+
+/**
+ * An opaque version for the local writer.
+ *
+ * Content-derived rather than mtime-derived: two saves in the same millisecond
+ * are indistinguishable by mtime on some filesystems, and a version that can
+ * collide is a conflict check that sometimes does not fire.
+ */
+function hashVersion(content: Buffer): string {
+  return createHash('sha256').update(content).digest('hex').slice(0, 40);
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/admin/guard';
-import { getContentWriter } from '@/lib/admin/content-writer';
+import { ConflictError, getContentWriter } from '@/lib/admin/content-writer';
+import { clientKeyFromHeaders, createRateLimiter } from '@/lib/security/rate-limit';
 import { parseDepth } from '@/data/project-depth';
 import { projects } from '@/data/projects';
 import type { ProjectDepth } from '@/types';
@@ -34,21 +35,67 @@ interface DepthResponse {
   projects?: Record<string, ProjectDepth>;
   /** True when the save needs a deployment before it is visible. */
   pendingDeploy?: boolean;
+  /**
+   * Opaque. The client sends it back on save so the write can be refused if
+   * anything landed in between. Never interpreted on either side.
+   */
+  version?: string;
+  /** Distinguishes a lost-update refusal from a transport failure. */
+  code?: 'conflict';
+  retryAfterSeconds?: number;
+}
+
+/*
+ * The route had none. In production a session gates it, but a valid session
+ * could still drive the GitHub API hard, and with ADMIN_LOCAL_BYPASS set there
+ * is no session at all. Looser than the upload limiter because saving a form
+ * repeatedly while editing is normal behaviour, not abuse.
+ */
+const DEPTH_RATE_LIMIT = {
+  limit: 60,
+  windowMs: 3_600_000,
+  burstLimit: 10,
+  burstWindowMs: 60_000,
+  maxKeys: 1_000,
+} as const;
+
+const depthLimiter = createRateLimiter(DEPTH_RATE_LIMIT);
+
+function rateLimited(request: Request): NextResponse<DepthResponse> | null {
+  const limit = depthLimiter.check(clientKeyFromHeaders(request.headers));
+  if (limit.allowed) return null;
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'Too many saves in a short time. Wait a moment and try again.',
+      retryAfterSeconds: limit.retryAfterSeconds,
+    },
+    { status: 429, headers: { 'retry-after': String(limit.retryAfterSeconds) } },
+  );
 }
 
 function json(body: DepthResponse, status: number) {
   return NextResponse.json(body, { status });
 }
 
-function denied(reason: 'unauthenticated' | 'misconfigured') {
-  return reason === 'misconfigured'
-    ? json({ ok: false, error: 'Admin sign-in is not configured on this deployment.' }, 503)
-    : json({ ok: false, error: 'Sign in first.' }, 401);
+function denied(reason: 'unauthenticated' | 'misconfigured' | 'cross_origin') {
+  if (reason === 'misconfigured') {
+    return json({ ok: false, error: 'Admin sign-in is not configured on this deployment.' }, 503);
+  }
+  if (reason === 'cross_origin') {
+    // Deliberately terse. A cross-origin caller is not a person who mistyped
+    // something, and an explanation of the check is a hint about how to pass it.
+    return json({ ok: false, error: 'Request rejected.' }, 403);
+  }
+  return json({ ok: false, error: 'Sign in first.' }, 401);
 }
 
 export async function GET(request: Request): Promise<NextResponse<DepthResponse>> {
   const access = checkAdminAccess(request);
   if (!access.allowed) return denied(access.reason);
+
+  const limited = rateLimited(request);
+  if (limited) return limited;
 
   // Read through the writer rather than from the imported module: the module
   // holds whatever was bundled at build time, and on the live site an edit
@@ -60,7 +107,7 @@ export async function GET(request: Request): Promise<NextResponse<DepthResponse>
 
   try {
     const raw = await writer.read('projectDepth');
-    const parsed: unknown = raw ? JSON.parse(raw.toString('utf8')) : { projects: {} };
+    const parsed: unknown = raw ? JSON.parse(raw.content.toString('utf8')) : { projects: {} };
     const source = (parsed as { projects?: unknown }).projects;
 
     const result: Record<string, ProjectDepth> = {};
@@ -71,7 +118,15 @@ export async function GET(request: Request): Promise<NextResponse<DepthResponse>
       }
     }
 
-    return json({ ok: true, mode: writer.mode, projects: result }, 200);
+    /*
+     * The version travels with the data. The client holds it and sends it back
+     * on save, which is what turns two tabs silently clobbering each other into
+     * a refusal the second one can see.
+     */
+    return json(
+      { ok: true, mode: writer.mode, projects: result, ...(raw ? { version: raw.version } : {}) },
+      200,
+    );
   } catch {
     return json({ ok: false, error: 'Could not read the saved details.' }, 502);
   }
@@ -80,6 +135,9 @@ export async function GET(request: Request): Promise<NextResponse<DepthResponse>
 export async function PUT(request: Request): Promise<NextResponse<DepthResponse>> {
   const access = checkAdminAccess(request);
   if (!access.allowed) return denied(access.reason);
+
+  const limited = rateLimited(request);
+  if (limited) return limited;
 
   const declaredLength = Number(request.headers.get('content-length') ?? '0');
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
@@ -132,9 +190,41 @@ export async function PUT(request: Request): Promise<NextResponse<DepthResponse>
     2,
   )}\n`;
 
+  /*
+   * The version the client read. Absent means an unconditional overwrite, which
+   * is kept only so an older client is not broken by this change — the panel
+   * sends it, and a save without one is the behaviour that lost edits.
+   */
+  const expectedVersion =
+    typeof (body as { version?: unknown }).version === 'string'
+      ? ((body as { version: string }).version)
+      : undefined;
+
+  let newVersion: string;
   try {
-    await writer.write('projectDepth', Buffer.from(file, 'utf8'), 'Update project details');
-  } catch {
+    newVersion = await writer.write(
+      'projectDepth',
+      Buffer.from(file, 'utf8'),
+      'Update project details',
+      expectedVersion,
+    );
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      /*
+       * Somebody else saved between this form being opened and this click. The
+       * reply says so and refuses; it does not merge, because a merge of two
+       * people's prose is a guess about which sentence was meant.
+       */
+      return json(
+        {
+          ok: false,
+          code: 'conflict',
+          error:
+            'These details were changed somewhere else after this form was opened. Reload to see the current version — saving now would overwrite that change.',
+        },
+        409,
+      );
+    }
     return json(
       {
         ok: false,
@@ -155,6 +245,9 @@ export async function PUT(request: Request): Promise<NextResponse<DepthResponse>
       // Honest about the delay rather than implying the live site changed the
       // instant the request returned. It has not — a deployment has to run.
       pendingDeploy: writer.mode === 'github',
+      // So the open form can save again without quoting a version the first
+      // save already superseded.
+      ...(newVersion ? { version: newVersion } : {}),
     },
     200,
   );
