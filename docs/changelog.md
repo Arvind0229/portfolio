@@ -18,6 +18,18 @@ project's history without opening five documents.
 | ADR-001 | Content architecture — git-as-CMS over a database for Phase 1 | [`ADR-001-content-architecture.md`](adr/ADR-001-content-architecture.md) |
 | ADR-002 | Company is a referenced entity, not a field on a role | [`ADR-002-company-as-referenced-entity.md`](adr/ADR-002-company-as-referenced-entity.md) |
 | ADR-003 | The browser processes uploaded images; the server validates without decoding | [`ADR-003-client-side-image-processing.md`](adr/ADR-003-client-side-image-processing.md) |
+| ADR-004 | Projects join the content layer; `ProjectDepth` gets a public surface; the id stays the URL | [`ADR-004-project-architecture.md`](adr/ADR-004-project-architecture.md) |
+
+## Phase 2 (in progress)
+
+| Document | What it is |
+|---|---|
+| [`AI-CONTEXT.md`](AI-CONTEXT.md) | Where the work stands, decisions not to reverse, mistakes already made here |
+| [`BRD-PHASE-2.md`](BRD-PHASE-2.md) | Requirements, EXISTING→GAP→CHANGE per item, data model, wireframe, risks |
+| [`MOTION-SYSTEM.md`](MOTION-SYSTEM.md) | Global vs theme-specific motion, tokens, robot states, Mandala layers |
+| [`DESIGN-RESEARCH-PHASE-2.md`](DESIGN-RESEARCH-PHASE-2.md) | Principles taken from current practice, and what was deliberately not taken |
+
+Gate G1 (analysis) is complete. No Phase 2 production code has been written.
 
 ## Where to start
 

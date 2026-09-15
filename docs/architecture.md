@@ -7,6 +7,10 @@ that will bite you.
 **Last verified:** 2026-09-14, against `main` after CHANGE-004 — types, lint,
 400 unit tests, production build and 421 E2E tests all green, plus 43 browser
 UAT scenarios.
+
+**Phase 2 is in progress at gate G1 (analysis only; no Phase 2 code written).**
+Start at `docs/AI-CONTEXT.md` for where the work stands, then `docs/BRD-PHASE-2.md`
+for what is planned and `docs/MOTION-SYSTEM.md` for how motion is organised.
 If something below contradicts the code, the code is right and this file is
 stale — fix it.
 
@@ -38,9 +42,9 @@ runtime content fetch on any public page.
 | `companies.json` + `companies.ts` | each employer, once — see ADR-002 | **Yes** |
 | `experience.json` + `experience.ts` | roles, referencing a company by id | **Yes** |
 | `skills.json` + `skills.ts` | the stack, grouped | **Yes** |
-| `project-depth.json` | the deep per-project detail layer | **Yes** |
+| `project-depth.json` | deep per-project detail | **Yes, and currently empty** — see the note below |
 | `resume-registry.json` | which resume the site serves + history | **Yes** |
-| `projects.ts` | the five case studies | Not yet |
+| `projects.ts` | the five case studies | Not yet — Phase 2 G2 |
 | `skill-notes.ts` | per-skill explainer notes | Not yet |
 | `impact.ts` | headline numbers | Not yet |
 | `site.ts` | nav, themes, font sets, assistant modes | Not yet |
@@ -51,6 +55,12 @@ pattern to copy is `profile.{json,ts}` — a JSON file, a validator beside it, a
 typed accessor, and an entry in `src/lib/content/registry.ts`. Adding a file to
 that registry is what gives it auth, rate limiting, a size cap, optimistic
 concurrency and conflict handling; there is no second route to write.
+
+**`ProjectDepth` feeds the assistant and nothing else.** `grep` for
+`project.depth` returns one consumer: `src/lib/ai/knowledge.ts`. The deep detail
+is indexed for retrieval and is rendered on no page — a visitor cannot read any
+of it. The store is also empty (`{"projects": {}}`). Giving it a public surface
+is the largest single item in Phase 2; see `docs/BRD-PHASE-2.md` §2.1.
 
 **The photo and the resume are editable, but not from the profile form.** Each
 has its own registry, because each is a file plus derived measurements rather
