@@ -2849,6 +2849,141 @@ a {
  */
 
 
+/* ========================= DOWNLOAD GLYPH ========================== *
+ * An arrow that drops into a tray.
+ *
+ * Two elements rather than a download icon, because the two halves have to
+ * move independently: the arrow falls and the tray stays put. An icon that
+ * slides as one piece reads as an arrow moving, not as something being
+ * downloaded — the tray is what supplies the meaning.
+ *
+ * On hover the arrow drops, fades out at the bottom, and returns from above
+ * ready to drop again. The tray's lip lifts a fraction as the arrow lands.
+ * `transform` and `opacity` only, so the compositor handles all of it.
+ */
+
+.download-glyph {
+  position: relative;
+  display: inline-block;
+  width: 0.9em;
+  height: 1em;
+  margin-left: 0.15em;
+  vertical-align: -0.12em;
+  overflow: hidden;
+}
+
+.download-arrow {
+  position: absolute;
+  left: 50%;
+  top: 0.04em;
+  width: 2px;
+  height: 0.52em;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: currentColor;
+  transition: transform var(--motion-base) var(--ease-out);
+}
+
+/* The head, drawn as a rotated square corner on the shaft. */
+.download-arrow::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: 0.34em;
+  height: 0.34em;
+  margin-left: -0.17em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-bottom-right-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.download-tray {
+  position: absolute;
+  left: 0;
+  bottom: 0.02em;
+  width: 100%;
+  height: 0.3em;
+  border: 2px solid currentColor;
+  border-top: 0;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  opacity: 0.75;
+  transition: transform var(--motion-base) var(--ease-out);
+}
+
+.download-cta:hover .download-arrow,
+.download-cta:focus-visible .download-arrow {
+  animation: download-drop calc(900ms / max(var(--motion-scale), 0.5)) var(--ease-out) infinite;
+}
+
+.download-cta:hover .download-tray,
+.download-cta:focus-visible .download-tray {
+  animation: tray-catch calc(900ms / max(var(--motion-scale), 0.5)) var(--ease-out) infinite;
+}
+
+@keyframes download-drop {
+  0% {
+    transform: translate3d(0, -0.9em, 0);
+    opacity: 0;
+  }
+  28% {
+    opacity: 1;
+  }
+  62% {
+    transform: translate3d(0, 0.16em, 0);
+    opacity: 1;
+  }
+  78%,
+  100% {
+    transform: translate3d(0, 0.5em, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes tray-catch {
+  0%,
+  55% {
+    transform: translate3d(0, 0, 0) scaleX(1);
+  }
+  68% {
+    transform: translate3d(0, 1px, 0) scaleX(1.1);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scaleX(1);
+  }
+}
+
+/* ===================== HERO ENTRANCE CHOREOGRAPHY ================== *
+ * The order the reference asks for — pill, given name, surname, subtitle,
+ * description, chips, CTA — is already what the hero does: each block is
+ * wrapped in `Reveal` with its own delay (520, 720, 780, 840ms). A second
+ * entrance system layered on top would double-animate every one of them,
+ * so there is deliberately no `.hero-rise` class here.
+ *
+ * What was missing is the one thing the reference singles out: the surname
+ * landing differently from everything around it. That is below.
+ */
+
+/* The surname keeps its clip wipe and gains a coral bloom that fades as it
+   lands — the "slightly more dramatic reveal" without turning the word into
+   a gradient. */
+.surname-wipe {
+  animation:
+    surname-wipe calc(760ms / max(var(--motion-scale), 0.5)) var(--ease-out) 420ms both,
+    surname-bloom calc(1100ms / max(var(--motion-scale), 0.5)) var(--ease-out) 420ms both;
+}
+
+@keyframes surname-bloom {
+  0% {
+    text-shadow: 0 0 22px color-mix(in srgb, var(--accent-vivid) 60%, transparent);
+  }
+  100% {
+    text-shadow: 0 0 0 transparent;
+  }
+}
+
 /* ========================= BACKDROP TOP MASK ======================= *
  * No decoration animates behind the header.
  *
@@ -3610,11 +3745,21 @@ a {
       opacity: 0 !important;
     }
 
-    /* A clipped element with its animation removed stays clipped. The
-       surname has to be forced to its finished state explicitly. */
+    /* A clipped element with its animation removed stays clipped, and an
+       element whose entrance was `both` keeps its `from` opacity. Both have
+       to be forced to their finished state explicitly. */
     & .surname-wipe {
       animation: none !important;
       clip-path: none !important;
+      opacity: 1 !important;
+      text-shadow: none !important;
+    }
+
+    /* The glyph stays assembled; it simply does not play. */
+    & .download-arrow,
+    & .download-tray {
+      animation: none !important;
+      transform: none !important;
       opacity: 1 !important;
     }
 
@@ -3665,6 +3810,8 @@ a {
     & .clay-wash-b,
     & .clay-wash-c,
     & .robot-stage-body,
+    & .download-arrow,
+    & .download-tray,
     & .studio-mote,
     & .studio-streak,
     & .crimson-rise,

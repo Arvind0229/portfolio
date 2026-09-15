@@ -65,6 +65,15 @@ type RobotState = 'hidden' | 'peeking' | 'observing' | 'walking' | 'idle' | 'hid
  * decoration start reading as a progress bar.
  */
 const DURATION: Record<RobotState, readonly [number, number]> = {
+  /*
+   * 22–46 seconds off stage, which is right for the *rhythm* of hide and seek
+   * and completely wrong for the first impression: a visitor opened Midnight,
+   * saw no robot at all, and reported the robot as missing. They were right —
+   * on a normal visit it had not arrived yet.
+   *
+   * `FIRST_APPEARANCE` below handles the opening; this range only governs the
+   * gaps after the visitor has already met it.
+   */
   hidden: [22000, 46000],
   peeking: [1800, 2400],
   observing: [3000, 6000],
@@ -75,6 +84,7 @@ const DURATION: Record<RobotState, readonly [number, number]> = {
 
 /** Where each state can go next, and how often. Sums are not normalised. */
 const NEXT: Record<RobotState, readonly (readonly [RobotState, number])[]> = {
+  // Never hidden -> hidden. Every exit from off-stage is an entrance.
   hidden: [['peeking', 3], ['walking', 1]],
   peeking: [['observing', 3], ['hiding', 1]],
   observing: [['walking', 2], ['idle', 2], ['hiding', 2]],
@@ -82,6 +92,15 @@ const NEXT: Record<RobotState, readonly (readonly [RobotState, number])[]> = {
   idle: [['walking', 2], ['observing', 1], ['hiding', 1]],
   hiding: [['hidden', 1]],
 };
+
+/**
+ * How long the figure waits before it is first seen.
+ *
+ * Short enough that it is part of the page rather than a surprise nobody
+ * waits for, long enough that it arrives *after* the hero has settled instead
+ * of competing with the entrance animation.
+ */
+const FIRST_APPEARANCE: readonly [number, number] = [1800, 3200];
 
 function pick(range: readonly [number, number]): number {
   return range[0] + Math.random() * (range[1] - range[0]);
@@ -152,7 +171,8 @@ export function RobotStage() {
       timerRef.current = setTimeout(step, pick(DURATION[to]));
     };
 
-    timerRef.current = setTimeout(step, pick(DURATION.hidden));
+    // The opening is deliberately not `DURATION.hidden` — see the note there.
+    timerRef.current = setTimeout(step, pick(FIRST_APPEARANCE));
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

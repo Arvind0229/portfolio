@@ -3,6 +3,7 @@
 import { Icon, type IconName } from '@/components/icons';
 import { LinkButton, Reveal, SplitText } from '@/components/ui';
 import { AutomationFlow } from '@/components/visuals/automation-flow';
+import { whatsappLink } from '@/lib/contact/whatsapp';
 import { RobotStage } from '@/components/visuals/robot-stage';
 import { impactMetrics } from '@/data/impact';
 import { profile } from '@/data/profile';
@@ -217,10 +218,37 @@ export function Hero() {
                 size="lg"
                 download
                 aria-label="Download resume as PDF"
-                className="w-full sm:w-auto text-center justify-center"
+                className="download-cta w-full sm:w-auto text-center justify-center"
               >
                 Download resume
+                {/* The tray the arrow drops into. Drawn rather than an icon so
+                    it can be two separate pieces — the arrow moves, the tray
+                    does not, which is what makes it read as *downloading*
+                    rather than as an arrow sliding. */}
+                <span aria-hidden="true" className="download-glyph">
+                  <span className="download-arrow" />
+                  <span className="download-tray" />
+                </span>
               </LinkButton>
+
+              {/*
+                WhatsApp, next to the resume.
+
+                It has always existed in the Resume section and still does —
+                what was missing is that a visitor reading the hero had no way
+                to reach it without scrolling. Same `whatsappLink()` helper and
+                the same icon, so there is one source for the number.
+              */}
+              <a
+                href={whatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="hero-whatsapp"
+                aria-label="Message Arvind on WhatsApp"
+                className="wa-press clay-control group inline-flex h-[54px] w-[54px] shrink-0 items-center justify-center self-center rounded-[var(--r-button,var(--radius-md))] border border-[color-mix(in_srgb,var(--whatsapp)_38%,var(--border))] text-[var(--whatsapp)] transition-[border-color,box-shadow,transform] duration-[var(--motion-fast)] hover:border-[var(--whatsapp)] hover:shadow-[0_0_0_3px_color-mix(in_srgb,var(--whatsapp)_16%,transparent)]"
+              >
+                <Icon name="whatsapp" size={22} aria-hidden="true" />
+              </a>
             </div>
           </Reveal>
         </div>
