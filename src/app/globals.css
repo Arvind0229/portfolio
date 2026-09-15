@@ -180,75 +180,125 @@
  */
 [data-theme='clay'][data-mode='light'] {
   color-scheme: light;
+
+  /* ---- the supplied palette, verbatim ---- */
+  --clay-lavender: #b8a6ff;
+  --clay-sky: #9ec9f0;
+  --clay-mint: #7dd4a8;
+  --clay-peach: #ffb59e;
+  --clay-pink: #f5b8d0;
+  --clay-lemon: #f5d77a;
+  --clay-coral: #ff7a6b;
+
+  /* Each surface's own darkened hue, for the clay shadow recipe. A clay
+     surface lit from the top-left pools its *own* colour bottom-right —
+     a neutral grey shadow under a lavender card is what makes CSS
+     claymorphism look like a drop-shadowed rectangle instead of an object. */
+  --h-lavender: 140, 108, 255;
+  --h-sky: 86, 152, 205;
+  --h-mint: 46, 168, 118;
+  --h-peach: 232, 128, 96;
+  --h-pink: 214, 122, 165;
+  --h-lemon: 206, 168, 60;
+  --h-coral: 255, 90, 75;
+
   --bg-primary: #f7f5fb;
   --bg-secondary: #f1eefa;
   --surface: #ffffff;
-  --surface-elevated: #faf8fd;
-  --text-primary: #211e29;
-  --text-secondary: #3e3a47;
-  --text-muted: #635e6c;
-  /* #706b78 was the value from the design note and it measures 4.16:1 on
-     --clay-lavender — an axe failure found in the footer at 390px, not
-     guessed at. #5F5968 is the darkest of the family and clears 4.5:1 on
-     every pastel surface in this theme (worst case 5.43 on lavender). */
+  --surface-elevated: #fbfaff;
+  --text-primary: #2e2a3f;
+  --text-secondary: #4a4560;
+  --text-muted: #6b6580;
+  /* Measured, not chosen: #6B6580 is 5.11:1 on the app ground and 5.53:1 on
+     white, but only 2.62:1 on lavender — so muted text is for white and the
+     page ground, and text on a pastel surface is always --text-primary
+     (6.54:1 at worst). Subtle is darker again so it clears 4.5:1 anywhere. */
   --text-subtle: #5f5968;
-  --border: #e4dff0;
-  --border-subtle: #eee9f7;
-  /* Text-safe coral. The brand coral lives in --accent-vivid and is used for
-     fills and graphics only. */
-  --accent-primary: #b03a2e;
+  --border: #e6e1f2;
+  --border-subtle: #efebf8;
+
+  /* The coral splits in three, because one coral cannot do all three jobs.
+     #FF7A6B is the brand fill and is used as a *background* only — it is
+     2.35:1 on the page ground, so it can never carry text. The display value
+     is what the big "Gupta" uses (3.36:1, clearing the 3:1 that large text
+     needs), and the text value is what any body-sized coral uses. */
+  --accent-vivid: #ff7a6b;
+  --accent-display: #e85440;
+  --accent-primary: #b8352a;
   --accent-secondary: #4c78c2;
-  --accent-tertiary: #8172b3;
-  --accent-vivid: #ff6f61;
+  --accent-tertiary: #7b5fd6;
+  /* Ink on an --accent-primary fill (#B8352A, dark red) — 5.86:1 with white.
+     This is NOT the ink for the coral CTA: --accent-contrast is used by every
+     component that fills with --accent-primary, and the first version set it
+     to the dark ink the coral needs, which made a filled toggle 2.35:1. Axe
+     caught it; the two inks are separate tokens now. */
   --accent-contrast: #ffffff;
-  --accent-glow: rgba(255, 111, 97, 0.28);
+  /* Ink on the #FF7A6B coral fill. White there is 2.55:1 and fails outright;
+     this is 5.43:1 on the same coral, which keeps the given colour exact. */
+  --clay-coral-ink: #2e2a3f;
+  --accent-glow: rgba(255, 122, 107, 0.34);
   --success: #2f6f52;
   --warning: #8a5a12;
   --error: #b3303a;
+  --status-active: #7dd4a8;
+  --status-pending: #f5d77a;
+  --status-archived: #c9b5ff;
 
-  /* Pastel surface family. Surfaces and accents — never text. */
-  --clay-lavender: #e9e4f7;
-  --clay-sky: #e3effb;
-  --clay-mint: #e2f3ec;
-  --clay-peach: #fce8df;
-  --clay-pink: #f7e3ea;
-  --clay-lemon: #f7f0cf;
+  /* ---- geometry ---- */
+  --radius-sm: 1rem;
+  --radius-md: 1.25rem;
+  --radius-lg: 1.75rem;
+  --radius-xl: 2.25rem;
+  --r-button: 1.125rem;
+  --button-h: 3.375rem;
 
-  --radius-sm: 0.75rem;
-  --radius-md: 1.125rem;
-  --radius-lg: 1.5rem;
-  --radius-xl: 2rem;
-
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(33, 30, 41, 0.07);
+  --glass-bg: rgba(255, 255, 255, 0.76);
+  --glass-border: rgba(46, 42, 63, 0.06);
   --glass-blur: 14px;
-  --shadow-sm: 0 1px 2px rgba(80, 70, 110, 0.08);
-  --shadow-md: 0 10px 26px -14px rgba(80, 70, 110, 0.26);
-  --shadow-lg: 0 28px 64px -30px rgba(80, 70, 110, 0.32);
+  --shadow-sm: 0 2px 6px rgba(140, 108, 255, 0.1);
+  --shadow-md: 0 12px 28px -14px rgba(140, 108, 255, 0.34);
+  --shadow-lg: 0 30px 66px -30px rgba(140, 108, 255, 0.4);
+
+  /* The clay recipe, as one token every surface class reuses. Light from the
+     top-left, depth pooling bottom-right, an inner sheen on the lit edge and
+     an inner shade on the shadowed one. `--h` is swapped per surface. */
+  --h: 140, 108, 255;
+  --clay-shadow:
+    8px 8px 24px rgba(var(--h), 0.28),
+    -8px -8px 24px rgba(255, 255, 255, 0.85),
+    inset 3px 3px 7px rgba(255, 255, 255, 0.6),
+    inset -5px -5px 11px rgba(var(--h), 0.22);
+  --clay-shadow-lift:
+    12px 16px 34px rgba(var(--h), 0.34),
+    -10px -10px 28px rgba(255, 255, 255, 0.9),
+    inset 3px 3px 7px rgba(255, 255, 255, 0.62),
+    inset -5px -5px 11px rgba(var(--h), 0.2);
+  --clay-shadow-press:
+    4px 4px 12px rgba(var(--h), 0.26),
+    -4px -4px 12px rgba(255, 255, 255, 0.8),
+    inset 4px 4px 10px rgba(var(--h), 0.22),
+    inset -3px -3px 7px rgba(255, 255, 255, 0.5);
 
   --panel-bg: #ffffff;
   --panel-border: transparent;
-  --panel-border-hover: color-mix(in srgb, var(--accent-vivid) 42%, transparent);
-  --panel-highlight: rgba(255, 255, 255, 0.9);
+  --panel-border-hover: transparent;
+  --panel-highlight: rgba(255, 255, 255, 0.92);
   --panel-bloom: transparent;
   --panel-blur: 0px;
   --panel-saturate: 100%;
-  --panel-shadow:
-    -6px -6px 14px rgba(255, 255, 255, 0.9),
-    7px 7px 16px rgba(80, 70, 110, 0.12),
-    inset 1px 1px 0 rgba(255, 255, 255, 0.55);
+  --panel-shadow: var(--clay-shadow);
   --panel-glow: none;
   --panel-radius: var(--radius-lg);
   --panel-sheen: transparent;
   --panel-sheen-strong: transparent;
   --icon-tint: var(--accent-tertiary);
 
-  --grid-opacity: 0.03;
-  --glow-opacity: 0.16;
+  --grid-opacity: 0.025;
+  --glow-opacity: 0.14;
   --noise-opacity: 0;
   --motion-scale: 1;
-  --tracking-display: -0.02em;
-  --weight-display: 620;
+  --tracking-display: -0.022em;
+  --weight-display: 700;
 }
 
 /* Dusk clay. The same clay language with the light source lowered, so the
@@ -2811,6 +2861,257 @@ a {
  * is exactly one copy of these rules to keep correct.
  */
 
+
+/* ================================================================== *
+ * CLAY THEME — surfaces, controls and the pastel rotation
+ *
+ * Scoped to [data-theme='clay'] throughout: none of this can reach the
+ * other three themes. The whole look rides on `--h`, the surface's own
+ * hue, which each rule swaps before reusing the shared `--clay-shadow`
+ * recipe.
+ * ================================================================== */
+
+[data-theme='clay'][data-mode='light'] {
+  /* Cards are moulded, not outlined. The border goes to transparent so the
+     shadow alone carries the edge — a 1px line around a clay object is the
+     single thing that most makes it read as a rectangle with a shadow. */
+  & .surface-card,
+  & .glass,
+  & .glass-elevated {
+    border-color: transparent;
+    box-shadow: var(--clay-shadow);
+  }
+
+  & .surface-card:has(a, button):hover,
+  & .glass:has(a, button):hover,
+  & .surface-card:has(a, button):focus-within,
+  & .glass:has(a, button):focus-within {
+    transform: translate3d(0, -4px, 0) scale(1.006);
+    box-shadow: var(--clay-shadow-lift);
+    border-color: transparent;
+  }
+
+  & .surface-card:has(a, button):active {
+    transform: translate3d(0, -1px, 0) scale(0.995);
+    box-shadow: var(--clay-shadow-press);
+  }
+
+  /* Controls. 54px tall, 18px radius, coral-keyed depth on the primary.
+
+     `--accent-contrast` is the ink on the coral fill and it is #2E2A3F,
+     not white. White on #FF7A6B measures **2.55:1** — it fails WCAG AA
+     outright, and the fill colour was given verbatim and should not be
+     darkened to rescue it. Dark ink on the same coral is 5.43:1. */
+  & a[class*='rounded'],
+  & button:not([role='tab']) {
+    border-radius: var(--r-button);
+  }
+
+  & .clay-control {
+    --h: var(--h-lavender);
+    min-height: var(--button-h);
+    border-radius: var(--r-button);
+    box-shadow: var(--clay-shadow);
+    border-color: transparent;
+  }
+
+  & .clay-control:hover {
+    transform: translate3d(0, -2px, 0) scale(1.02);
+    box-shadow: var(--clay-shadow-lift);
+  }
+
+  & .clay-control:active {
+    transform: translate3d(0, 0, 0) scale(0.97);
+    box-shadow: var(--clay-shadow-press);
+  }
+
+  & .clay-control-primary {
+    --h: var(--h-coral);
+    background-color: var(--accent-vivid);
+    color: var(--clay-coral-ink);
+    border-color: transparent;
+  }
+
+  /* The nav's current item becomes a raised clay pill. */
+  & [aria-current='page'],
+  & [data-active='true'] {
+    --h: var(--h-coral);
+  }
+
+  /* Icon tiles get their own pastel and their own depth — the "3D icon
+     tile" in the reference is a small clay object, not a tinted square. */
+  & .icon-tile {
+    --h: var(--h-lavender);
+    border-color: transparent;
+    border-radius: var(--radius-md);
+    background-color: color-mix(in srgb, var(--clay-lavender) 55%, #ffffff);
+    color: #2e2a3f;
+    box-shadow:
+      4px 4px 10px rgba(var(--h), 0.3),
+      -3px -3px 8px rgba(255, 255, 255, 0.9),
+      inset 2px 2px 5px rgba(255, 255, 255, 0.7),
+      inset -3px -3px 6px rgba(var(--h), 0.22);
+  }
+
+  /* The pastel rotation. Applied by position so the existing components
+     need no per-card prop: the nth card in a grid takes the nth hue, in
+     the order the reference uses. Text on these stays --text-primary,
+     which clears 4.5:1 on every one of them. */
+  & .clay-rotate > *:nth-child(6n + 1) .icon-tile {
+    --h: var(--h-lavender);
+    background-color: color-mix(in srgb, var(--clay-lavender) 60%, #ffffff);
+  }
+  & .clay-rotate > *:nth-child(6n + 2) .icon-tile {
+    --h: var(--h-sky);
+    background-color: color-mix(in srgb, var(--clay-sky) 60%, #ffffff);
+  }
+  & .clay-rotate > *:nth-child(6n + 3) .icon-tile {
+    --h: var(--h-mint);
+    background-color: color-mix(in srgb, var(--clay-mint) 60%, #ffffff);
+  }
+  & .clay-rotate > *:nth-child(6n + 4) .icon-tile {
+    --h: var(--h-peach);
+    background-color: color-mix(in srgb, var(--clay-peach) 60%, #ffffff);
+  }
+  & .clay-rotate > *:nth-child(6n + 5) .icon-tile {
+    --h: var(--h-pink);
+    background-color: color-mix(in srgb, var(--clay-pink) 60%, #ffffff);
+  }
+  & .clay-rotate > *:nth-child(6n + 6) .icon-tile {
+    --h: var(--h-lemon);
+    background-color: color-mix(in srgb, var(--clay-lemon) 60%, #ffffff);
+  }
+
+  /* The card behind each tile picks up a whisper of the same hue, so the
+     card and its icon read as one moulded object rather than a white box
+     with a coloured sticker on it. */
+  & .clay-rotate > *:nth-child(6n + 1) .surface-card { --h: var(--h-lavender); }
+  & .clay-rotate > *:nth-child(6n + 2) .surface-card { --h: var(--h-sky); }
+  & .clay-rotate > *:nth-child(6n + 3) .surface-card { --h: var(--h-mint); }
+  & .clay-rotate > *:nth-child(6n + 4) .surface-card { --h: var(--h-peach); }
+  & .clay-rotate > *:nth-child(6n + 5) .surface-card { --h: var(--h-pink); }
+  & .clay-rotate > *:nth-child(6n + 6) .surface-card { --h: var(--h-lemon); }
+
+  /* The workflow nodes, one pastel each, in the reference's order:
+     manual lavender, bot coral, data sky, validation mint, result lemon. */
+  & .flow-node {
+    border-color: transparent;
+    border-radius: var(--radius-md);
+  }
+  & .flow-node[data-node='manual'] {
+    --h: var(--h-lavender);
+    background-color: color-mix(in srgb, var(--clay-lavender) 42%, #ffffff);
+  }
+  & .flow-node[data-node='bot'] {
+    --h: var(--h-coral);
+    background-color: color-mix(in srgb, var(--clay-coral) 40%, #ffffff);
+  }
+  & .flow-node[data-node='processing'] {
+    --h: var(--h-sky);
+    background-color: color-mix(in srgb, var(--clay-sky) 46%, #ffffff);
+  }
+  & .flow-node[data-node='validation'] {
+    --h: var(--h-mint);
+    background-color: color-mix(in srgb, var(--clay-mint) 42%, #ffffff);
+  }
+  & .flow-node[data-node='result'] {
+    --h: var(--h-lemon);
+    background-color: color-mix(in srgb, var(--clay-lemon) 48%, #ffffff);
+  }
+  & .flow-node {
+    box-shadow:
+      5px 5px 14px rgba(var(--h, 140, 108, 255), 0.3),
+      -4px -4px 12px rgba(255, 255, 255, 0.85),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.65),
+      inset -4px -4px 9px rgba(var(--h, 140, 108, 255), 0.2);
+  }
+
+  /* The metric strip, by meaning rather than by position: mint for the
+     positive outcome, sky for the technical count, lavender and pink for
+     the supporting two. */
+  & .clay-metrics > *:nth-child(1) { --h: var(--h-lavender); }
+  & .clay-metrics > *:nth-child(2) { --h: var(--h-mint); }
+  & .clay-metrics > *:nth-child(3) { --h: var(--h-sky); }
+  & .clay-metrics > *:nth-child(4) { --h: var(--h-pink); }
+}
+
+/* ============================ CLAY BUBBLES ========================= *
+ * Soft 3D pastel objects, not flat circles: an off-centre radial
+ * highlight gives each one a lit side, and a colour-keyed drop shadow
+ * gives it somewhere to sit. Six of them, each on its own slow path
+ * with a different period, so they never march in step.
+ * ================================================================== */
+
+.clay-bubble {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.clay-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.92), transparent 46%),
+    radial-gradient(circle at 68% 76%, rgba(var(--h), 0.5), transparent 62%),
+    rgb(var(--h));
+  box-shadow:
+    14px 18px 40px rgba(var(--h), 0.3),
+    -10px -12px 30px rgba(255, 255, 255, 0.55),
+    inset -10px -12px 26px rgba(var(--h), 0.4),
+    inset 8px 10px 22px rgba(255, 255, 255, 0.55);
+  /* Atmosphere, not foreground. At 0.55 these read as objects in front of
+     the page; at 0.3 they read as objects behind it, which is the job. */
+  opacity: 0.3;
+}
+
+@keyframes bubble-float-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, calc(-38px * var(--motion-scale)), 0) scale(1.04); }
+}
+@keyframes bubble-float-b {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(calc(-26px * var(--motion-scale)), calc(22px * var(--motion-scale)), 0); }
+}
+@keyframes bubble-float-c {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(calc(20px * var(--motion-scale)), calc(-28px * var(--motion-scale)), 0) rotate(6deg); }
+}
+@keyframes bubble-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.bubble-1 { animation: bubble-float-a calc(26s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite; }
+.bubble-2 { animation: bubble-float-b calc(34s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -6s infinite; }
+.bubble-3 { animation: bubble-float-c calc(30s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -12s infinite; }
+.bubble-4 { animation: bubble-breathe calc(18s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -4s infinite; }
+.bubble-5 { animation: bubble-float-a calc(42s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -20s infinite; }
+.bubble-6 { animation: bubble-float-c calc(38s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -15s infinite; }
+
+/* ---------------------- HERO SURNAME REVEAL ----------------------- *
+ * "Gupta" wipes in from the left behind a clip, rather than fading.
+ * One animation on one element; the given name keeps the existing
+ * per-character rise, so the two halves enter differently and the
+ * surname lands last.
+ */
+@keyframes surname-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.surname-wipe {
+  animation: surname-wipe calc(760ms / max(var(--motion-scale), 0.5)) var(--ease-out) 420ms both;
+}
+
 /* ================================================================== *
  * SIGNATURE BACKDROPS
  *
@@ -3174,6 +3475,14 @@ a {
       opacity: 0 !important;
     }
 
+    /* A clipped element with its animation removed stays clipped. The
+       surname has to be forced to its finished state explicitly. */
+    & .surname-wipe {
+      animation: none !important;
+      clip-path: none !important;
+      opacity: 1 !important;
+    }
+
     /* The clay rail is a connector. It stops travelling and rests centred,
        rather than disappearing — removing it would take the RPA cue out of
        the ground for the people most likely to be reading slowly. */
@@ -3221,6 +3530,14 @@ a {
     & .clay-wash-b,
     & .clay-wash-c,
     & .robot-stage-body,
+    & .clay-bubble,
+    & .bubble-1,
+    & .bubble-2,
+    & .bubble-3,
+    & .bubble-4,
+    & .bubble-5,
+    & .bubble-6,
+    & .surname-wipe,
     & .search-overlay,
     & .search-panel,
     & .robot-peek,

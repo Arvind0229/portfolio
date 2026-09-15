@@ -37,7 +37,7 @@ function groupIcon(id: string): IconName {
 export function ExpertiseSection() {
   return (
     <>
-      <div className="mt-14 grid gap-4 md:grid-cols-2">
+      <div className="clay-rotate mt-14 grid gap-4 md:grid-cols-2">
         {expertisePillars.map((pillar, index) => (
           <Reveal key={pillar.id} delay={index * 70}>
             <article className="surface-card card-reactive h-full p-6 transition-transform duration-[var(--motion-base)] hover:-translate-y-1 hover:border-[var(--accent-primary)]">
@@ -83,7 +83,7 @@ export function ExpertiseSection() {
           </p>
         </Reveal>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="clay-rotate mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {skillGroups.map((group, index) => (
             <Reveal key={group.id} delay={index * 60}>
               <article className="surface-card h-full p-5 transition-[border-color] duration-[var(--motion-base)] hover:border-[var(--accent-primary)]">

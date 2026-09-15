@@ -413,7 +413,7 @@ function NodeCard({
   emphasis = false,
   compact = false,
 }: {
-  node: { label: string; detail?: string };
+  node: { id?: string; label: string; detail?: string };
   icon?: IconName;
   emphasis?: boolean;
   compact?: boolean;
@@ -424,6 +424,9 @@ function NodeCard({
         'surface-card flow-node flex h-full w-full flex-col items-center justify-center gap-1 px-1 text-center',
         emphasis && 'flow-node-active',
       )}
+      /* The node's id reaches CSS so a theme can colour each stage without
+         this component knowing anything about that theme's palette. */
+      data-node={node.id}
       style={{ containerType: 'inline-size' }}
     >
       {/* The icon sits bare on the card, not inside a bordered tile.

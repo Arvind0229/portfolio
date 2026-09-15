@@ -419,23 +419,41 @@ function MandalaLayer() {
  * dirty rather than dimensional.
  */
 function ClayLayer() {
+  /*
+   * Six soft objects, each with its own hue, size, position and period.
+   * Position and size live here; the lighting, the colour-keyed shadow and
+   * the motion live in CSS. Nothing here is random — a random walk reads as
+   * drift rather than as floating, and it cannot be tuned.
+   */
+  const bubbles = [
+    /*
+     * Sized and placed to stay out of the reading column.
+     *
+     * The first cut used 20rem spheres at 55% opacity anchored near the
+     * content, and they sat *on top of* the headline — decoration competing
+     * with the thing it decorates. These are roughly half the size, a third
+     * of the opacity, and pushed to the page margins and the deep background
+     * where they read as atmosphere.
+     */
+    { cls: 'bubble-1', h: 'var(--h-lavender)', style: { left: '-9%', top: '4%', width: '13rem', height: '13rem' } },
+    { cls: 'bubble-2', h: 'var(--h-sky)', style: { right: '-7%', top: '2%', width: '11rem', height: '11rem' } },
+    { cls: 'bubble-3', h: 'var(--h-peach)', style: { right: '-5%', top: '58%', width: '12rem', height: '12rem' } },
+    { cls: 'bubble-4', h: 'var(--h-mint)', style: { left: '-4%', top: '66%', width: '7rem', height: '7rem' } },
+    { cls: 'bubble-5', h: 'var(--h-pink)', style: { right: '12%', top: '90%', width: '9rem', height: '9rem' } },
+    { cls: 'bubble-6', h: 'var(--h-lemon)', style: { left: '4%', top: '88%', width: '5rem', height: '5rem' } },
+  ] as const;
+
   return (
     <>
-      <div
-        className="clay-wash clay-wash-a absolute -left-[12%] top-[6%] h-[26rem] w-[26rem] rounded-full blur-[60px]"
-        style={{ background: 'var(--clay-lavender)' }}
-      />
-      <div
-        className="clay-wash clay-wash-b absolute -right-[10%] top-[26%] h-[22rem] w-[22rem] rounded-full blur-[60px]"
-        style={{ background: 'var(--clay-sky)' }}
-      />
-      <div
-        className="clay-wash clay-wash-c absolute left-[30%] top-[58%] h-[20rem] w-[20rem] rounded-full blur-[60px]"
-        style={{ background: 'var(--clay-mint)' }}
-      />
-      {/* The automation rail: one thin line with a coral charge running along
-          it, so the RPA identity is present in the ground without a second
-          workflow diagram competing with the one in the hero. */}
+      {bubbles.map((bubble) => (
+        <div
+          key={bubble.cls}
+          className={`clay-bubble ${bubble.cls}`}
+          style={{ ...bubble.style, ['--h' as string]: bubble.h }}
+        />
+      ))}
+      {/* The automation rail: the RPA cue in the ground, so the identity is
+          present without a second workflow competing with the hero's. */}
       <div className="clay-rail absolute inset-x-0 top-[70vh] h-px" />
     </>
   );

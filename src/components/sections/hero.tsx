@@ -156,12 +156,19 @@ export function Hero() {
                 offsetMs={120}
               />
               {lastName ? (
-                <SplitText
-                  text={lastName}
-                  announce={false}
-                  className="block text-[var(--accent-primary)]"
-                  offsetMs={120 + firstName.length * 34}
-                />
+                /*
+                 * The surname wipes in from the left behind a clip instead of
+                 * rising character by character, so the two halves of the name
+                 * enter differently and the surname lands last.
+                 *
+                 * The colour is `--accent-display`, not `--accent-primary`:
+                 * the brand coral is 2.35:1 on the clay ground and cannot
+                 * carry text at any size. The display value clears the 3:1
+                 * that large text needs. Themes without it fall back.
+                 */
+                <span className="surname-wipe block text-[var(--accent-display,var(--accent-primary))]">
+                  {lastName}
+                </span>
               ) : null}
             </span>
             <Reveal delay={520}>
@@ -253,7 +260,7 @@ export function Hero() {
       <Reveal delay={840}>
         <dl
           ref={metricsRef}
-          className="surface-card mt-12 grid grid-cols-2 gap-x-3 gap-y-6 p-4 sm:p-7 md:grid-cols-4 md:gap-x-0"
+          className="clay-metrics surface-card mt-12 grid grid-cols-2 gap-x-3 gap-y-6 p-4 sm:p-7 md:grid-cols-4 md:gap-x-0"
         >
           {impactMetrics.map((metric, index) => (
             <div

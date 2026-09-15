@@ -42,6 +42,19 @@ import { useAppearance } from '@/hooks/use-appearance';
  * to a screen reader.
  */
 
+/*
+ * Which themes get the robot: Midnight, and only Midnight.
+ *
+ * Clay was tried, because the reference for that theme shows a robot beside
+ * the workflow, and it was reverted after looking at it. The reference places
+ * a 3D rendered mascot in a gap between the text column and the workflow
+ * panel — a slot this hero does not have. Its right column *is* the workflow,
+ * so the existing SVG lands on top of the panel and reads as a translucent
+ * smudge over the diagram. The fix is a layout change to the hero or a real
+ * mascot asset, not a transform, and neither is in scope here.
+ */
+const THEMES_WITH_ROBOT = new Set<string>(['engineering']);
+
 type RobotState = 'hidden' | 'peeking' | 'observing' | 'walking' | 'idle' | 'hiding';
 
 /**
@@ -97,7 +110,7 @@ export function RobotStage() {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!mounted || theme !== 'engineering') return;
+    if (!mounted || !THEMES_WITH_ROBOT.has(theme)) return;
 
     /*
      * Reduced motion is the two-part check this project uses everywhere: the
@@ -148,10 +161,10 @@ export function RobotStage() {
     };
   }, [mounted, theme]);
 
-  // Not Midnight: nothing renders. This is the theme isolation, and it is a
-  // mount condition rather than a CSS rule so the figure cannot be revealed
-  // by a stray selector or caught by a screenshot on another theme.
-  if (theme !== 'engineering') return null;
+  // Studio and Crimson never get the robot. Isolation is a mount condition
+  // rather than a CSS rule, so the figure cannot be revealed by a stray
+  // selector or caught by a screenshot on a theme that should not have it.
+  if (!THEMES_WITH_ROBOT.has(theme)) return null;
 
   return (
     <div

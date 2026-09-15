@@ -89,9 +89,14 @@ export function LinkButton({
       {...(target ? { target } : {})}
       {...(rel ? { rel } : target === '_blank' ? { rel: 'noopener noreferrer' } : {})}
       className={cn(
-        'group inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium',
-        'transition-[background-color,border-color,color,transform,filter] duration-[var(--motion-fast)]',
+        /* `clay-control` is a hook, not a style: in every theme but Clay it
+           matches nothing. It is what lets the Clay theme give this button a
+           54px height, an 18px radius and coral-keyed depth without a second
+           button component or a theme prop threaded through every call site. */
+        'group clay-control inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium',
+        'transition-[background-color,border-color,color,transform,filter,box-shadow] duration-[var(--motion-fast)]',
         'active:translate-y-px',
+        variant === 'primary' && 'clay-control-primary',
         VARIANTS[variant],
         SIZES[size],
         className,
