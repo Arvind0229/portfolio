@@ -186,7 +186,7 @@ export function Hero() {
           </Reveal>
 
           <Reveal delay={660}>
-            <ul className="mt-7 flex flex-wrap gap-2" aria-label="Focus areas">
+            <ul className="clay-chips mt-7 flex flex-wrap gap-2" aria-label="Focus areas">
               {profile.focusAreas.map((area) => (
                 <li
                   key={area}

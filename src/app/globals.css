@@ -3109,70 +3109,149 @@ a {
       inset -3px -3px 6px rgba(var(--h), 0.22);
   }
 
-  /* The pastel rotation. Applied by position so the existing components
-     need no per-card prop: the nth card in a grid takes the nth hue, in
-     the order the reference uses. Text on these stays --text-primary,
-     which clears 4.5:1 on every one of them. */
-  & .clay-rotate > *:nth-child(6n + 1) .icon-tile {
-    --h: var(--h-lavender);
-    background-color: color-mix(in srgb, var(--clay-lavender) 60%, #ffffff);
-  }
-  & .clay-rotate > *:nth-child(6n + 2) .icon-tile {
-    --h: var(--h-sky);
-    background-color: color-mix(in srgb, var(--clay-sky) 60%, #ffffff);
-  }
-  & .clay-rotate > *:nth-child(6n + 3) .icon-tile {
-    --h: var(--h-mint);
-    background-color: color-mix(in srgb, var(--clay-mint) 60%, #ffffff);
-  }
-  & .clay-rotate > *:nth-child(6n + 4) .icon-tile {
-    --h: var(--h-peach);
-    background-color: color-mix(in srgb, var(--clay-peach) 60%, #ffffff);
-  }
-  & .clay-rotate > *:nth-child(6n + 5) .icon-tile {
-    --h: var(--h-pink);
-    background-color: color-mix(in srgb, var(--clay-pink) 60%, #ffffff);
-  }
-  & .clay-rotate > *:nth-child(6n + 6) .icon-tile {
-    --h: var(--h-lemon);
-    background-color: color-mix(in srgb, var(--clay-lemon) 60%, #ffffff);
+  /* ---------------------------------------------------------------- *
+   * The pastel rotation, at FULL strength.
+   *
+   * The first cut diluted every surface — `color-mix(lavender 60%,
+   * white)` — and only tinted the icon tiles, so the exact colours from
+   * the palette never actually appeared on screen. They were in the
+   * tokens and invisible on the page, which is the same as not having
+   * them. These are the given hex values, undiluted, on the surfaces the
+   * palette table names: skill chips, metric tiles, feature cards and
+   * workflow nodes.
+   *
+   * Applied by position, so no component needs a per-item colour prop.
+   *
+   * Ink on a full pastel is `--text-primary` (#2E2A3F), 6.54:1 at worst
+   * (on lavender). `--text-muted` #6B6580 measures **2.62:1** on the same
+   * lavender and must never land on one — so inside a pastel surface the
+   * muted and secondary tokens are re-pointed at a darker ink that clears
+   * 4.5:1 on all six. Computed, not adjusted until it looked right.
+   */
+  & .clay-tint {
+    --clay-ink: #2e2a3f;
+    --clay-ink-soft: #3e3a47;
+    color: var(--clay-ink);
+    border-color: transparent;
+    box-shadow:
+      8px 8px 24px rgba(var(--h), 0.32),
+      -8px -8px 24px rgba(255, 255, 255, 0.72),
+      inset 4px 4px 8px rgba(255, 255, 255, 0.5),
+      inset -6px -6px 12px rgba(var(--h), 0.28);
   }
 
-  /* The card behind each tile picks up a whisper of the same hue, so the
-     card and its icon read as one moulded object rather than a white box
-     with a coloured sticker on it. */
-  & .clay-rotate > *:nth-child(6n + 1) .surface-card { --h: var(--h-lavender); }
-  & .clay-rotate > *:nth-child(6n + 2) .surface-card { --h: var(--h-sky); }
-  & .clay-rotate > *:nth-child(6n + 3) .surface-card { --h: var(--h-mint); }
-  & .clay-rotate > *:nth-child(6n + 4) .surface-card { --h: var(--h-peach); }
-  & .clay-rotate > *:nth-child(6n + 5) .surface-card { --h: var(--h-pink); }
-  & .clay-rotate > *:nth-child(6n + 6) .surface-card { --h: var(--h-lemon); }
+  /* Every descendant token that would otherwise be too light on a pastel. */
+  & .clay-tint,
+  & .clay-tint * {
+    --text-muted: var(--clay-ink-soft);
+    --text-secondary: var(--clay-ink-soft);
+    --text-subtle: var(--clay-ink-soft);
+  }
+
+  & .clay-tint-lavender { --h: var(--h-lavender); background-color: var(--clay-lavender); }
+  & .clay-tint-sky { --h: var(--h-sky); background-color: var(--clay-sky); }
+  & .clay-tint-mint { --h: var(--h-mint); background-color: var(--clay-mint); }
+  & .clay-tint-peach { --h: var(--h-peach); background-color: var(--clay-peach); }
+  & .clay-tint-pink { --h: var(--h-pink); background-color: var(--clay-pink); }
+  & .clay-tint-lemon { --h: var(--h-lemon); background-color: var(--clay-lemon); }
+
+  /* Feature cards — Lavender, Sky, Mint, Peach, Pink, per the table. */
+  & .clay-rotate > *:nth-child(6n + 1) .surface-card { --h: var(--h-lavender); background-color: var(--clay-lavender); }
+  & .clay-rotate > *:nth-child(6n + 2) .surface-card { --h: var(--h-sky); background-color: var(--clay-sky); }
+  & .clay-rotate > *:nth-child(6n + 3) .surface-card { --h: var(--h-mint); background-color: var(--clay-mint); }
+  & .clay-rotate > *:nth-child(6n + 4) .surface-card { --h: var(--h-peach); background-color: var(--clay-peach); }
+  & .clay-rotate > *:nth-child(6n + 5) .surface-card { --h: var(--h-pink); background-color: var(--clay-pink); }
+  & .clay-rotate > *:nth-child(6n + 6) .surface-card { --h: var(--h-lemon); background-color: var(--clay-lemon); }
+
+  & .clay-rotate .surface-card {
+    --text-muted: #3e3a47;
+    --text-secondary: #3e3a47;
+    --text-subtle: #3e3a47;
+    color: #2e2a3f;
+    border-color: transparent;
+  }
+
+  /* The icon tile on a pastel card is white clay — the deeper/lighter
+     treatment of the same family the table asks for. */
+  & .clay-rotate .icon-tile {
+    background-color: rgba(255, 255, 255, 0.82);
+    color: #2e2a3f;
+  }
+
+  /* Skill chips — Lavender, Sky, Mint, Peach, Lemon, Pink. */
+  & .clay-chips > *:nth-child(6n + 1) { --h: var(--h-lavender); background-color: var(--clay-lavender); }
+  & .clay-chips > *:nth-child(6n + 2) { --h: var(--h-sky); background-color: var(--clay-sky); }
+  & .clay-chips > *:nth-child(6n + 3) { --h: var(--h-mint); background-color: var(--clay-mint); }
+  & .clay-chips > *:nth-child(6n + 4) { --h: var(--h-peach); background-color: var(--clay-peach); }
+  & .clay-chips > *:nth-child(6n + 5) { --h: var(--h-lemon); background-color: var(--clay-lemon); }
+  & .clay-chips > *:nth-child(6n + 6) { --h: var(--h-pink); background-color: var(--clay-pink); }
+
+  & .clay-chips > * {
+    color: #2e2a3f;
+    border-color: transparent;
+    box-shadow:
+      5px 5px 14px rgba(var(--h), 0.3),
+      -4px -4px 12px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 5px rgba(255, 255, 255, 0.55),
+      inset -3px -3px 7px rgba(var(--h), 0.24);
+  }
+
+  /* Metric tiles — Pink, Mint, Sky, Lavender, per the table. */
+  & .clay-metrics > *:nth-child(1) { --h: var(--h-pink); background-color: var(--clay-pink); }
+  & .clay-metrics > *:nth-child(2) { --h: var(--h-mint); background-color: var(--clay-mint); }
+  & .clay-metrics > *:nth-child(3) { --h: var(--h-sky); background-color: var(--clay-sky); }
+  & .clay-metrics > *:nth-child(4) { --h: var(--h-lavender); background-color: var(--clay-lavender); }
+
+  & .clay-metrics {
+    background-color: transparent;
+    box-shadow: none;
+    gap: 1rem;
+  }
+
+  & .clay-metrics > * {
+    --text-muted: #3e3a47;
+    --text-secondary: #3e3a47;
+    color: #2e2a3f;
+    border: 0;
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.25rem;
+    box-shadow:
+      8px 8px 24px rgba(var(--h), 0.3),
+      -8px -8px 24px rgba(255, 255, 255, 0.75),
+      inset 4px 4px 8px rgba(255, 255, 255, 0.5),
+      inset -6px -6px 12px rgba(var(--h), 0.26);
+  }
 
   /* The workflow nodes, one pastel each, in the reference's order:
      manual lavender, bot coral, data sky, validation mint, result lemon. */
   & .flow-node {
     border-color: transparent;
     border-radius: var(--radius-md);
+    --text-muted: #3e3a47;
+    --text-secondary: #3e3a47;
+    color: #2e2a3f;
   }
   & .flow-node[data-node='manual'] {
     --h: var(--h-lavender);
-    background-color: color-mix(in srgb, var(--clay-lavender) 42%, #ffffff);
+    background-color: var(--clay-lavender);
   }
+  /* Peach, not coral — the palette table reserves coral for the CTA and
+     gives the bot the warm pastel: Lavender -> Peach -> Sky -> Mint -> Lemon. */
   & .flow-node[data-node='bot'] {
-    --h: var(--h-coral);
-    background-color: color-mix(in srgb, var(--clay-coral) 40%, #ffffff);
+    --h: var(--h-peach);
+    background-color: var(--clay-peach);
   }
   & .flow-node[data-node='processing'] {
     --h: var(--h-sky);
-    background-color: color-mix(in srgb, var(--clay-sky) 46%, #ffffff);
+    background-color: var(--clay-sky);
   }
   & .flow-node[data-node='validation'] {
     --h: var(--h-mint);
-    background-color: color-mix(in srgb, var(--clay-mint) 42%, #ffffff);
+    background-color: var(--clay-mint);
   }
   & .flow-node[data-node='result'] {
     --h: var(--h-lemon);
-    background-color: color-mix(in srgb, var(--clay-lemon) 48%, #ffffff);
+    background-color: var(--clay-lemon);
   }
   & .flow-node {
     box-shadow:
