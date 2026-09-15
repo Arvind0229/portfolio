@@ -1,6 +1,8 @@
 # ADR-004: Projects join the content layer; depth gets a public surface
 
-**Status:** Proposed · 2026-09-15 · awaiting G1 approval
+**Status:** Accepted · 2026-09-15 · G1 approved, G2 and G3 built. §3 and §5 are
+implemented as written; the departures are recorded in "As built (G3)" at the
+foot of this document.
 **Builds on:** ADR-001 (git-as-CMS), ADR-002 (referenced entities), ADR-003
 (client-side image processing)
 
@@ -158,3 +160,51 @@ If project content ever needs to be queried rather than listed — "every projec
 using Python, across companies, ordered by year" — the build-time join stops
 being the right shape and the database question reopens. Five projects is not
 that. Fifty might be.
+
+---
+
+## As built (G3)
+
+Three things turned out differently from the way this document described them,
+and one thing it promised is not yet true.
+
+### There is no unfiltered single-record accessor
+
+§5 said internal content is filtered before it reaches a page or a chunk. The
+first implementation offered two accessors side by side — one filtered, one
+not — with a comment explaining which to use. That is an API that fails
+silently in exactly one direction, and a comment is not a control. The
+unfiltered getter was removed. `publicDepthFor()` is the only accessor, the
+join in `projects.ts` is the only caller, and a unit test scans `src/app` and
+`src/components` for any reference to the raw store, comments included.
+
+### Absent visibility means public, deliberately
+
+The safer-sounding default — absent means internal — would have hidden every
+record written before this change on the day it shipped, which presents as a
+rendering bug rather than as a policy. An unrecognised value is also treated as
+public, because the field is written by a two-option select: a third value
+means a corrupted file, not an intention to hide. Confidentiality here rests on
+an explicit marking, and the admin panel makes that marking the first control
+on the form.
+
+### Related work is ranked, not filtered
+
+The scored set was originally returned in display order, which picked the right
+three projects and then threw the ranking away. It now returns them
+best-match-first.
+
+### The new fields are not in retrieval yet
+
+This is a gap, and it is stated here rather than in a release note because
+someone will otherwise rediscover it. `buildChunks()` reads `scale`, `systems`,
+`failureHandling`, `challenges`, `decisions`, `faq`, `team`, `timeline`,
+`before` and `after`. It does **not** yet read `overview`, `businessProblem`,
+`architecture`, `workflow`, `metrics`, `lessonsLearned` or `futureEnhancements`.
+
+So a visitor can read those on the case-study page and the assistant will say
+the profile does not cover them. That is a wrong-but-safe failure — it
+under-claims rather than invents — and extending retrieval is tracked for G6,
+where the chunking and the honesty guards are being worked on anyway. A test
+asserts the current boundary explicitly so that it is a known state rather than
+an assumption.

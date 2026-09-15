@@ -1,5 +1,5 @@
 import raw from '@/data/projects.json';
-import { depthFor } from '@/data/project-depth';
+import { publicDepthFor } from '@/data/project-depth';
 import { companyById } from '@/data/companies';
 import { experienceRecords } from '@/data/experience';
 import { skillGroups } from '@/data/skills';
@@ -195,7 +195,20 @@ export const projects: readonly ProjectCaseStudy[] = ordered.map((record) => {
   void visible;
   void order;
 
-  const depth = depthFor(record.id);
+  /*
+   * `publicDepthFor`, not `depthFor`.
+   *
+   * This one line is the visibility boundary for the whole site. `projects` is
+   * what the public sections, the case-study page and the AI knowledge layer
+   * all read, so filtering here filters every consumer at once — rather than
+   * asking each of them to remember, which is how one of them eventually
+   * forgets and the failure is silent.
+   *
+   * The admin panel does not read this export; it reads the stored record
+   * through its own route, because it has to show Arvind what he wrote in
+   * order for him to change it.
+   */
+  const depth = publicDepthFor(record.id);
   return depth ? { ...study, depth } : study;
 });
 
@@ -241,4 +254,48 @@ export function projectsForCompany(companyId: string): readonly ProjectCaseStudy
     ordered.filter((record) => record.companyId === companyId).map((record) => record.id),
   );
   return projects.filter((project) => ids.has(project.id));
+}
+
+/**
+ * Projects related to this one, by what they actually share.
+ *
+ * The page used to link "the next one in the array", which is adjacency
+ * dressed up as relevance — it would happily send a reader from a compliance
+ * bot to an HR automation because of where they sat in a file.
+ *
+ * Scored instead: a shared skill area is worth more than a shared employer,
+ * because at a single-employer portfolio the company is shared by everything
+ * and therefore distinguishes nothing. Ties fall back to display order so the
+ * result is stable rather than incidental.
+ */
+export function relatedProjects(id: string, limit = 3): readonly ProjectCaseStudy[] {
+  const self = projectRecords.find((record) => record.id === id);
+  if (!self) return [];
+
+  const scored = ordered
+    .filter((record) => record.id !== id)
+    .map((record) => {
+      const sharedSkills = record.skillIds.filter((skill) => self.skillIds.includes(skill)).length;
+      const sharedRoles = record.experienceIds.filter((role) =>
+        self.experienceIds.includes(role),
+      ).length;
+      const sameCompany = record.companyId && record.companyId === self.companyId ? 1 : 0;
+      const sameCategory = record.category === self.category ? 1 : 0;
+      return { record, score: sharedSkills * 4 + sharedRoles * 2 + sameCategory * 2 + sameCompany };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || a.record.order - b.record.order)
+    .slice(0, limit);
+
+  /*
+   * Score order, not display order.
+   *
+   * The obvious spelling — `projects.filter(project => ids.has(project.id))` —
+   * picks the right set and then throws the ranking away, so the closest match
+   * turns up third whenever it happens to sit last in the file. `scored` is
+   * already sorted; this keeps that order and looks each one up.
+   */
+  return scored
+    .map((entry) => projects.find((project) => project.id === entry.record.id))
+    .filter((project): project is ProjectCaseStudy => Boolean(project));
 }

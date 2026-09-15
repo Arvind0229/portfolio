@@ -1,5 +1,11 @@
 import raw from '@/data/project-depth.json';
-import type { ProjectChallenge, ProjectDecision, ProjectDepth, ProjectFaq } from '@/types';
+import type {
+  ProjectChallenge,
+  ProjectDecision,
+  ProjectDepth,
+  ProjectFaq,
+  ProjectMetric,
+} from '@/types';
 
 /**
  * The depth layer, loaded and validated.
@@ -37,6 +43,26 @@ function asString(value: unknown): string | undefined {
 function asStringArray(value: unknown): readonly string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const items = value.map(asString).filter((item): item is string => Boolean(item));
+  return items.length > 0 ? items : undefined;
+}
+
+/**
+ * Quantified outcomes. Both halves are required: a label with no number says
+ * nothing, and a number with no label says less.
+ */
+function asMetrics(value: unknown): readonly ProjectMetric[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value
+    .map((entry) => {
+      if (typeof entry !== 'object' || entry === null) return undefined;
+      const record = entry as Record<string, unknown>;
+      const label = asString(record.label);
+      const metricValue = asString(record.value);
+      if (!label || !metricValue) return undefined;
+      const note = asString(record.note);
+      return note ? { label, value: metricValue, note } : { label, value: metricValue };
+    })
+    .filter((item): item is ProjectMetric => Boolean(item));
   return items.length > 0 ? items : undefined;
 }
 
@@ -91,7 +117,28 @@ export function parseDepth(value: unknown): ProjectDepth | undefined {
   if (typeof value !== 'object' || value === null) return undefined;
   const record = value as Record<string, unknown>;
 
+  /*
+   * Absent means public.
+   *
+   * The depth layer existed before this field did, so a record written under
+   * the old shape has no `visibility` — and defaulting that to `internal`
+   * would make every existing entry silently vanish from the page and from
+   * retrieval. Defaulting to `public` keeps them, and anything genuinely
+   * internal has to be marked, which is the direction a person can actually
+   * notice they got wrong.
+   */
+  const visibility: ProjectDepth['visibility'] =
+    asString(record.visibility) === 'internal' ? 'internal' : 'public';
+
   const depth: ProjectDepth = {
+    visibility,
+    overview: asString(record.overview),
+    businessProblem: asString(record.businessProblem),
+    architecture: asStringArray(record.architecture),
+    workflow: asStringArray(record.workflow),
+    metrics: asMetrics(record.metrics),
+    lessonsLearned: asStringArray(record.lessonsLearned),
+    futureEnhancements: asStringArray(record.futureEnhancements),
     scale: asStringArray(record.scale),
     systems: asStringArray(record.systems),
     challenges: asChallenges(record.challenges),
@@ -108,7 +155,15 @@ export function parseDepth(value: unknown): ProjectDepth | undefined {
   // depth at all, and returning `{}` would make `project.depth` truthy while
   // carrying nothing — every "has he told us about X" check downstream would
   // then have to test the fields individually.
-  const hasAnything = Object.values(depth).some((field) => field !== undefined);
+  /*
+   * `visibility` is always set, so it cannot count towards "has anything" —
+   * otherwise an entry with no content at all would look populated and every
+   * downstream "has he told us about X" check would have to test the fields
+   * individually, which is the thing returning `undefined` here avoids.
+   */
+  const hasAnything = Object.entries(depth).some(
+    ([key, field]) => key !== 'visibility' && field !== undefined,
+  );
   return hasAnything ? depth : undefined;
 }
 
@@ -127,6 +182,37 @@ function loadAll(): Readonly<Record<string, ProjectDepth>> {
 /** Keyed by project id. Missing id means the resume-derived baseline only. */
 export const projectDepth: Readonly<Record<string, ProjectDepth>> = loadAll();
 
-export function depthFor(projectId: string): ProjectDepth | undefined {
-  return projectDepth[projectId];
+/*
+ * There is deliberately no `depthFor(id)` accessor beside `publicDepthFor`.
+ *
+ * One was written and then removed: an unfiltered single-record getter sitting
+ * next to the filtered one is an invitation to autocomplete the wrong one onto
+ * a public page, and nothing would have failed loudly if someone had. The
+ * admin panel does not need it — it loads every record through
+ * `/api/admin/depth`, behind the session check — and a test that needs the
+ * stored record can read `projectDepth` above, which is named plainly enough
+ * that reaching for it on a public page reads as the mistake it would be.
+ */
+
+/**
+ * The depth record, but only when it may be shown.
+ *
+ * One function, used by both the page and the AI knowledge layer, because two
+ * filters are two chances for one of them to be wrong — and the failure is
+ * silent in exactly the direction that matters.
+ *
+ * What this does and does not claim: it **reduces the risk of accidental
+ * public exposure**, because an `internal` record is excluded from the build
+ * output and from every retrieval chunk, and a test asserts that. It is not a
+ * guarantee. It depends on this function being the only path (checked by
+ * `grep`, not by hope) and on the person classifying the record correctly.
+ *
+ * Credentials, tokens, PAN, PII and customer data are not covered by this at
+ * all. They must never be stored, because this repository's history is
+ * permanent — deleting a value later does not remove it.
+ */
+export function publicDepthFor(projectId: string): ProjectDepth | undefined {
+  const depth = projectDepth[projectId];
+  if (!depth || depth.visibility === 'internal') return undefined;
+  return depth;
 }

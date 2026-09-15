@@ -1,6 +1,15 @@
 # BRD — Phase 2
 
-**Status:** G1 (analysis and design) complete. No production code changed.
+**Status:** G1 (analysis and design), G2 (project data layer and CRUD) and G3
+(the public case-study page) complete. G4 onwards not started. The G3 outcome,
+including the two gaps carried forward, is in
+[`changes/CHANGE-2026-09-15-case-study-page.md`](changes/CHANGE-2026-09-15-case-study-page.md).
+
+**R1 is still open.** The case-study page is built and the depth store is still
+`{"projects": {}}`, so on live content every new section renders as nothing —
+by design, but nothing all the same. The mitigation below was "Arvind populates
+one real project at G3"; that has not happened yet, and the content will not be
+invented here.
 **Restore point:** tag `pre-phase2-restore-point`, plus a content-verified
 filesystem backup (187 files, blob-hash matched, not merely counted).
 **Written:** 2026-09-15, against the repository as it actually is. Every claim

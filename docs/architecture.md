@@ -252,6 +252,14 @@ Each of these is load-bearing and each has cost someone real time:
 7. **The AI honesty guards** (§6).
 8. **`parseDepth` / `parseResumeRegistry` drop bad fields rather than throwing.**
    A bad admin save must never be able to take the site down.
+9. **`publicDepthFor()` is the only way to read a depth record.** There is no
+   unfiltered single-record accessor, deliberately — one was written and
+   removed. The page and the AI both read the joined result, so one filter
+   covers both, and a unit test scans `src/app` and `src/components` for any
+   reference to the raw store. It matches comments too, on purpose.
+10. **A depth section with no content renders nothing.** Not a heading, not an
+    empty card. An empty section reads as a page that failed to load, and on
+    this site it is an invitation to fill the gap with something invented.
 
 ---
 
@@ -262,8 +270,10 @@ Each of these is load-bearing and each has cost someone real time:
   is written so the next person does not repeat a debugging session. Match that.
 - **Every claim in a comment should be checkable.** Prefer "measured X at 1440"
   over "should be fast".
-- **Tests are the safety net for everything above** — 400 unit/API, 421 E2E
-  across four viewports. Run them; never report results you did not run.
+- **Tests are the safety net for everything above** — 459 unit/component/API,
+  437 E2E across four viewports. Run them; never report results you did not run.
+  The full E2E suite takes over ten minutes, so it is run in batches; say so
+  rather than implying one green run.
 - **Before adding a dependency**: does existing code solve it? Does the platform?
   Is it maintained? What does it cost the bundle? The answer has been "no
   dependency" 100% of the time so far.
@@ -322,6 +332,8 @@ Honest list. None of these is hypothetical.
 | 15 | **The responsibilities/achievements split of the existing roles is a first pass** | Two lines were classified as achievements by their wording. Arvind should review the split; it is content, not code |
 | 16 | **Company logos are a path field, not an upload** | The validator accepts a site-relative image path. Nothing puts a file there yet |
 | 17 | **The public experience section still renders one flat list** | Responsibilities and achievements are separate in the data and concatenated for display. Showing them as two labelled groups is a design decision, not an oversight |
+| 18 | **No depth record has been written.** `project-depth.json` is `{"projects": {}}` | The case-study page renders correctly and shows none of the new sections, because there is nothing to show. Content must come from Arvind; it will not be invented |
+| 19 | **The AI does not read the depth fields added in G3** | `buildChunks()` reads `scale`, `systems`, `failureHandling`, `challenges`, `decisions`, `faq`, `team`, `timeline`, `before`, `after` — not `overview`, `businessProblem`, `architecture`, `workflow`, `metrics`, `lessonsLearned`, `futureEnhancements`. A visitor can read those on the page while the assistant says the profile does not cover them. Safe direction, still wrong. Tracked for G6 and pinned by a test |
 
 ---
 
@@ -333,6 +345,8 @@ Honest list. None of these is hypothetical.
 | CHANGE-001 | Resume is a registry with version history; upload writes the file then the pointer, in that order |
 | ADR-002 | A company is its own entity; roles reference it by id, and a dangling reference drops the role rather than rendering a blank employer |
 | ADR-003 | The browser resizes uploaded images; the server validates them without ever decoding one. Read before reaching for `sharp` |
+| ADR-004 | Projects are a registry content file; `ProjectDepth` is extended rather than duplicated; the id stays the URL; visibility is one record-level switch with one enforcement point. The "As built (G3)" section records where the implementation departed from the plan |
+| CHANGE-005 | The depth layer gets a public page. Sections render only when filled; related work is scored on shared references rather than file order |
 
 Change documents live in `docs/changes/`. Write one for anything non-trivial,
 and record what was *actually* tested rather than what should pass.

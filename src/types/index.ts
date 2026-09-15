@@ -201,7 +201,49 @@ export type ProjectFaq = {
  * in here may be inferred, rounded, or filled in from what an RPA project
  * "usually" looks like — it is stated by him or it is not there.
  */
+/** A quantified outcome. `value` is the number; `note` is the qualifier. */
+export type ProjectMetric = {
+  label: string;
+  value: string;
+  note?: string;
+};
+
 export interface ProjectDepth {
+  /**
+   * Who may see this record.
+   *
+   * **Record level, not field level** (ADR-004 §5). One setting for the whole
+   * depth entry: field-level visibility multiplies the places a
+   * mis-classification can happen and the filters that must each be correct,
+   * for a portfolio with five projects.
+   *
+   * `internal` content is excluded from the rendered page *and* from AI
+   * retrieval. There is deliberately no `confidential` level — credentials,
+   * tokens, PAN, PII and customer data must not enter this repository at all,
+   * because its git history is permanent.
+   *
+   * Absent means `public`: the depth layer existed before this field, and a
+   * record written under the old shape must not silently disappear.
+   */
+  visibility?: 'public' | 'internal';
+  /** A paragraph for the case-study page. `businessView` is one line for a card. */
+  overview?: string;
+  /** The long form. `problem` on the case study is the summary. */
+  businessProblem?: string;
+  /** Components and how they connect. Nothing else holds this. */
+  architecture?: readonly string[];
+  /**
+   * What it does when it *runs*.
+   *
+   * Not a duplicate of `process` on the case study, which is how it was
+   * *built* — requirements, BRD, sign-off, testing, deployment. Two genuinely
+   * different lists (ADR-004 §3).
+   */
+  workflow?: readonly string[];
+  /** Quantified outcomes. `impact` on the case study is the prose version. */
+  metrics?: readonly ProjectMetric[];
+  lessonsLearned?: readonly string[];
+  futureEnhancements?: readonly string[];
   /** Volumes, run frequency, how many people or branches it touches. */
   scale?: readonly string[];
   /** The actual applications, databases and interfaces it works against. */

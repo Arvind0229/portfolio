@@ -5,8 +5,8 @@ the system works; this file explains **where the project stands, what has been
 decided, and which mistakes have already been made here** so they are not made
 again.
 
-**Current phase:** Phase 2, gate G2 complete (project data layer and CRUD).
-G3 onwards not started.
+**Current phase:** Phase 2, gate G3 complete (the public case-study page).
+G4 onwards not started.
 **Last verified:** 2026-09-15.
 
 ---
@@ -37,8 +37,9 @@ page fetches content at runtime.
 | CHANGE-003 | Content layer — profile, socials, skills admin-editable |
 | CHANGE-004 | Phase 1 gaps — photo, company as an entity, admin entry |
 | Phase 2 G1 | Analysis complete, approved |
-| **Phase 2 G2** | **Projects are admin-editable: data layer, CRUD, relationships** |
-| Phase 2 G3–G6 | Not started |
+| Phase 2 G2 | Projects are admin-editable: data layer, CRUD, relationships |
+| **Phase 2 G3** | **`ProjectDepth` gets a public page; visibility; related work by reference** |
+| Phase 2 G4–G6 | Not started |
 
 Phase 2 gates: G2 project data + CRUD · G3 case-study page · G4 motion + robot ·
 G5 Mandala + Crimson · G6 AI + performance + release.
@@ -58,6 +59,9 @@ G5 Mandala + Crimson · G6 AI + performance + release.
 | Extend `ProjectDepth`; never create a second details store | ADR-004 | The proposed schema duplicated four existing fields |
 | A project's id is derived from its title, then frozen | G2 | The admin panel renders it as text, not an input. Editing it breaks a live URL |
 | New and duplicated projects start **hidden** | G2 | Publishing is a deliberate act; a half-written project must not appear the moment it is created |
+| `publicDepthFor()` is the **only** depth accessor | G3 | An unfiltered getter beside it is an invitation to autocomplete the wrong one onto a public page. A unit test scans `src/app` and `src/components`, comments included |
+| Absent `visibility` means **public** | G3 | The safer-sounding default would have hidden every existing record on the day it shipped, which presents as a rendering bug |
+| A depth section with no content renders **nothing** | G3 | An empty heading reads as a failed load, and invites filling the gap with something plausible |
 
 ---
 
@@ -74,6 +78,9 @@ A `grep` before building is worth more here than anywhere else.
 | Scroll reveals | `Reveal` + `use-in-view` + `.reveal`, stagger via `--reveal-delay` |
 | A count-up animation | `use-count-up` |
 | A projects store | `projects.json` + `parseProjects` + `relationsFor()` + a registry entry |
+| A case-study section component | `components/sections/case-study.tsx` — metrics, overview, mechanics, outcome, related |
+| A "related projects" rule | `relatedProjects()` — scored on shared references, best match first |
+| A repeated-row admin editor | `PairList` — generic over any `Record<string, string \| undefined>`, so metrics needed no new component |
 | An upload pipeline | Resume and photo routes: magic bytes, size cap, content-hash filename, pointer-then-file ordering, rollback |
 | Optimistic concurrency + conflict UI | `useContent<T>()` — inherit it, do not reimplement |
 | A rate limiter | `createRateLimiter`, separate read and write budgets |
@@ -99,7 +106,20 @@ Five honesty guards stop it answering about things Arvind has not done. **Do not
 refactor it casually.**
 
 `KnowledgeChunk` already carries provenance: `kind`, `sourceSection`,
-`projectId`. Phase 2 adds `visibility`, and retrieval must filter on it.
+`projectId`.
+
+**Visibility is filtered upstream, not in retrieval.** `buildChunks()` reads
+`project.depth`, which the join already passed through `publicDepthFor()`, so an
+internal record never becomes a chunk in the first place. A test in
+`tests/unit/project-visibility.test.ts` mounts a fixture and asserts it.
+
+**Open gap for G6.** `buildChunks()` reads `scale`, `systems`,
+`failureHandling`, `challenges`, `decisions`, `faq`, `team`, `timeline`,
+`before` and `after`. It does **not** read the fields G3 added: `overview`,
+`businessProblem`, `architecture`, `workflow`, `metrics`, `lessonsLearned`,
+`futureEnhancements`. A visitor can read those on the case-study page while the
+assistant says the profile does not cover them — under-claiming rather than
+inventing, so it is safe, but it is wrong and it is worth closing.
 
 **`projectId` exists for a specific reason.** Facet chunks carry globally rare
 vocabulary ("hardest", "challenge"), so their IDF is enormous, and one
@@ -125,20 +145,22 @@ Recorded so the next agent does not repeat them. Each cost real time.
 | `process.exit` in a `finally` | Swallowed an exception; a UAT run skipped its last third and reported "0 failed" |
 | `waitUntil: 'networkidle'` against a dev server | The HMR socket never settles. Wait for the element |
 | Clicking before hydration | The tab exists in SSR HTML before React attaches a handler |
+| axe scanned mid-fade | Four "serious" contrast failures that do not exist: axe read text at ~12% opacity during a scroll reveal. **Scan under reduced motion**, where this site removes the reveal instead of shortening it |
+| Text overflowing a `min-w-0` flex item | The element's box is in bounds and the document still scrolls sideways. `min-w-0` lets the box shrink; it does not make an unbreakable token wrap. Prose needs `break-words` too |
 
 ---
 
-## 7. Measured baseline (2026-09-15)
+## 7. Measured baseline (2026-09-15, after G3)
 
 | | |
 |---|---|
-| Shared JS | 102 kB |
+| Shared JS | 102 kB (unchanged through G3) |
 | Homepage | 153 kB |
-| `/projects/[id]` | 109 kB |
-| `/admin` | 121 kB (118 kB before G2) |
+| `/projects/[id]` | 109 kB (unchanged through G3) |
+| `/admin` | 123 kB (121 kB before G3, 118 kB before G2) |
 | Middleware | 33.9 kB |
-| Unit + API tests | 428 passing (400 before G2) |
-| E2E tests | 421 passing, 3 intentional skips |
+| Unit + API tests | 459 passing (428 before G3) |
+| E2E tests | 437 passing, 3 intentional skips (421 before G3) |
 | Accessibility | 0 axe WCAG A/AA violations |
 | **Lighthouse** | **never run** |
 

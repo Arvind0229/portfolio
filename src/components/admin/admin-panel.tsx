@@ -721,7 +721,14 @@ export function AdminPanel({ projects, localMode }: Props) {
           className="mt-4 flex flex-wrap gap-2 border-b border-[var(--border-subtle)] pb-3"
         >
           {projects.map((project) => {
-            const filled = Boolean(depth[project.id]);
+            /*
+              `visibility` is not content.
+              A record holding nothing but a visibility choice is dropped by the
+              parser on save, so counting it here would light the dot for a
+              project that has nothing written about it — and put it out again
+              on the next reload.
+            */
+            const filled = Object.keys(depth[project.id] ?? {}).some((key) => key !== 'visibility');
             return (
               <button
                 key={project.id}
@@ -755,6 +762,122 @@ export function AdminPanel({ projects, localMode }: Props) {
           <p className="mt-6 text-[0.85rem] text-[var(--text-muted)]">Loading…</p>
         ) : (
           <div className="mt-6 grid gap-5 lg:grid-cols-2">
+            {/*
+              Visibility first, because it governs everything below it.
+
+              One switch, at the record level — not per field. A per-field
+              choice reads as flexibility and behaves as a trap: it takes one
+              mis-set toggle for a confidential sentence to be public, and
+              nobody re-checks forty switches. `internal` removes the whole
+              depth record from the public page and from the assistant's
+              retrieval set in the same step, because both read it through
+              `publicDepthFor()`.
+            */}
+            <div className="lg:col-span-2">
+              <Field
+                label="Who can see this detail?"
+                hint="Internal keeps the whole block off the public page and out of the assistant's answers. The project itself still appears — only this extra detail is withheld."
+              >
+                <select
+                  value={current.visibility ?? 'public'}
+                  data-testid="admin-visibility"
+                  onChange={(event) =>
+                    patch({ visibility: event.target.value === 'internal' ? 'internal' : 'public' })
+                  }
+                  className={inputClass}
+                >
+                  <option value="public">Public — shown on the site and used by the assistant</option>
+                  <option value="internal">Internal — visible only here</option>
+                </select>
+              </Field>
+              {current.visibility === 'internal' ? (
+                <p
+                  className="mt-2 text-[0.78rem] leading-relaxed text-[var(--accent-tertiary)]"
+                  data-testid="admin-visibility-note"
+                >
+                  This detail is withheld from the site and the assistant. It is still stored in the
+                  repository, so it is not the place for credentials, customer data or anything
+                  under an NDA.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="lg:col-span-2">
+              <Field
+                label="In one paragraph, what is this?"
+                hint="What it is and who it is for, before any detail. This is the first thing on the case-study page."
+              >
+                <TextArea
+                  testId="admin-overview"
+                  rows={3}
+                  value={current.overview ?? ''}
+                  onChange={(value) => patch({ overview: value })}
+                />
+              </Field>
+            </div>
+
+            <div className="lg:col-span-2">
+              <Field
+                label="The business problem, in full"
+                hint="The long form of the one-line problem already on the card. It appears under the same heading, as the paragraph after it."
+              >
+                <TextArea
+                  testId="admin-business-problem"
+                  rows={4}
+                  value={current.businessProblem ?? ''}
+                  onChange={(value) => patch({ businessProblem: value })}
+                />
+              </Field>
+            </div>
+
+            <Field
+              label="How is it put together?"
+              hint="One component per line. The pieces and how they relate — not a step-by-step run."
+            >
+              <TextArea
+                testId="admin-architecture"
+                rows={4}
+                value={lines(current.architecture)}
+                placeholder={'Orchestrator schedules the run\nQueue holds the day’s records'}
+                onChange={(value) => patch({ architecture: toLines(value) })}
+              />
+            </Field>
+
+            <Field
+              label="What happens, step by step, when it runs?"
+              hint="One step per line, in order. This is what it does on a run — the line above is how it is built."
+            >
+              <TextArea
+                testId="admin-workflow"
+                rows={4}
+                value={lines(current.workflow)}
+                onChange={(value) => patch({ workflow: toLines(value) })}
+              />
+            </Field>
+
+            <div className="lg:col-span-2">
+              <p className="text-[0.85rem] font-medium text-[var(--text-primary)]">
+                The numbers worth leading with
+              </p>
+              <p className="mt-0.5 mb-2 text-[0.75rem] text-[var(--text-muted)]">
+                These sit at the top of the case study, above everything else, because a figure is
+                what someone scanning on a phone stops for. Only figures you can stand behind — put
+                &ldquo;approx.&rdquo; in the note if it is an estimate. A row needs both a number and
+                a label; one without the other is dropped on save.
+              </p>
+              <PairList
+                testId="admin-metrics"
+                items={current.metrics ?? []}
+                fields={[
+                  { key: 'value', label: 'The figure (e.g. 4 hours a day)' },
+                  { key: 'label', label: 'What it measures' },
+                  { key: 'note', label: 'How it was arrived at (optional)' },
+                ]}
+                addLabel="Add a number"
+                onChange={(metrics) => patch({ metrics })}
+              />
+            </div>
+
             <Field
               label="How big is it, and how often does it run?"
               hint="One point per line. Records or transactions handled, run frequency, how many people or branches it reaches."
@@ -868,6 +991,30 @@ export function AdminPanel({ projects, localMode }: Props) {
                 onChange={(decisions) => patch({ decisions })}
               />
             </div>
+
+            <Field
+              label="What did building it teach you?"
+              hint="One per line. What you would tell someone starting the same thing — this is the section that reads as experience rather than a feature list."
+            >
+              <TextArea
+                testId="admin-lessons"
+                rows={4}
+                value={lines(current.lessonsLearned)}
+                onChange={(value) => patch({ lessonsLearned: toLines(value) })}
+              />
+            </Field>
+
+            <Field
+              label="What would you do next with it?"
+              hint="One per line. Write these as plans, not as claims — they render under a heading that says they have not been built."
+            >
+              <TextArea
+                testId="admin-future"
+                rows={4}
+                value={lines(current.futureEnhancements)}
+                onChange={(value) => patch({ futureEnhancements: toLines(value) })}
+              />
+            </Field>
 
             <div className="lg:col-span-2">
               <p className="text-[0.85rem] font-medium text-[var(--text-primary)]">

@@ -10,6 +10,7 @@ project's history without opening five documents.
 | CHANGE-002 | 2026-09-14 | Admin security batch — explicit `ADMIN_LOCAL_BYPASS`, edge middleware, rate limiting on every admin write, real optimistic concurrency (the 409 could never previously fire), origin checks, server-side-only credentials | [`CHANGE-2026-09-14-admin-security.md`](changes/CHANGE-2026-09-14-admin-security.md) |
 | CHANGE-003 | 2026-09-14 | Content layer — profile, social links and skills become admin-editable; registry-driven content API; resume version UI with rollback; Phase 1 UAT | [`CHANGE-2026-09-14-content-layer.md`](changes/CHANGE-2026-09-14-content-layer.md) |
 | CHANGE-004 | 2026-09-14 | Phase 1 gap closure — appearance panel overflow, admin-managed profile photo, Company as a referenced entity, quiet admin entry in the footer | [`CHANGE-2026-09-14-phase1-gaps.md`](changes/CHANGE-2026-09-14-phase1-gaps.md) |
+| CHANGE-005 | 2026-09-15 | The public case-study page — `ProjectDepth` gets a surface a visitor can read, seven new fields, record-level visibility with one enforcement point, related work by shared reference rather than file order | [`CHANGE-2026-09-15-case-study-page.md`](changes/CHANGE-2026-09-15-case-study-page.md) |
 
 ## Architecture decisions
 
@@ -29,13 +30,14 @@ project's history without opening five documents.
 | [`MOTION-SYSTEM.md`](MOTION-SYSTEM.md) | Global vs theme-specific motion, tokens, robot states, Mandala layers |
 | [`DESIGN-RESEARCH-PHASE-2.md`](DESIGN-RESEARCH-PHASE-2.md) | Principles taken from current practice, and what was deliberately not taken |
 
-**G1** (analysis) and **G2** (project data layer + CRUD) are complete. G3
-onwards is not started.
+**G1** (analysis), **G2** (project data layer + CRUD) and **G3** (the public
+case-study page) are complete. G4 onwards is not started.
 
 | Gate | Delivered |
 |---|---|
 | G1 | BRD, ADR-004, motion system, design research, AI context, restore point |
 | G2 | `projects.json` + validator + accessor + registry entry; admin CRUD with create, edit, duplicate, delete, reorder, publish and feature; company / role / skill references |
+| G3 | `case-study.tsx`; seven depth fields plus record-level visibility, through the parser, the admin form and the page; related work scored on shared references; 31 new tests including an end-to-end assertion that an internal record reaches neither the page nor retrieval |
 
 ## Where to start
 
