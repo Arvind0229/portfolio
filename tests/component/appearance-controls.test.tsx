@@ -54,8 +54,19 @@ describe('AppearanceControls', () => {
     await user.click(screen.getByTestId('theme-option-engineering'));
     expect(document.documentElement.getAttribute('data-mode')).toBe('dark');
 
-    await user.click(screen.getByTestId('theme-option-enterprise'));
+    /*
+     * Clay is the light-first theme now. This assertion used to use
+     * Enterprise, which was light-first until it became Crimson — a
+     * dark-first theme. The test is checking that switching theme adopts
+     * *that theme's* intended mode, so it needs a theme whose intent is
+     * light; it is not checking anything about Enterprise specifically.
+     */
+    await user.click(screen.getByTestId('theme-option-clay'));
     expect(document.documentElement.getAttribute('data-mode')).toBe('light');
+
+    // And the reverse: Crimson is dark-first and must pull the mode back.
+    await user.click(screen.getByTestId('theme-option-enterprise'));
+    expect(document.documentElement.getAttribute('data-mode')).toBe('dark');
   });
 
   it('hands light and dark to the lamp rather than duplicating the control', async () => {

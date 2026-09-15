@@ -20,7 +20,16 @@ export const DEFAULT_THEME: ThemeId = 'engineering';
 export const DEFAULT_MODE: ColorMode = 'dark';
 export const DEFAULT_FONT: FontSetId = 'precision';
 
-const THEME_IDS: readonly ThemeId[] = ['enterprise', 'engineering', 'studio'];
+/*
+ * `enterprise` is kept, and it is now Crimson Claymorphism.
+ *
+ * The id is a storage key, not a name. Renaming it would invalidate every
+ * saved preference and every `theme-option-enterprise` test selector to buy a
+ * string nobody sees. `clay` is added rather than repurposing one of the
+ * three, so a visitor who stored any existing value still lands on a theme
+ * that exists.
+ */
+const THEME_IDS: readonly ThemeId[] = ['clay', 'engineering', 'studio', 'enterprise'];
 const MODES: readonly ColorMode[] = ['light', 'dark'];
 const FONT_IDS: readonly FontSetId[] = ['precision', 'technical', 'editorial'];
 
@@ -52,12 +61,12 @@ var t=localStorage.getItem('${STORAGE_KEYS.theme}');
 var m=localStorage.getItem('${STORAGE_KEYS.mode}');
 var f=localStorage.getItem('${STORAGE_KEYS.font}');
 var mo=localStorage.getItem('${STORAGE_KEYS.motion}');
-var themes=['enterprise','engineering','studio'];
+var themes=['clay','engineering','studio','enterprise'];
 var modes=['light','dark'];
 var fonts=['precision','technical','editorial'];
 if(themes.indexOf(t)===-1){t='${DEFAULT_THEME}';}
 if(modes.indexOf(m)===-1){
-  m = t==='engineering' ? 'dark' : 'light';
+  m = (t==='engineering'||t==='enterprise') ? 'dark' : 'light';
   if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches&&t!=='studio'){m='dark';}
 }
 if(fonts.indexOf(f)===-1){f='${DEFAULT_FONT}';}

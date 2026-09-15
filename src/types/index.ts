@@ -6,7 +6,7 @@
  * truth (`src/data`), so updating the resume never means editing components.
  */
 
-export type ThemeId = 'enterprise' | 'engineering' | 'studio';
+export type ThemeId = 'clay' | 'engineering' | 'studio' | 'enterprise';
 export type ColorMode = 'light' | 'dark';
 export type FontSetId = 'precision' | 'technical' | 'editorial';
 

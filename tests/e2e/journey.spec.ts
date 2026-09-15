@@ -526,7 +526,7 @@ test.describe('portfolio journey', () => {
      * floor and not a range — this asserts the page is alive, and how alive is
      * a judgement for a person looking at it, not for a byte comparison.
      */
-    for (const theme of ['enterprise', 'studio'] as const) {
+    for (const theme of ['clay', 'enterprise', 'studio'] as const) {
       await page.goto('/#experience');
       await openAppearance(page, testInfo.project.use.viewport?.width ?? 1440);
       await page.getByTestId(`theme-option-${theme}`).click();

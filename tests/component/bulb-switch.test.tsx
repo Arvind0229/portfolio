@@ -69,9 +69,11 @@ describe('BulbSwitch', () => {
     const user = userEvent.setup();
     renderBulb();
 
-    // Enterprise is a light-first theme; force it dark deliberately.
+    // Clay is a light-first theme; force it dark deliberately. (This was
+    // Enterprise until Enterprise became Crimson, which is dark-first — the
+    // test needs a light-first theme to have something to override.)
     await user.click(screen.getByTestId('appearance-trigger'));
-    await user.click(screen.getByTestId('theme-option-enterprise'));
+    await user.click(screen.getByTestId('theme-option-clay'));
     expect(document.documentElement.getAttribute('data-mode')).toBe('light');
 
     await user.click(screen.getByTestId('bulb-switch'));
@@ -83,7 +85,7 @@ describe('BulbSwitch', () => {
 
     // Leaving and returning must respect the explicit choice, not the default.
     await user.click(screen.getByTestId('theme-option-studio'));
-    await user.click(screen.getByTestId('theme-option-enterprise'));
+    await user.click(screen.getByTestId('theme-option-clay'));
     expect(document.documentElement.getAttribute('data-mode')).toBe('dark');
   });
 

@@ -101,11 +101,11 @@ export const sitemapRoutes: readonly string[] = [
 
 export const themes: readonly ThemeDefinition[] = [
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    tagline: 'Restrained, executive, highly readable',
+    id: 'clay',
+    name: 'Light Clay',
+    tagline: 'Pastel claymorphism — soft, tactile, approachable',
     defaultMode: 'light',
-    swatch: ['#1D4ED8', '#0F766E'],
+    swatch: ['#FF6F61', '#8172B3'],
   },
   {
     id: 'engineering',
@@ -117,9 +117,17 @@ export const themes: readonly ThemeDefinition[] = [
   {
     id: 'studio',
     name: 'Studio',
-    tagline: 'Editorial, typographic, expressive',
+    tagline: 'Generative mandala — editorial and expressive',
     defaultMode: 'light',
     swatch: ['#D9451F', '#1F5F5B'],
+  },
+  {
+    /* The id stays `enterprise`. See the note in lib/theme/constants.ts. */
+    id: 'enterprise',
+    name: 'Crimson Clay',
+    tagline: 'Deep crimson claymorphism — the RPA command centre',
+    defaultMode: 'dark',
+    swatch: ['#E21D36', '#4A8DFF'],
   },
 ];
 

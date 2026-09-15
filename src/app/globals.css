@@ -164,54 +164,307 @@
   --whatsapp: #25d366;
 }
 
-/* --------------------------- ENTERPRISE ---------------------------- */
-[data-theme='enterprise'][data-mode='light'] {
+/* ------------------------------ CLAY ------------------------------- *
+ * Light Pastel Claymorphism.
+ *
+ * Depth here comes from `--panel-shadow`, not from a border: a clay card is
+ * a light source above-left and a shadow below-right, plus a 1px inner
+ * highlight along the top edge. The existing panel system already owns all
+ * three, so every card, button and surface on the site becomes clay from
+ * these tokens alone — no component was edited to get this look.
+ *
+ * Contrast was computed, not eyeballed. Coral #FF6F61 measures 2.9:1 on
+ * white, so it is never text: it is a *fill* with #21131A on it, and the
+ * text-weight coral is --accent-primary #B03A2E (5.6:1 on #FFFFFF). The
+ * pastels are surfaces only; nothing sets pastel on pastel.
+ */
+[data-theme='clay'][data-mode='light'] {
   color-scheme: light;
-  --grid-opacity: 0.045;
-  --glow-opacity: 0.09;
-  --motion-scale: 0.8;
-  --tracking-display: -0.022em;
+  --bg-primary: #f7f5fb;
+  --bg-secondary: #f1eefa;
+  --surface: #ffffff;
+  --surface-elevated: #faf8fd;
+  --text-primary: #211e29;
+  --text-secondary: #3e3a47;
+  --text-muted: #635e6c;
+  /* #706b78 was the value from the design note and it measures 4.16:1 on
+     --clay-lavender — an axe failure found in the footer at 390px, not
+     guessed at. #5F5968 is the darkest of the family and clears 4.5:1 on
+     every pastel surface in this theme (worst case 5.43 on lavender). */
+  --text-subtle: #5f5968;
+  --border: #e4dff0;
+  --border-subtle: #eee9f7;
+  /* Text-safe coral. The brand coral lives in --accent-vivid and is used for
+     fills and graphics only. */
+  --accent-primary: #b03a2e;
+  --accent-secondary: #4c78c2;
+  --accent-tertiary: #8172b3;
+  --accent-vivid: #ff6f61;
+  --accent-contrast: #ffffff;
+  --accent-glow: rgba(255, 111, 97, 0.28);
+  --success: #2f6f52;
+  --warning: #8a5a12;
+  --error: #b3303a;
+
+  /* Pastel surface family. Surfaces and accents — never text. */
+  --clay-lavender: #e9e4f7;
+  --clay-sky: #e3effb;
+  --clay-mint: #e2f3ec;
+  --clay-peach: #fce8df;
+  --clay-pink: #f7e3ea;
+  --clay-lemon: #f7f0cf;
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1.125rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(33, 30, 41, 0.07);
+  --glass-blur: 14px;
+  --shadow-sm: 0 1px 2px rgba(80, 70, 110, 0.08);
+  --shadow-md: 0 10px 26px -14px rgba(80, 70, 110, 0.26);
+  --shadow-lg: 0 28px 64px -30px rgba(80, 70, 110, 0.32);
+
+  --panel-bg: #ffffff;
+  --panel-border: transparent;
+  --panel-border-hover: color-mix(in srgb, var(--accent-vivid) 42%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.9);
+  --panel-bloom: transparent;
+  --panel-blur: 0px;
+  --panel-saturate: 100%;
+  --panel-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.9),
+    7px 7px 16px rgba(80, 70, 110, 0.12),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.55);
+  --panel-glow: none;
+  --panel-radius: var(--radius-lg);
+  --panel-sheen: transparent;
+  --panel-sheen-strong: transparent;
+  --icon-tint: var(--accent-tertiary);
+
+  --grid-opacity: 0.03;
+  --glow-opacity: 0.16;
+  --noise-opacity: 0;
+  --motion-scale: 1;
+  --tracking-display: -0.02em;
+  --weight-display: 620;
+}
+
+/* Dusk clay. The same clay language with the light source lowered, so the
+   bulb still does something meaningful on this theme rather than being
+   disabled — which would be a capability loss dressed up as a design. */
+[data-theme='clay'][data-mode='dark'] {
+  color-scheme: dark;
+  --bg-primary: #17141d;
+  --bg-secondary: #1e1a26;
+  --surface: #241f2e;
+  --surface-elevated: #2b2537;
+  --text-primary: #f6f3fb;
+  --text-secondary: #d6cfe2;
+  --text-muted: #a79fb6;
+  --text-subtle: #978ea8;
+  --border: #372f46;
+  --border-subtle: #2b2537;
+  --accent-primary: #ff8a7d;
+  --accent-secondary: #8fb4ee;
+  --accent-tertiary: #b9a9e6;
+  --accent-vivid: #ff6f61;
+  --accent-contrast: #17141d;
+  --accent-glow: rgba(255, 111, 97, 0.3);
+  --success: #5fd39a;
+  --warning: #f0c05a;
+  --error: #ff7f8d;
+
+  --clay-lavender: #332c44;
+  --clay-sky: #26334a;
+  --clay-mint: #243a33;
+  --clay-peach: #3d2c26;
+  --clay-pink: #3a2732;
+  --clay-lemon: #39341f;
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1.125rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+
+  --glass-bg: rgba(36, 31, 46, 0.66);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-blur: 16px;
+  --shadow-sm: 0 1px 2px rgba(8, 5, 14, 0.6);
+  --shadow-md: 0 14px 34px -20px rgba(8, 5, 14, 0.85);
+  --shadow-lg: 0 34px 78px -38px rgba(8, 5, 14, 0.92);
+
+  --panel-bg: #241f2e;
+  --panel-border: transparent;
+  --panel-border-hover: color-mix(in srgb, var(--accent-vivid) 50%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.05);
+  --panel-bloom: transparent;
+  --panel-blur: 0px;
+  --panel-saturate: 100%;
+  --panel-shadow:
+    -5px -5px 12px rgba(255, 255, 255, 0.025),
+    8px 8px 18px rgba(0, 0, 0, 0.42),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.045);
+  --panel-glow: none;
+  --panel-radius: var(--radius-lg);
+  --panel-sheen: transparent;
+  --panel-sheen-strong: transparent;
+  --icon-tint: var(--accent-tertiary);
+
+  --grid-opacity: 0.05;
+  --glow-opacity: 0.2;
+  --motion-scale: 1;
+  --tracking-display: -0.02em;
+  --weight-display: 620;
+}
+
+/* ---------------------------- CRIMSON ------------------------------ *
+ * Theme id `enterprise`, display name "Crimson Claymorphism".
+ *
+ * The id is deliberately unchanged — it is a localStorage key and a test
+ * selector, and renaming it would break both to change a string nobody sees.
+ *
+ * Dark is the intended mode. Depth is the same clay recipe as the Light
+ * theme with the light source dimmed, so the two claymorphism themes are one
+ * design language rather than two coincidences. Blue is an accent for data
+ * and integration only; crimson stays primary.
+ *
+ * Contrast computed: --accent-primary #FF5C70 measures 5.4:1 on --surface
+ * #1D0D10, and #E21D36 (the brand crimson) is 3.6:1 there — so the brand red
+ * lives in --accent-vivid for fills and strokes, and text uses the lighter
+ * value. --text-muted #C4A9AD is 7.3:1 on the app ground.
+ */
+[data-theme='enterprise'][data-mode='dark'] {
+  color-scheme: dark;
+  --bg-primary: #12080a;
+  --bg-secondary: #180a0d;
+  --surface: #1d0d10;
+  --surface-elevated: #2c151a;
+  --text-primary: #fff3f1;
+  --text-secondary: #ebd8da;
+  --text-muted: #c4a9ad;
+  --text-subtle: #ab9296;
+  --border: #3a1a21;
+  --border-subtle: #2c151a;
+  --accent-primary: #ff5c70;
+  --accent-secondary: #4a8dff;
+  --accent-tertiary: #ff9aa6;
+  --accent-vivid: #e21d36;
+  --accent-contrast: #12080a;
+  --accent-glow: rgba(226, 29, 54, 0.34);
+  --success: #3bc47a;
+  --warning: #f2c94c;
+  --error: #ff7f8d;
+
+  /* Crimson surface family, used by the web geometry and the workflow. */
+  --crimson-deep: #570914;
+  --crimson: #7f1020;
+  --crimson-light: #a7192d;
+  --web-white: #f8eeee;
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1.125rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+
+  --glass-bg: rgba(29, 13, 16, 0.68);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 16px;
+  --shadow-sm: 0 1px 2px rgba(6, 2, 3, 0.62);
+  --shadow-md: 0 14px 36px -20px rgba(6, 2, 3, 0.9);
+  --shadow-lg: 0 36px 84px -40px rgba(6, 2, 3, 0.95);
+
+  --panel-bg: #1d0d10;
+  --panel-border: transparent;
+  --panel-border-hover: color-mix(in srgb, var(--accent-vivid) 62%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.045);
+  --panel-bloom: transparent;
+  --panel-blur: 0px;
+  --panel-saturate: 100%;
+  --panel-shadow:
+    -4px -4px 12px rgba(255, 80, 90, 0.025),
+    8px 8px 20px rgba(0, 0, 0, 0.42),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.04);
+  --panel-glow: none;
+  --panel-radius: var(--radius-lg);
+  --panel-sheen: transparent;
+  --panel-sheen-strong: transparent;
+  --icon-tint: var(--accent-tertiary);
+
+  --grid-opacity: 0.06;
+  --glow-opacity: 0.2;
+  --motion-scale: 0.9;
+  --tracking-display: -0.024em;
   --weight-display: 640;
 }
 
-[data-theme='enterprise'][data-mode='dark'] {
-  color-scheme: dark;
-  --bg-primary: #0b1017;
-  --bg-secondary: #10161f;
-  --surface: #141b25;
-  --surface-elevated: #1b2331;
-  --text-primary: #f1f5f9;
-  --text-secondary: #c3ccdb;
-  --text-muted: #96a1b4;
-  --text-subtle: #8992a2;
-  --border: #26303f;
-  --border-subtle: #1d2632;
-  --accent-primary: #7aa7ff;
-  --accent-secondary: #4fd3bd;
-  --accent-tertiary: #a5b4fc;
-  --accent-contrast: #08101c;
-  --accent-glow: rgba(122, 167, 255, 0.2);
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --error: #f87171;
-  --glass-bg: rgba(20, 27, 37, 0.66);
-  --glass-border: rgba(203, 213, 225, 0.12);
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 10px 30px -16px rgba(0, 0, 0, 0.7);
-  --shadow-lg: 0 30px 70px -34px rgba(0, 0, 0, 0.8);
-  --grid-opacity: 0.06;
+/* Crimson by daylight. Warm off-white ground, same clay, crimson kept as the
+   accent rather than the surface — a light theme made of #7F1020 panels is
+   unreadable, so the crimson moves into the accents and the edges. */
+[data-theme='enterprise'][data-mode='light'] {
+  color-scheme: light;
+  --bg-primary: #fbf6f5;
+  --bg-secondary: #f5eceb;
+  --surface: #ffffff;
+  --surface-elevated: #fdf8f7;
+  --text-primary: #200f12;
+  --text-secondary: #43282c;
+  --text-muted: #6b4a4f;
+  --text-subtle: #7d5a5f;
+  --border: #eddcda;
+  --border-subtle: #f5eceb;
+  --accent-primary: #b3142a;
+  --accent-secondary: #1d5fd1;
+  --accent-tertiary: #8c1023;
+  --accent-vivid: #e21d36;
+  --accent-contrast: #ffffff;
+  --accent-glow: rgba(226, 29, 54, 0.2);
+  --success: #17683f;
+  --warning: #8a5a12;
+  --error: #b3142a;
+
+  --crimson-deep: #7f1020;
+  --crimson: #a7192d;
+  --crimson-light: #e21d36;
+  --web-white: #200f12;
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1.125rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+
+  --glass-bg: rgba(255, 255, 255, 0.74);
+  --glass-border: rgba(32, 15, 18, 0.08);
+  --glass-blur: 14px;
+  --shadow-sm: 0 1px 2px rgba(90, 40, 46, 0.08);
+  --shadow-md: 0 10px 26px -14px rgba(90, 40, 46, 0.24);
+  --shadow-lg: 0 28px 64px -30px rgba(90, 40, 46, 0.3);
+
+  --panel-bg: #ffffff;
+  --panel-border: transparent;
+  --panel-border-hover: color-mix(in srgb, var(--accent-vivid) 45%, transparent);
+  --panel-highlight: rgba(255, 255, 255, 0.9);
+  --panel-bloom: transparent;
+  --panel-blur: 0px;
+  --panel-saturate: 100%;
+  --panel-shadow:
+    -6px -6px 14px rgba(255, 255, 255, 0.92),
+    7px 7px 16px rgba(90, 40, 46, 0.13),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.6);
+  --panel-glow: none;
+  --panel-radius: var(--radius-lg);
+  --panel-sheen: transparent;
+  --panel-sheen-strong: transparent;
+  --icon-tint: var(--accent-tertiary);
+
+  --grid-opacity: 0.035;
   --glow-opacity: 0.12;
-  --motion-scale: 0.8;
+  --motion-scale: 0.9;
+  --tracking-display: -0.024em;
+  --weight-display: 640;
 }
 
-/* ------------------------- SIGNATURE (id: engineering) --------------------
-   Midnight blue ground, electric blue interaction, cyan for data and glow.
-   The brief's hexes are used verbatim wherever they clear WCAG AA as text on
-   the lightest surface of the theme. Three did not, and were lifted by the
-   smallest amount that passes — the shift is imperceptible next to the
-   original and is documented inline. Saturated originals survive as
-   --accent-vivid for gradients and glow, where contrast does not apply.
-   ------------------------------------------------------------------------ */
 [data-theme='engineering'][data-mode='dark'] {
   color-scheme: dark;
   --bg-primary: #050a12;
@@ -748,6 +1001,84 @@ fieldset {
   .glass-elevated:hover,
   .glass-elevated:focus-within {
     background-position: 100% 100%;
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Clay interaction: lift, settle, compress.
+   *
+   * One rule set, every theme, because the interaction *semantics* are
+   * shared even where the surfaces are not — a card rises a little on
+   * hover and a button gives under the press, and how much depends on
+   * `--motion-scale`, which each theme already sets.
+   *
+   * `translate3d` and `box-shadow` only. Nothing here animates a layout
+   * property, so none of it can shift the page, and the shadow change is
+   * what reads as depth in a clay system — a card that moves without its
+   * shadow moving looks like a sticker sliding on glass.
+   *
+   * Applied through the existing classes rather than new ones, so the
+   * thirteen sections inherit it without a single component edit.
+   */
+  .surface-card,
+  .glass,
+  .glass-elevated {
+    transition:
+      transform var(--motion-base) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out),
+      background-color var(--theme-transition) var(--ease-in-out),
+      background-position 900ms var(--ease-out);
+  }
+
+  /* Only cards that are actually interactive lift. A static panel that
+     rises when the pointer crosses it is noise, so the lift is scoped to
+     cards containing a link or a button — `:has` is supported in every
+     browser this site targets, and where it is not, the card simply does
+     not lift, which is a clean degradation rather than a broken one. */
+  .surface-card:has(a, button):hover,
+  .glass:has(a, button):hover,
+  .surface-card:has(a, button):focus-within,
+  .glass:has(a, button):focus-within {
+    transform: translate3d(0, calc(-3px * var(--motion-scale)), 0);
+    box-shadow: var(--panel-shadow), var(--shadow-md);
+  }
+
+  .surface-card:has(a, button):active {
+    transform: translate3d(0, calc(-1px * var(--motion-scale)), 0);
+  }
+
+  /*
+   * Buttons and links that look like buttons.
+   *
+   * Targeted by role rather than by a new class, so every existing
+   * control is covered and no component had to be touched. The press
+   * state compresses *into* the surface, which is the whole point of a
+   * clay control: it is a physical thing being pushed, not a rectangle
+   * changing colour.
+   */
+  a[class*='rounded'],
+  button:not([role='tab']) {
+    transition:
+      transform var(--motion-fast) var(--ease-out),
+      box-shadow var(--motion-fast) var(--ease-out),
+      background-color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out);
+  }
+
+  a[class*='rounded']:active,
+  button:not([role='tab']):active {
+    transform: translate3d(0, calc(1px * var(--motion-scale)), 0) scale(0.985);
+  }
+
+  /* The directional nudge on an arrow inside a control. Small enough to
+     read as intent rather than as an animation. */
+  .group:hover .nudge-x {
+    transform: translate3d(calc(3px * var(--motion-scale)), 0, 0);
+  }
+
+  .nudge-x {
+    transition: transform var(--motion-fast) var(--ease-out);
   }
 
   /*
@@ -2479,6 +2810,297 @@ a {
  * Everything below is nested under that guard rather than duplicated, so there
  * is exactly one copy of these rules to keep correct.
  */
+
+/* ================================================================== *
+ * SIGNATURE BACKDROPS
+ *
+ * One block per theme, and each class name is prefixed with its theme so
+ * `grep mandala` answers "which theme is this?" without opening a file.
+ * Every animation below is `transform` or `opacity` — nothing here can
+ * trigger layout, and nothing uses `will-change` (see architecture.md §8:
+ * adding it to the orbs exhausted GPU memory on phones).
+ * ================================================================== */
+
+/* ------------------------------- CLAY ------------------------------ */
+
+.clay-wash {
+  opacity: calc(var(--glow-opacity) * 2.4);
+}
+
+@keyframes clay-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, calc(-26px * var(--motion-scale)), 0) scale(1.05);
+  }
+}
+
+.clay-wash-a {
+  animation: clay-drift calc(34s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+}
+.clay-wash-b {
+  animation: clay-drift calc(44s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -8s infinite;
+}
+.clay-wash-c {
+  animation: clay-drift calc(52s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -20s infinite;
+}
+
+/* The automation rail. A 3px box carrying a 1px stripe, not a 1px box:
+   a hairline centred in an even-width box lands on a half-pixel and
+   shimmers on every repaint — architecture.md §8, rule 5. */
+.clay-rail {
+  height: 3px;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent-vivid) 55%, transparent),
+    transparent
+  );
+  background-size: 34% 1px;
+  background-repeat: no-repeat;
+  background-position: -34% 50%;
+  animation: clay-rail-run calc(11s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+  opacity: 0.75;
+}
+
+@keyframes clay-rail-run {
+  0% {
+    background-position: -34% 50%;
+  }
+  100% {
+    background-position: 134% 50%;
+  }
+}
+
+/* ----------------------------- MANDALA ----------------------------- */
+
+.mandala {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(126vh, 112vw);
+  height: min(126vh, 112vw);
+  transform: translate3d(-50%, -50%, 0);
+  /* 0.17 at the previous size put petal strokes across the headline: a 0.55
+     stroke in a 200 viewBox scaled to ~1400px paints at nearly 4px. Both the
+     scale and the opacity are down, and the stroke widths in the component
+     are down with them. Environment, not ornament — and not competition. */
+  opacity: 0.12;
+}
+
+@keyframes mandala-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mandala-spin-rev {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* The centre breathes instead of turning — a rotating circle has no feature
+   to track, so it reads as stillness and costs the same. */
+@keyframes mandala-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+.mandala-l4 {
+  animation: mandala-spin calc(180s / max(var(--motion-scale), 0.4)) linear infinite;
+}
+.mandala-l3 {
+  animation: mandala-spin-rev calc(120s / max(var(--motion-scale), 0.4)) linear infinite;
+}
+.mandala-l2 {
+  animation: mandala-spin calc(90s / max(var(--motion-scale), 0.4)) linear infinite;
+}
+.mandala-l1 {
+  animation: mandala-spin-rev calc(64s / max(var(--motion-scale), 0.4)) linear infinite;
+}
+.mandala-l0 {
+  animation: mandala-breathe calc(14s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+}
+
+/* ----------------------------- CRIMSON ----------------------------- */
+
+.crimson-web {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: min(150vh, 140vw);
+  height: min(150vh, 140vw);
+  transform: translate3d(-50%, -50%, 0);
+  opacity: 0.3;
+}
+
+/* The charge is one spoke drawn twice: the static web underneath, and this
+   bright copy whose dash travels outward. Same trick as the Midnight circuit
+   — the dash is the charge, the gap is the wait. */
+.crimson-charge {
+  stroke-dasharray: 10 190;
+  stroke-dashoffset: 200;
+  animation: crimson-run calc(7s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+}
+
+.crimson-charge-b {
+  animation-duration: calc(11s / max(var(--motion-scale), 0.4));
+  animation-delay: -3s;
+}
+
+@keyframes crimson-run {
+  0% {
+    stroke-dashoffset: 200;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  70%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* ------------------------- MOBILE BUDGETS -------------------------- *
+ * Phones render the geometry, not the movement. The starting hypothesis
+ * from the motion spec: at ≤430px the mandala is static and the outer two
+ * layers are dropped entirely, the crimson charges stop, and the clay
+ * washes hold still. Measured, not assumed — if a later measurement shows
+ * headroom, this is the one block to revisit.
+ */
+@media (max-width: 430px) {
+  .mandala-l4,
+  .mandala-l3 {
+    display: none;
+  }
+
+  .mandala-l2,
+  .mandala-l1,
+  .mandala-l0,
+  .crimson-charge,
+  .clay-wash-a,
+  .clay-wash-b,
+  .clay-wash-c,
+  .clay-rail {
+    animation: none;
+  }
+
+  .clay-rail {
+    background-position: 50% 50%;
+  }
+}
+
+
+/* ============================ ROBOT STAGE ========================== *
+ * One transform per state, driven by `data-state` on the wrapper. The
+ * machine in robot-stage.tsx only writes the attribute and `--robot-x`;
+ * every pixel of movement is here, so nothing animates from JavaScript.
+ *
+ * Every frame moves LEFT (negative X) or straight down. Never right: an
+ * earlier version leaned right from `-right-6` and added 9px of document
+ * overflow at 1440, and 1280 — where there are eight pixels of room — is
+ * not one of the four viewports the E2E projects cover, so nothing would
+ * have caught it.
+ * ================================================================== */
+
+.robot-stage {
+  --robot-x: 0px;
+  /* Every state below keeps the figure at or left of -50%, and the hidden
+     states leave by moving DOWN rather than right.
+
+     This is the trap the old keyframes carried a width table about, and the
+     first cut of this file walked straight into it: `translate3d(58%, …)`
+     put 76px of document overflow on the page at 1280, which the element
+     scan did not flag because the wrapper is aria-hidden and the scan skips
+     aria-hidden subtrees. Only the document-width measurement caught it.
+
+     The figure sits at `-right-6` (24px out) and `2xl:-right-24` (96px out),
+     so -50% of a 200px / 232px box pulls it back inside at both. */
+  transform: translate3d(-50%, 30%, 0);
+  opacity: 0;
+  transition:
+    transform 1600ms var(--ease-in-out),
+    opacity 900ms var(--ease-out);
+}
+
+.robot-stage[data-state='hidden'] {
+  transform: translate3d(-50%, 30%, 0);
+  opacity: 0;
+}
+
+/* Ducking up from behind the panel edge — the hide-and-seek move, now
+   vertical because horizontal is where the overflow lives. */
+.robot-stage[data-state='peeking'] {
+  transform: translate3d(-50%, 6%, 0) rotate(-4deg);
+  opacity: 0.9;
+}
+
+.robot-stage[data-state='observing'] {
+  transform: translate3d(-55%, 0, 0);
+  opacity: 0.95;
+}
+
+/* Walking: `--robot-x` is always negative, so this only ever moves further
+   left of the resting offset. */
+.robot-stage[data-state='walking'] {
+  transform: translate3d(calc(-55% + var(--robot-x)), 0, 0);
+  opacity: 0.95;
+  transition:
+    transform 5200ms var(--ease-in-out),
+    opacity 900ms var(--ease-out);
+}
+
+.robot-stage[data-state='idle'] {
+  transform: translate3d(calc(-55% + var(--robot-x)), 0, 0);
+  opacity: 0.9;
+}
+
+.robot-stage[data-state='hiding'] {
+  transform: translate3d(-50%, 30%, 0) rotate(3deg);
+  opacity: 0;
+  transition:
+    transform 1100ms var(--ease-in-out),
+    opacity 700ms var(--ease-out);
+}
+
+/* A slight bob while walking or idling, so a stationary figure is not
+   perfectly rigid. Suspended in the states where the figure is off stage. */
+@keyframes robot-bob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, calc(-5px * var(--motion-scale)), 0);
+  }
+}
+
+.robot-stage-body {
+  animation: robot-bob calc(4.2s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+}
+
+.robot-stage[data-state='hidden'] .robot-stage-body {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-motion='full']) {
 
@@ -2552,6 +3174,23 @@ a {
       opacity: 0 !important;
     }
 
+    /* The clay rail is a connector. It stops travelling and rests centred,
+       rather than disappearing — removing it would take the RPA cue out of
+       the ground for the people most likely to be reading slowly. */
+    & .clay-rail {
+      animation: none !important;
+      background-position: 50% 50% !important;
+    }
+
+    /* The robot does not walk, roam or animate continuously under reduced
+       motion. It holds one still pose, and stays aria-hidden and
+       pointer-events:none exactly as it is in every other state. */
+    & .robot-stage {
+      transition: none !important;
+      transform: translate3d(-55%, 0, 0) !important;
+      opacity: 0.85 !important;
+    }
+
     /* The rail is a connector, not a highlight, so it stays — as a solid one. */
     & .flow-rail {
       background-size: 100% 100% !important;
@@ -2568,6 +3207,20 @@ a {
        up visible, so they are forced to their finished state rather than
        hidden: a dialog that never arrives is a dialog nobody can use, and a
        robot frozen mid-withdrawal is a robot half off the page. */
+    /* Everything added by the four-theme work. This list is an explicit
+       allow-list by design — a new animated class that is not named here
+       escapes the block silently, which is exactly how the hero graph ran
+       under reduced motion for a release. */
+    & .mandala-l0,
+    & .mandala-l1,
+    & .mandala-l2,
+    & .mandala-l3,
+    & .mandala-l4,
+    & .crimson-charge,
+    & .clay-wash-a,
+    & .clay-wash-b,
+    & .clay-wash-c,
+    & .robot-stage-body,
     & .search-overlay,
     & .search-panel,
     & .robot-peek,

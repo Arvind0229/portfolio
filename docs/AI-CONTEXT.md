@@ -5,8 +5,8 @@ the system works; this file explains **where the project stands, what has been
 decided, and which mistakes have already been made here** so they are not made
 again.
 
-**Current phase:** Phase 2, gate G3 complete (the public case-study page).
-G4 onwards not started.
+**Current phase:** Phase 2. G3 implementation complete (acceptance pending real
+content); G4/G5 complete (four themes + motion). G6 not started.
 **Last verified:** 2026-09-15.
 
 ---
@@ -38,8 +38,9 @@ page fetches content at runtime.
 | CHANGE-004 | Phase 1 gaps — photo, company as an entity, admin entry |
 | Phase 2 G1 | Analysis complete, approved |
 | Phase 2 G2 | Projects are admin-editable: data layer, CRUD, relationships |
-| **Phase 2 G3** | **`ProjectDepth` gets a public page; visibility; related work by reference** |
-| Phase 2 G4–G6 | Not started |
+| Phase 2 G3 | `ProjectDepth` gets a public page; visibility; related work by reference |
+| **Phase 2 G4/G5** | **Four visual identities, signature isolation, robot state machine, mandala, clay motion** |
+| Phase 2 G6 | Not started |
 
 Phase 2 gates: G2 project data + CRUD · G3 case-study page · G4 motion + robot ·
 G5 Mandala + Crimson · G6 AI + performance + release.
@@ -55,7 +56,9 @@ G5 Mandala + Crimson · G6 AI + performance + release.
 | Server never decodes an uploaded image | ADR-003 | Header parse only. Do not add `sharp` |
 | Project id is the URL; no slug field | ADR-004 | Five live URLs; the id already satisfies every slug requirement |
 | A dangling `companyId` on a **project** keeps the project | ADR-004 | Deliberately the opposite of the role rule. A project without an employer is still a project |
-| Theme id `enterprise` is not renamed | BRD Phase 2 | Renaming invalidates every saved `localStorage` preference |
+| Theme id `enterprise` is not renamed | BRD Phase 2 · CHANGE-006 | Renaming invalidates every saved `localStorage` preference and every `theme-option-enterprise` selector. It displays as "Crimson Clay" |
+| A signature visual is isolated by **mount condition**, not CSS | CHANGE-006 | An inactive layer is absent from the DOM, so it cannot animate, hold a timer or reach a screenshot |
+| Absent `visibility` means **public** | G3 | The safer-sounding default would have hidden every existing record on the day it shipped |
 | Extend `ProjectDepth`; never create a second details store | ADR-004 | The proposed schema duplicated four existing fields |
 | A project's id is derived from its title, then frozen | G2 | The admin panel renders it as text, not an input. Editing it breaks a live URL |
 | New and duplicated projects start **hidden** | G2 | Publishing is a deliberate act; a half-written project must not appear the moment it is created |
@@ -77,6 +80,11 @@ A `grep` before building is worth more here than anywhere else.
 | Per-theme motion intensity | `--motion-scale` (0.8 / 1.1 / 1.0) |
 | Scroll reveals | `Reveal` + `use-in-view` + `.reveal`, stagger via `--reveal-delay` |
 | A count-up animation | `use-count-up` |
+| A fourth theme | `clay` exists. `enterprise` is Crimson — the id was kept deliberately |
+| A robot state machine | `components/visuals/robot-stage.tsx` — six states, one ref, one timer |
+| A mandala | `MandalaLayer` in `backdrop.tsx` — five nested radial layers |
+| Clay surfaces | Token-only: `--panel-shadow` and friends. **No section component was edited to get the clay look** |
+| Card hover / button press | Already global, applied by element role in `@layer components` |
 | A projects store | `projects.json` + `parseProjects` + `relationsFor()` + a registry entry |
 | A case-study section component | `components/sections/case-study.tsx` — metrics, overview, mechanics, outcome, related |
 | A "related projects" rule | `relatedProjects()` — scored on shared references, best match first |
@@ -145,6 +153,8 @@ Recorded so the next agent does not repeat them. Each cost real time.
 | `process.exit` in a `finally` | Swallowed an exception; a UAT run skipped its last third and reported "0 failed" |
 | `waitUntil: 'networkidle'` against a dev server | The HMR socket never settles. Wait for the element |
 | Clicking before hydration | The tab exists in SSR HTML before React attaches a handler |
+| Screenshotting at 1200ms | Before IntersectionObserver attaches — every shot showed an empty page under the headline and looked like a rendering bug. **Wait for `.reveal[data-visible="true"]`** |
+| Moving the robot right | `translate3d(58%, …)` put 76px of document overflow at 1280. The element scan missed it because the wrapper is aria-hidden and the scan skips aria-hidden subtrees — only the document-width measurement saw it. **Every robot X must stay ≤ −50%** |
 | axe scanned mid-fade | Four "serious" contrast failures that do not exist: axe read text at ~12% opacity during a scroll reveal. **Scan under reduced motion**, where this site removes the reveal instead of shortening it |
 | Text overflowing a `min-w-0` flex item | The element's box is in bounds and the document still scrolls sideways. `min-w-0` lets the box shrink; it does not make an unbreakable token wrap. Prose needs `break-words` too |
 

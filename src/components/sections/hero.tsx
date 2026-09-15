@@ -3,11 +3,10 @@
 import { Icon, type IconName } from '@/components/icons';
 import { LinkButton, Reveal, SplitText } from '@/components/ui';
 import { AutomationFlow } from '@/components/visuals/automation-flow';
-import { RobotFigure } from '@/components/visuals/robot-figure';
+import { RobotStage } from '@/components/visuals/robot-stage';
 import { impactMetrics } from '@/data/impact';
 import { profile } from '@/data/profile';
 import { useCountUp } from '@/hooks/use-count-up';
-import { useAppearance } from '@/hooks/use-appearance';
 import { useInView } from '@/hooks/use-in-view';
 
 /**
@@ -36,9 +35,6 @@ const METRIC_ICONS: Record<string, IconName> = {
   interns: 'users',
 };
 export function Hero() {
-  // Only for the figure's opacity: a white shell at full strength on a light
-  // ground is a cut-out, not a companion standing behind the page.
-  const { mode } = useAppearance();
 
   // One observer for the whole strip rather than one per figure: the four
   // numbers sit on a single row and enter together, so four observers would
@@ -110,35 +106,16 @@ export function Hero() {
 
         The left fade keeps it from cutting hard across the panel.
       */}
-      <div
-        aria-hidden="true"
-        data-testid="hero-robot"
-        /*
-          `robot-peek` leans the figure in from the edge on a long cycle and
-          tucks it back — the hide-and-seek look Arvind asked for.
+      {/*
+        The robot now lives in its own component, mounted only on Midnight.
 
-          It is on this element, not on a wrapper inside it, so the mask below
-          travels with the figure: a stationary mask over a moving child would
-          repeat its gradient outside the box and tear a band across the robot
-          as it passed.
-
-          Every frame of that animation moves *left*. The paragraph above ends
-          with a warning about `-right-14` making the document wider than the
-          viewport; the first cut of this animation walked straight back into it
-          from the other direction, adding 9px of overflow at 1440. The keyframes
-          in globals.css carry the width-by-width table that says why leftward is
-          the only safe direction — at 1280 there are eight pixels of room, and
-          1280 is not one of the viewports the E2E projects cover.
-        */
-        className="robot-peek pointer-events-none absolute -bottom-2 -right-6 hidden h-[19rem] w-[12.5rem] xl:block 2xl:-bottom-12 2xl:-right-24 2xl:h-[22rem] 2xl:w-[14.5rem]"
-        style={{
-          opacity: mode === 'dark' ? 0.95 : 0.5,
-          maskImage: 'linear-gradient(to left, #000 0%, #000 42%, transparent 88%)',
-          WebkitMaskImage: 'linear-gradient(to left, #000 0%, #000 42%, transparent 88%)',
-        }}
-      >
-        <RobotFigure className="robot-peek-body h-full w-full" />
-      </div>
+        It used to be mounted here unconditionally, which meant it appeared in
+        every theme — Studio and Enterprise included, at half opacity. That was
+        a theme-isolation defect, not a design choice. `RobotStage` returns
+        null off Midnight, so the figure is absent from the DOM rather than
+        merely hidden.
+      */}
+      <RobotStage />
 
         <div>
           <Reveal>

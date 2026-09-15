@@ -15,6 +15,8 @@ import { expect, test } from './fixtures';
  *     await expect(page).toHaveScreenshot('hero-engineering.png', { maxDiffPixelRatio: 0.01 });
  */
 const STATES = [
+  { theme: 'clay', mode: 'light' },
+  { theme: 'clay', mode: 'dark' },
   { theme: 'engineering', mode: 'dark' },
   { theme: 'engineering', mode: 'light' },
   { theme: 'enterprise', mode: 'light' },

@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, openAppearance, test } from './fixtures';
 
-const THEMES = ['enterprise', 'engineering', 'studio'] as const;
+const THEMES = ['clay', 'engineering', 'studio', 'enterprise'] as const;
 
 /**
  * The audit runs with reduced motion enabled.
