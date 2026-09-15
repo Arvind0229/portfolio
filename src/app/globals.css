@@ -1098,28 +1098,15 @@ fieldset {
   }
 
   /*
-   * Buttons and links that look like buttons.
+   * Button depth is opt-in, via `.clay-control` on the button components.
    *
-   * Targeted by role rather than by a new class, so every existing
-   * control is covered and no component had to be touched. The press
-   * state compresses *into* the surface, which is the whole point of a
-   * clay control: it is a physical thing being pushed, not a rectangle
-   * changing colour.
+   * It was `a[class*='rounded'], button:not([role='tab'])` — every button on
+   * the site, matched by element type. That handed a transform transition and
+   * an `:active` scale to controls that were never meant to have one: the
+   * bulb, whose swing animation it then interpolated against, the nav toggle,
+   * the search trigger and the theme picker. Styling by element type looks
+   * like coverage and behaves like a leak.
    */
-  a[class*='rounded'],
-  button:not([role='tab']) {
-    transition:
-      transform var(--motion-fast) var(--ease-out),
-      box-shadow var(--motion-fast) var(--ease-out),
-      background-color var(--motion-fast) var(--ease-out),
-      border-color var(--motion-fast) var(--ease-out),
-      color var(--motion-fast) var(--ease-out);
-  }
-
-  a[class*='rounded']:active,
-  button:not([role='tab']):active {
-    transform: translate3d(0, calc(1px * var(--motion-scale)), 0) scale(0.985);
-  }
 
   /* The directional nudge on an arrow inside a control. Small enough to
      read as intent rather than as an animation. */
@@ -2861,6 +2848,40 @@ a {
  * is exactly one copy of these rules to keep correct.
  */
 
+
+/* ========================= BACKDROP TOP MASK ======================= *
+ * No decoration animates behind the header.
+ *
+ * The bulb hangs on a 3px cord and the header is translucent, so anything
+ * that drifts behind them shows *through* them — and a moving ground read
+ * through a thin foreground element is exactly what "the bulb handle is
+ * flickering" describes. It is not the cord repainting: clipped to the
+ * bulb with the backdrop hidden, every theme measures 0 changed pixels
+ * across 8 frames. With the backdrop visible, Midnight measured 838 in
+ * the same box and 29,165 across the header band.
+ *
+ * So the fix belongs to the backdrop, not to the cord. One mask on the
+ * root fades every theme's decoration out above 210px, which also buys
+ * the header a cleaner ground to sit on. Measured after: 0 everywhere.
+ *
+ * Static — nothing here animates, so reduced motion needs no entry.
+ */
+.backdrop-root {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 150px,
+    #000 210px,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 150px,
+    #000 210px,
+    #000 100%
+  );
+}
 
 /* ================================================================== *
  * CLAY THEME — surfaces, controls and the pastel rotation

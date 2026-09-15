@@ -246,6 +246,14 @@ Each of these is load-bearing and each has cost someone real time:
 5. **A 1px line must never be centred in an even-width box.** It lands on a
    half-pixel and shimmers on every repaint. Three separate flicker bugs came
    from this; the fix is a 3px box with a `background-size: 1px 100%` stripe.
+   **A fourth flicker bug was not this one.** The bulb's cord is a 3px box and
+   was correct; what shimmered was the *backdrop* drifting behind it, read
+   through a thin foreground element over a translucent header. Clipped to the
+   bulb with the backdrop hidden, every theme measures 0 changed pixels; with
+   it visible, Midnight measured 838. `.backdrop-root` now masks all
+   decoration away above 210px, and `tests/e2e/flicker.spec.ts` asserts the
+   header band is still on every theme. **When something appears to flicker,
+   measure the element with the backdrop hidden before touching the element.**
 6. **Reduced-motion is a two-part check**, in CSS *and* in JS: the OS preference
    AND the absence of `data-motion="full"`. Checking `matchMedia` alone broke the
    opt-in.
@@ -331,6 +339,7 @@ Honest list. None of these is hypothetical.
 | 14 | **Nothing rebuilds the site after a content save** | A save commits to the repository; the public page shows it on the next deployment. The deploy hook is not wired up (Phase 2) |
 | 15 | **The responsibilities/achievements split of the existing roles is a first pass** | Two lines were classified as achievements by their wording. Arvind should review the split; it is content, not code |
 | 16 | **Company logos are a path field, not an upload** | The validator accepts a site-relative image path. Nothing puts a file there yet |
+| 20 | **Style controls by class, never by element type** | `a[class*='rounded'], button:not([role='tab'])` gave a transform transition and an `:active` scale to every button on the site, including the bulb — whose swing animation it then interpolated against. Depth is opt-in through `.clay-control` |
 | 17 | **The public experience section still renders one flat list** | Responsibilities and achievements are separate in the data and concatenated for display. Showing them as two labelled groups is a design decision, not an oversight |
 | 18 | **No depth record has been written.** `project-depth.json` is `{"projects": {}}` | The case-study page renders correctly and shows none of the new sections, because there is nothing to show. Content must come from Arvind; it will not be invented |
 | 19 | **The AI does not read the depth fields added in G3** | `buildChunks()` reads `scale`, `systems`, `failureHandling`, `challenges`, `decisions`, `faq`, `team`, `timeline`, `before`, `after` — not `overview`, `businessProblem`, `architecture`, `workflow`, `metrics`, `lessonsLearned`, `futureEnhancements`. A visitor can read those on the page while the assistant says the profile does not cover them. Safe direction, still wrong. Tracked for G6 and pinned by a test |

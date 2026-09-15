@@ -16,7 +16,7 @@ export function Backdrop() {
   const { theme } = useAppearance();
 
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div aria-hidden="true" className="backdrop-root pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       {/*
         Each theme owns its ground. Nothing is shared.
 

@@ -155,6 +155,8 @@ Recorded so the next agent does not repeat them. Each cost real time.
 | Clicking before hydration | The tab exists in SSR HTML before React attaches a handler |
 | Screenshotting at 1200ms | Before IntersectionObserver attaches — every shot showed an empty page under the headline and looked like a rendering bug. **Wait for `.reveal[data-visible="true"]`** |
 | Moving the robot right | `translate3d(58%, …)` put 76px of document overflow at 1280. The element scan missed it because the wrapper is aria-hidden and the scan skips aria-hidden subtrees — only the document-width measurement saw it. **Every robot X must stay ≤ −50%** |
+| "The bulb is flickering" | It was not the bulb. A moving backdrop read through a 3px cord over a translucent header. **Measure the element with the backdrop hidden first** — it was 0 changed pixels every time |
+| Styling controls by element type | `button:not([role='tab'])` is not coverage, it is a leak: it reached the bulb, the nav toggle, the search trigger and the theme picker |
 | axe scanned mid-fade | Four "serious" contrast failures that do not exist: axe read text at ~12% opacity during a scroll reveal. **Scan under reduced motion**, where this site removes the reveal instead of shortening it |
 | Text overflowing a `min-w-0` flex item | The element's box is in bounds and the document still scrolls sideways. `min-w-0` lets the box shrink; it does not make an unbreakable token wrap. Prose needs `break-words` too |
 
