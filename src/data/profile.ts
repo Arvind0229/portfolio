@@ -1,4 +1,5 @@
 import type { EducationItem, Profile, SocialLink } from '@/types';
+import { activePhoto } from '@/data/photo';
 import { activeResume } from '@/data/resume-registry';
 import rawProfile from '@/data/profile.json';
 import { isRecord, safeUrl, str, strList } from '@/lib/content/validate';
@@ -21,18 +22,18 @@ import { isRecord, safeUrl, str, strList } from '@/lib/content/validate';
  * ## What is editable and what is not
  *
  * The prose, the contact details and the social links come from
- * `profile.json`, which the admin panel writes. The **photo does not**, and
- * that is a deliberate line rather than an omission.
+ * `profile.json`, which the admin panel writes. The photo and the resume do
+ * not, and that is a deliberate line rather than an omission.
  *
  * `photo.width`, `photo.height` and `blurDataURL` are measured properties of a
  * specific file — a unit test opens the JPEG and asserts the numbers match. Put
  * them in a text box and a save can silently cause layout shift, or fail the
  * build, with nothing on screen to explain why. They are derived data, not
- * content, and they belong with the photo-upload feature that will compute them
- * rather than with a form that asks a person to type them.
+ * content, so they are computed at upload and stored beside the version they
+ * describe, in `photo.json`. `activePhoto()` reads it.
  *
- * The resume is absent for the same reason, one step further along: it already
- * has its own registry, and `resolveResume()` reads it.
+ * The resume is absent for the same reason: its own registry, and
+ * `resolveResume()` reads it.
  *
  * ## Why the shape is unchanged
  *
@@ -42,23 +43,15 @@ import { isRecord, safeUrl, str, strList } from '@/lib/content/validate';
  */
 export const profile: Profile = {
   ...parseProfileContent(rawProfile),
-  // The portrait. One entry, read by every component that shows his face, so
-  // a new photograph is a one-line change rather than a hunt through JSX.
-  // The file is a 4:5 crop of the studio headshot he supplied, re-encoded from
-  // a 1.9 MB PNG to a 167 KB progressive JPEG — a photograph stored as PNG is
-  // many times the bytes for no visible gain, and `next/image` negotiates
-  // AVIF/WebP from this source per request.
-  photo: {
-    src: '/profile/arvind-gupta.jpg',
-    width: 1081,
-    height: 1351,
-    alt: 'Arvind Gupta',
-    blurDataURL:
-      'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAAPAAwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDLs7GG9gd3Y5HA2tjFZUqbJGXOcHGfWtfw4Fmnmgfum4fUVjSHLt9aSTTKbTR//9k=',
-    // The face centres at about 41% of the source height; this is the
-    // `object-position` that keeps it centred when the crop goes square.
-    facePosition: '50% 8%',
-  },
+  // The portrait, from the registry that the upload writes. One entry, read by
+  // every component that shows his face, so a new photograph is a pointer change
+  // rather than a hunt through JSX.
+  //
+  // The seeded version is a 4:5 crop of the studio headshot he supplied,
+  // re-encoded from a 1.9 MB PNG to a 167 KB progressive JPEG — a photograph
+  // stored as PNG is many times the bytes for no visible gain, and `next/image`
+  // negotiates AVIF/WebP from whatever is stored, per request.
+  photo: activePhoto(),
 
   resume: resolveResume(),
 };

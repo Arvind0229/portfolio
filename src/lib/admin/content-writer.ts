@@ -34,6 +34,9 @@ export const WRITABLE = {
   resumeRegistry: 'src/data/resume-registry.json',
   profile: 'src/data/profile.json',
   skills: 'src/data/skills.json',
+  photoRegistry: 'src/data/photo.json',
+  companies: 'src/data/companies.json',
+  experience: 'src/data/experience.json',
 } as const;
 
 export type WritableKey = keyof typeof WRITABLE;
@@ -77,7 +80,39 @@ export function resumeFileUrl(target: ResumeFileTarget): string {
   return `/resume/${target.id}.${target.format}`;
 }
 
-export type WriteTarget = WritableKey | ResumeFileTarget;
+/**
+ * Profile photographs, the second parameterised family — same rules as resumes.
+ *
+ * The id here is the **content hash** rather than a timestamp, which buys two
+ * things a fixed name cannot. A file whose name is its content can be served
+ * with a long cache lifetime and can never go stale, so replacing the photo
+ * takes effect immediately instead of leaving visitors looking at the old one
+ * until a CDN expires it. And because a new upload never overwrites the file
+ * before it, rolling back is switching a pointer rather than restoring a file.
+ *
+ * Still re-validated against the same pattern: a hash is not user input today,
+ * and this function is here so that it does not matter if that ever changes.
+ */
+const PHOTO_DIR = 'public/profile';
+
+export interface PhotoFileTarget {
+  readonly family: 'photoFile';
+  readonly id: string;
+}
+
+export function photoFileTarget(id: string): PhotoFileTarget {
+  if (!RESUME_ID.test(id)) {
+    throw new Error(`Refusing to build a photo path from ${JSON.stringify(id)}`);
+  }
+  return { family: 'photoFile', id };
+}
+
+/** The public URL a committed photo is served from. */
+export function photoFileUrl(target: PhotoFileTarget): string {
+  return `/profile/${target.id}.jpg`;
+}
+
+export type WriteTarget = WritableKey | ResumeFileTarget | PhotoFileTarget;
 
 /** The single place a target becomes a path, for both writers. */
 export function targetPath(target: WriteTarget): string {
@@ -85,9 +120,11 @@ export function targetPath(target: WriteTarget): string {
   // Re-validated rather than trusted: this function is the last gate before a
   // string becomes a filesystem path or an API URL.
   if (!RESUME_ID.test(target.id)) {
-    throw new Error('Invalid resume file id');
+    throw new Error('Invalid file id');
   }
-  return `${RESUME_DIR}/${target.id}.${target.format}`;
+  return target.family === 'photoFile'
+    ? `${PHOTO_DIR}/${target.id}.jpg`
+    : `${RESUME_DIR}/${target.id}.${target.format}`;
 }
 
 /**

@@ -35,3 +35,7 @@ yarn-error.log*
 # Build artefacts that slipped into a delivery zip once.
 tsconfig.tsbuildinfo
 *.mjs.local
+
+# UAT harnesses — run locally, not part of the build
+.uat*.mjs
+.diag*.mjs

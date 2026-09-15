@@ -244,6 +244,31 @@ describe('the content registry', () => {
     }
   });
 
+  it('accepts its own output, because that is what a save sends back', () => {
+    /*
+     * The test that was missing, and the bug it would have caught.
+     *
+     * A save is a loop: GET returns `definition.parse(file)`, the panel edits
+     * that value, and PUT sends it back to `definition.parse` again. So the
+     * parser must accept its own output, not only the file it came from.
+     *
+     * `parseSkillGroups` did not. It read `value.groups`, an `isRecord` guard
+     * rejected the bare array the panel sends, and parsing produced `[]` — so
+     * saving skills silently did nothing. Nothing threw, nothing logged, and
+     * the round-trip test above passed the whole time because it only ever fed
+     * the parser the *file* shape, which was never the broken one.
+     *
+     * It shipped. It was found when the company editor hit the same wall during
+     * UAT, which is later than it should have been — hence this test, over
+     * every key rather than the one that failed.
+     */
+    for (const [key, definition] of Object.entries(CONTENT)) {
+      const source = key === 'profile' ? rawProfile : rawSkills;
+      const fromGet = definition.parse(source);
+      expect(definition.parse(fromGet), `a save of ${key} would be dropped`).toEqual(fromGet);
+    }
+  });
+
   it('never throws, whatever it is given', () => {
     for (const definition of Object.values(CONTENT)) {
       for (const rubbish of [null, undefined, 42, 'text', [], { a: 1 }]) {

@@ -89,7 +89,31 @@ export function Footer() {
           © {year} {profile.name}. All content drawn from his resume.
         </p>
         <p className="text-[0.76rem] text-[var(--text-subtle)]">
-          Built with Next.js · assistant grounded in resume data
+          Built with Next.js · assistant grounded in resume data ·{' '}
+          {/*
+            The way in, for the one person who needs it.
+
+            Quiet on purpose: the same size and colour as the line it sits in,
+            no button, no icon, last item in the last row. A recruiter reading
+            the footer sees a word; it is not competing with anything.
+
+            It is **not** a security boundary and must never be treated as one.
+            Anyone can type `/admin`, and bots scan for it without reading the
+            page at all — so hiding the link would protect nothing. What
+            protects the panel is TOTP, the rate limiter, the signed HttpOnly
+            cookie and the edge middleware, every one of which is in front of
+            this URL whether or not anything links to it. The page itself is
+            `noindex, nofollow`, which keeps it out of search results; `rel`
+            here keeps it out of the crawl that would find it from this page.
+          */}
+          <Link
+            href="/admin"
+            rel="nofollow"
+            data-testid="admin-entry"
+            className="text-[var(--text-subtle)] underline-offset-4 transition-colors hover:text-[var(--text-secondary)] hover:underline"
+          >
+            Admin
+          </Link>
         </p>
       </div>
     </footer>

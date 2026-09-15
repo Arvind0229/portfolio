@@ -1,100 +1,181 @@
+import raw from '@/data/experience.json';
+import { type Company, companyById } from '@/data/companies';
+import { id as safeId, isRecord, str, strList } from '@/lib/content/validate';
 import type { ExperienceItem } from '@/types';
 
 /**
- * Roles as the resume states them, plus a short profile of each employer.
+ * Roles, each referencing an employer rather than repeating it.
  *
- * The employer profiles are the one thing here that does not come from the
- * resume, because the resume does not describe its own employers. They are
- * public facts about the companies, checked against each company's own site
- * and public reporting rather than written from memory:
+ * ## The shape of the change
  *
- *   - SBFC Finance Limited — a listed NBFC lending to small businesses and
- *     against gold; listed on the NSE and BSE in August 2023.
- *     Sources: sbfc.com, screener.in/company/SBFC, and the listing coverage.
- *   - Harjai Computers Pvt. Ltd. — a Mumbai IT services firm whose main line
- *     is staff augmentation. Source: harjai.com/staff-augmentation.html.
+ * This file used to be a TypeScript literal holding both the role and a profile
+ * of the company it was at. The company half moved to `companies.json` and what
+ * is left here is the role, plus a `companyId`. Why, in full, is in
+ * `companies.ts` and ADR-002; the short version is that a career has more roles
+ * than employers, and duplicated facts drift.
  *
- * They describe the *company*, never Arvind. What he did at each is in
- * `highlights`, and that is resume-sourced as before. A `relevance` line
- * connects the two, and is written so it says why the context matters — not
- * what he achieved in it.
+ * ## Nothing downstream changed
+ *
+ * `experience` below is still a `readonly ExperienceItem[]` with exactly the
+ * fields it always had. The join happens here, once, and the public sections
+ * and the whole AI knowledge layer read the same shape they did before — which
+ * is the only reason a change this structural could be made without touching
+ * the retrieval code that is the most carefully built part of the repository.
+ *
+ * `highlights` is the interesting one: responsibilities and achievements are
+ * separate fields now, because a form that asks for both gets better answers
+ * than one box labelled "highlights". They are concatenated back into a single
+ * `highlights` array for consumers, responsibilities first, so the ordering a
+ * reader sees is unchanged.
  */
+export interface ExperienceRecord {
+  readonly id: string;
+  readonly companyId: string;
+  readonly designation: string;
+  /** Falls back to the company's location when the role does not state one. */
+  readonly location: string;
+  readonly employmentType: string;
+  readonly start: string;
+  /** Empty when `current` — the display reads "Present". */
+  readonly end: string;
+  readonly current: boolean;
+  readonly summary: string;
+  readonly responsibilities: readonly string[];
+  readonly achievements: readonly string[];
+  readonly technologies: readonly string[];
+  /** Project ids this role produced. Unresolved ids are simply not linked. */
+  readonly projectIds: readonly string[];
+  /** Lower sorts first. Ties fall back to the order in the file. */
+  readonly order: number;
+  /** Hidden roles stay in the file and off the site — a draft, not a delete. */
+  readonly visible: boolean;
+}
 
-export const experience: readonly ExperienceItem[] = [
-  {
-    id: 'sbfc-rpa-developer',
-    company: 'SBFC Finance Limited',
-    companyProfile: {
-      sector: 'NBFC · Retail lending',
-      what: 'A non-banking financial company listed on the NSE and BSE, lending to small businesses and against gold — secured MSME loans and gold loans, written through a branch network across India.',
-      relevance:
-        'Lending at that volume runs on a loan origination system, a loan management system and a great deal of recurring reporting, all of it inside a regulated environment where an exception has to reach a person quickly. That is the ground every automation here was built on.',
-    },
-    role: 'RPA Developer',
-    location: 'Mumbai',
-    start: 'Oct 2023',
-    end: 'Present',
-    period: 'Oct 2023 – Present',
-    current: true,
-    summary:
-      'Progressed from IT Executive to on-role RPA Developer, recognised for ownership and delivery performance. Designs and builds enterprise automations end to end across the retail lending LOS–LMS environment.',
-    highlights: [
-      'Designed and built enterprise RPA bots end-to-end using TruBot (Datamatics), with recent hands-on in Automation Edge, automating high-volume business, HR/IT operations, reporting and compliance processes across the Retail Lending / LOS–LMS environment.',
-      'Delivered 80+ production automations single-handedly, cutting manual effort by 80%+ and saving hundreds of operational hours a year.',
-      'Owned the complete delivery lifecycle — requirement discussions with business users, BRD authoring, sign-off, development, testing, UAT, deployment and support.',
-      'Automated HR and IT operations, including employee ID creation and deactivation for onboarding/offboarding and recurring HR MIS, improving turnaround and access-management accuracy.',
-      'Automated complex Excel workflows — multi-step calculations, pivots and summary generation — and MIS reports delivered as formatted HTML mail-body dashboards to stakeholders.',
-      'Wrote and scheduled Python scripts for heavy calculations and report generation where native RPA or SQL alone was not sufficient.',
-      'Developed and tuned SQL / PL-SQL across Oracle, MS SQL, MySQL, PostgreSQL and Redshift; moved and archived reports and documents securely via Amazon S3 and SFTP/FTP.',
-      'Automated compliance communication by integrating SMS and WhatsApp APIs into bots for timely, auditable customer messaging.',
-      'Built UI / recorder-based front-end automations for applications without back-end access, applying queues, triggers and the RE Framework for scalable, resilient bot design.',
-      'Built Power BI dashboards and multi-product MIS with dashboard views, converting unstructured data into decision-ready insights for management and product teams.',
-      'Monitored production bots daily and resolved incidents through root-cause and log analysis, exception handling and retry logic to maintain high automation uptime.',
-      'Used AI assistants (ChatGPT, Claude) to accelerate code development and prototyping, reviewing all output for accuracy, data security and compliance before deployment.',
-      'Trained and mentored 3 interns, who now contribute as independent RPA developers.',
-    ],
-    technologies: [
-      'TruBot (Datamatics)',
-      'Automation Edge',
-      'SQL',
-      'PL/SQL',
-      'Python',
-      'Oracle',
-      'MS SQL Server',
-      'MySQL',
-      'PostgreSQL',
-      'Redshift',
-      'Amazon S3',
-      'SFTP / FTP',
-      'Power BI',
-      'Advanced Excel',
-      'SMS & WhatsApp API',
-      'RE Framework',
-      'LOS',
-      'LMS',
-    ],
-  },
-  {
-    id: 'harjai-recruiter',
-    company: 'Harjai Computers Pvt. Ltd.',
-    companyProfile: {
-      sector: 'IT services · Staffing',
-      what: 'A Mumbai IT services company whose main line is staff augmentation — placing engineers and specialists into client teams for the length of a project.',
-      relevance:
-        'Recruiting for technical roles means reading job specifications closely and talking to the people who own a requirement. It is the same conversation an automation starts with, which is why the step from here into RPA delivery was shorter than the job titles suggest.',
-    },
-    role: 'Talent Acquisition / IT Recruiter',
-    location: 'Mumbai',
-    start: 'Jul 2021',
-    end: 'Feb 2023',
-    period: 'Jul 2021 – Feb 2023',
-    current: false,
-    summary:
-      'End-to-end technical and non-technical recruitment, with client coordination and vendor management — early exposure to process-driven IT workflows and stakeholder communication.',
-    highlights: [
-      'Managed end-to-end recruitment for technical and non-technical roles, sourcing and screening candidates against client requirements.',
-      'Handled client coordination and vendor management, building early exposure to process-driven IT workflows and stakeholder communication.',
-    ],
-    technologies: ['Stakeholder Communication', 'Vendor Management', 'Process Coordination'],
-  },
-];
+function parseRecord(value: unknown): ExperienceRecord | null {
+  if (!isRecord(value)) return null;
+
+  const id = safeId(value.id);
+  const companyId = safeId(value.companyId);
+  const designation = str(value.designation, 160);
+  // Without any one of these there is nothing to render: no id means no React
+  // key, no company means a blank employer, no designation means a card with no
+  // job title on it.
+  if (!id || !companyId || !designation) return null;
+
+  const order = typeof value.order === 'number' && Number.isFinite(value.order)
+    ? Math.trunc(value.order)
+    : Number.MAX_SAFE_INTEGER;
+
+  return {
+    id,
+    companyId,
+    designation,
+    location: str(value.location, 120) ?? '',
+    employmentType: str(value.employmentType, 60) ?? '',
+    start: str(value.start, 40) ?? '',
+    end: str(value.end, 40) ?? '',
+    current: value.current === true,
+    summary: str(value.summary, 2_000) ?? '',
+    responsibilities: strList(value.responsibilities, 1_000, 40),
+    achievements: strList(value.achievements, 1_000, 40),
+    technologies: strList(value.technologies, 80, 40),
+    projectIds: strList(value.projectIds, 64, 20),
+    order,
+    // Absent means visible. A role that disappears because someone forgot to
+    // write `"visible": true` is a worse default than one that has to be hidden
+    // deliberately.
+    visible: value.visible !== false,
+  };
+}
+
+export function parseExperienceRecords(value: unknown): readonly ExperienceRecord[] {
+  /*
+   * `{ roles: [...] }` on disk, a bare array coming back from the admin panel
+   * — the route returns the parsed value and the panel PUTs it unchanged, so
+   * the parser must accept its own output. Checking the array case *first*
+   * matters: an `isRecord` guard ahead of it rejects arrays outright, which is
+   * how the same mistake silently disabled saving for skills.
+   */
+  const source = Array.isArray(value)
+    ? value
+    : isRecord(value) && Array.isArray(value.roles)
+      ? value.roles
+      : [];
+
+  const out: ExperienceRecord[] = [];
+  const seen = new Set<string>();
+  for (const entry of source) {
+    const record = parseRecord(entry);
+    if (!record || seen.has(record.id)) continue;
+    seen.add(record.id);
+    out.push(record);
+  }
+  return out;
+}
+
+export const experienceRecords: readonly ExperienceRecord[] = parseExperienceRecords(raw);
+
+/** "Oct 2023 – Present", or "Jul 2021 – Feb 2023". */
+function formatPeriod(record: ExperienceRecord): string {
+  const end = record.current ? 'Present' : record.end;
+  if (!record.start) return end;
+  return end ? `${record.start} – ${end}` : record.start;
+}
+
+/**
+ * Join a role to its employer, producing the shape every consumer already reads.
+ *
+ * Returns `null` for a dangling `companyId`. That is the deliberate behaviour:
+ * a role whose employer is missing would otherwise render with a blank company
+ * name in the headline and a card that reads as broken. Dropping it is visible
+ * in the admin panel — the role is there, it simply is not on the site — which
+ * is a better failure than shipping the blank.
+ */
+function join(record: ExperienceRecord, company: Company | null): ExperienceItem | null {
+  if (!company) return null;
+
+  return {
+    id: record.id,
+    company: company.name,
+    companyProfile: company.description
+      ? {
+          sector: company.industry,
+          what: company.description,
+          relevance: company.relevance,
+        }
+      : undefined,
+    role: record.designation,
+    location: record.location || company.location,
+    start: record.start,
+    end: record.current ? 'Present' : record.end,
+    period: formatPeriod(record),
+    current: record.current,
+    summary: record.summary,
+    /*
+     * Achievements first.
+     *
+     * Splitting one `highlights` list into two fields necessarily reorders it,
+     * and the first arrangement tried — responsibilities then achievements —
+     * pushed "Delivered 80+ production automations single-handedly" from second
+     * in the list to last. That is his strongest line and a recruiter reads the
+     * first two bullets.
+     *
+     * So outcomes lead and duties follow, which is the ordering a résumé would
+     * use anyway. Nothing is added or dropped: a test asserts the joined list is
+     * the same set of lines it was before the split.
+     */
+    highlights: [...record.achievements, ...record.responsibilities],
+    technologies: record.technologies,
+  };
+}
+
+/**
+ * What the site and the assistant read. Unchanged in shape from before the
+ * company split, which is the whole point.
+ */
+export const experience: readonly ExperienceItem[] = experienceRecords
+  .filter((record) => record.visible)
+  .slice()
+  .sort((a, b) => a.order - b.order)
+  .map((record) => join(record, companyById(record.companyId)))
+  .filter((item): item is ExperienceItem => item !== null);

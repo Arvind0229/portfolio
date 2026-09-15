@@ -32,7 +32,34 @@ export const dynamic = 'force-dynamic';
 /** Generous for prose, small enough that no field can bloat the bundle. */
 const MAX_BODY_BYTES = 256 * 1024;
 
-const CONTENT_RATE_LIMIT = {
+/*
+ * Reads and writes have separate budgets, and they used to share one.
+ *
+ * Sharing was wrong in a way that only showed up in use. A save is a
+ * deliberate act a person performs a few times a session; a read happens
+ * whenever a screen renders, and one screen legitimately needs more than one —
+ * the experience section loads companies and roles, and React's development
+ * double-render makes that six requests before anyone has done anything.
+ *
+ * Against a shared burst of ten a minute, opening that tab twice was enough to
+ * be refused. Found in UAT: a second browser opened the section, every content
+ * request came back 429, and the panel showed an empty list with the message
+ * "Too many saves in a short time" — for a page that had saved nothing.
+ *
+ * A limiter that a normal screen can trip is not protecting anything; it is
+ * just an intermittent bug. So reads get room for a screen to render several
+ * times over, writes keep the tight budget that actually guards the GitHub API,
+ * and each says what it means.
+ */
+const READ_RATE_LIMIT = {
+  limit: 300,
+  windowMs: 3_600_000,
+  burstLimit: 40,
+  burstWindowMs: 60_000,
+  maxKeys: 1_000,
+} as const;
+
+const WRITE_RATE_LIMIT = {
   limit: 60,
   windowMs: 3_600_000,
   burstLimit: 10,
@@ -40,7 +67,8 @@ const CONTENT_RATE_LIMIT = {
   maxKeys: 1_000,
 } as const;
 
-const limiter = createRateLimiter(CONTENT_RATE_LIMIT);
+const readLimiter = createRateLimiter(READ_RATE_LIMIT);
+const writeLimiter = createRateLimiter(WRITE_RATE_LIMIT);
 
 interface ContentResponse {
   ok: boolean;
@@ -69,16 +97,22 @@ function denied(reason: 'unauthenticated' | 'misconfigured' | 'cross_origin') {
   return json({ ok: false, error: 'Sign in first.' }, 401);
 }
 
-function guard(request: Request) {
+function guard(request: Request, kind: 'read' | 'write') {
   const access = checkAdminAccess(request);
   if (!access.allowed) return denied(access.reason);
 
+  const limiter = kind === 'read' ? readLimiter : writeLimiter;
   const limit = limiter.check(clientKeyFromHeaders(request.headers));
   if (!limit.allowed) {
     return NextResponse.json(
       {
         ok: false,
-        error: 'Too many saves in a short time. Wait a moment and try again.',
+        // Says which thing was refused. "Too many saves" on a read sent the
+        // person looking for a save they had not made.
+        error:
+          kind === 'read'
+            ? 'Loading was throttled. Wait a moment and reload.'
+            : 'Too many saves in a short time. Wait a moment and try again.',
         retryAfterSeconds: limit.retryAfterSeconds,
       },
       { status: 429, headers: { 'retry-after': String(limit.retryAfterSeconds) } },
@@ -91,7 +125,7 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ key: string }> },
 ): Promise<NextResponse<ContentResponse>> {
-  const blocked = guard(request);
+  const blocked = guard(request, 'read');
   if (blocked) return blocked;
 
   const { key } = await context.params;
@@ -156,7 +190,7 @@ export async function PUT(
   request: Request,
   context: { params: Promise<{ key: string }> },
 ): Promise<NextResponse<ContentResponse>> {
-  const blocked = guard(request);
+  const blocked = guard(request, 'write');
   if (blocked) return blocked;
 
   const { key } = await context.params;

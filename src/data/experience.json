@@ -1,0 +1,80 @@
+{
+  "$comment": "Roles, as the resume states them. Each references a company by id rather than repeating it.",
+  "roles": [
+    {
+      "id": "sbfc-rpa-developer",
+      "companyId": "sbfc",
+      "designation": "RPA Developer",
+      "location": "Mumbai",
+      "employmentType": "Full-time",
+      "start": "Oct 2023",
+      "end": "",
+      "current": true,
+      "summary": "Progressed from IT Executive to on-role RPA Developer, recognised for ownership and delivery performance. Designs and builds enterprise automations end to end across the retail lending LOS–LMS environment.",
+      "responsibilities": [
+        "Designed and built enterprise RPA bots end-to-end using TruBot (Datamatics), with recent hands-on in Automation Edge, automating high-volume business, HR/IT operations, reporting and compliance processes across the Retail Lending / LOS–LMS environment.",
+        "Owned the complete delivery lifecycle — requirement discussions with business users, BRD authoring, sign-off, development, testing, UAT, deployment and support.",
+        "Automated HR and IT operations, including employee ID creation and deactivation for onboarding/offboarding and recurring HR MIS, improving turnaround and access-management accuracy.",
+        "Automated complex Excel workflows — multi-step calculations, pivots and summary generation — and MIS reports delivered as formatted HTML mail-body dashboards to stakeholders.",
+        "Wrote and scheduled Python scripts for heavy calculations and report generation where native RPA or SQL alone was not sufficient.",
+        "Developed and tuned SQL / PL-SQL across Oracle, MS SQL, MySQL, PostgreSQL and Redshift; moved and archived reports and documents securely via Amazon S3 and SFTP/FTP.",
+        "Automated compliance communication by integrating SMS and WhatsApp APIs into bots for timely, auditable customer messaging.",
+        "Built UI / recorder-based front-end automations for applications without back-end access, applying queues, triggers and the RE Framework for scalable, resilient bot design.",
+        "Built Power BI dashboards and multi-product MIS with dashboard views, converting unstructured data into decision-ready insights for management and product teams.",
+        "Monitored production bots daily and resolved incidents through root-cause and log analysis, exception handling and retry logic to maintain high automation uptime.",
+        "Used AI assistants (ChatGPT, Claude) to accelerate code development and prototyping, reviewing all output for accuracy, data security and compliance before deployment."
+      ],
+      "achievements": [
+        "Delivered 80+ production automations single-handedly, cutting manual effort by 80%+ and saving hundreds of operational hours a year.",
+        "Trained and mentored 3 interns, who now contribute as independent RPA developers."
+      ],
+      "technologies": [
+        "TruBot (Datamatics)",
+        "Automation Edge",
+        "SQL",
+        "PL/SQL",
+        "Python",
+        "Oracle",
+        "MS SQL Server",
+        "MySQL",
+        "PostgreSQL",
+        "Redshift",
+        "Amazon S3",
+        "SFTP / FTP",
+        "Power BI",
+        "Advanced Excel",
+        "SMS & WhatsApp API",
+        "RE Framework",
+        "LOS",
+        "LMS"
+      ],
+      "projectIds": [],
+      "order": 1,
+      "visible": true
+    },
+    {
+      "id": "harjai-recruiter",
+      "companyId": "harjai",
+      "designation": "Talent Acquisition / IT Recruiter",
+      "location": "Mumbai",
+      "employmentType": "Full-time",
+      "start": "Jul 2021",
+      "end": "Feb 2023",
+      "current": false,
+      "summary": "End-to-end technical and non-technical recruitment, with client coordination and vendor management — early exposure to process-driven IT workflows and stakeholder communication.",
+      "responsibilities": [
+        "Managed end-to-end recruitment for technical and non-technical roles, sourcing and screening candidates against client requirements.",
+        "Handled client coordination and vendor management, building early exposure to process-driven IT workflows and stakeholder communication."
+      ],
+      "achievements": [],
+      "technologies": [
+        "Stakeholder Communication",
+        "Vendor Management",
+        "Process Coordination"
+      ],
+      "projectIds": [],
+      "order": 2,
+      "visible": true
+    }
+  ]
+}

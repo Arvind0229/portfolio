@@ -189,4 +189,36 @@ test.describe('admin', () => {
     const sitemap = await (await request.get('/sitemap.xml')).text();
     expect(sitemap).not.toContain('/admin');
   });
+
+  test('the footer offers a quiet way in, and it is not a security boundary', async ({ page }) => {
+    await page.goto('/');
+    const entry = page.getByTestId('admin-entry');
+    await expect(entry).toBeVisible();
+    await expect(entry).toHaveAttribute('rel', /nofollow/);
+
+    /*
+     * Quiet is the requirement, so it is measured rather than asserted by
+     * eyeballing: the link must not be larger or heavier than the sentence it
+     * sits in. A recruiter should read past it.
+     */
+    const weight = await entry.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const parent = getComputedStyle(element.parentElement as HTMLElement);
+      return {
+        size: style.fontSize,
+        parentSize: parent.fontSize,
+        weight: Number(style.fontWeight),
+        parentWeight: Number(parent.fontWeight),
+      };
+    });
+    expect(weight.size).toBe(weight.parentSize);
+    expect(weight.weight).toBeLessThanOrEqual(weight.parentWeight);
+
+    // And it goes where it says, landing on the sign-in box rather than the
+    // panel — the link changes discoverability, never access.
+    await entry.click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByTestId('admin-code')).toBeVisible();
+    await expect(page.getByTestId('admin-panel')).toHaveCount(0);
+  });
 });

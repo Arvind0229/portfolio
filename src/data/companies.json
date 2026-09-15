@@ -1,0 +1,23 @@
+{
+  "$comment": "Public facts about each employer, checked against the company's own site and public reporting — a different provenance from the roles in experience.json, which come from the resume. Referenced by companyId; never duplicated into a role.",
+  "companies": {
+    "sbfc": {
+      "name": "SBFC Finance Limited",
+      "website": "https://www.sbfc.com",
+      "logo": "",
+      "location": "Mumbai",
+      "industry": "NBFC · Retail lending",
+      "description": "A non-banking financial company listed on the NSE and BSE, lending to small businesses and against gold — secured MSME loans and gold loans, written through a branch network across India.",
+      "relevance": "Lending at that volume runs on a loan origination system, a loan management system and a great deal of recurring reporting, all of it inside a regulated environment where an exception has to reach a person quickly. That is the ground every automation here was built on."
+    },
+    "harjai": {
+      "name": "Harjai Computers Pvt. Ltd.",
+      "website": "https://www.harjai.com",
+      "logo": "",
+      "location": "Mumbai",
+      "industry": "IT services · Staffing",
+      "description": "A Mumbai IT services company whose main line is staff augmentation — placing engineers and specialists into client teams for the length of a project.",
+      "relevance": "Recruiting for technical roles means reading job specifications closely and talking to the people who own a requirement. It is the same conversation an automation starts with, which is why the step from here into RPA delivery was shorter than the job titles suggest."
+    }
+  }
+}

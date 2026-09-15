@@ -37,7 +37,21 @@ export const allSkills: readonly string[] = Array.from(
  * list reorders.
  */
 export function parseSkillGroups(value: unknown): readonly SkillGroup[] {
-  const source = isRecord(value) ? value.groups : null;
+  /*
+   * Two shapes, and both are real.
+   *
+   * On disk this is `{ groups: [...] }`. But the admin route hands the *parsed*
+   * value straight back on a save — the panel loads `data` (an array), edits it
+   * and PUTs it — so the parser has to accept its own output as well as the
+   * file it came from.
+   *
+   * It did not, and the effect was invisible: a bare array failed `isRecord`,
+   * parsing produced `[]`, and saving skills quietly did nothing. Nothing
+   * errored, nothing logged, and the round-trip test that existed only checked
+   * the *file* shape, which was never the broken one. Found by the company
+   * editor hitting the same wall.
+   */
+  const source = Array.isArray(value) ? value : isRecord(value) ? value.groups : null;
   if (!Array.isArray(source)) return [];
 
   const out: SkillGroup[] = [];

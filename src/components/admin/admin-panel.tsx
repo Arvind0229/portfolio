@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CareerEditors } from '@/components/admin/career-editors';
+import { PhotoEditor, type PhotoVersionRow } from '@/components/admin/photo-editor';
 import { cn } from '@/lib/utils/cn';
 import {
   ProfileEditor,
@@ -62,11 +64,13 @@ interface Props {
  * the panel to change. Project details last because it is the longest form and
  * the one edited least.
  */
-type Section = 'profile' | 'skills' | 'resume' | 'projects';
+type Section = 'profile' | 'photo' | 'skills' | 'experience' | 'resume' | 'projects';
 
 const SECTIONS: readonly { id: Section; label: string }[] = [
   { id: 'profile', label: 'Profile' },
+  { id: 'photo', label: 'Photo' },
   { id: 'skills', label: 'Skills' },
+  { id: 'experience', label: 'Experience' },
   { id: 'resume', label: 'Resume' },
   { id: 'projects', label: 'Project details' },
 ];
@@ -282,6 +286,17 @@ export function AdminPanel({ projects, localMode }: Props) {
     versions: [],
   });
 
+  // Portrait versions, same idea: nothing is overwritten, so going back is a
+  // pointer change. Loaded through the content route rather than the bundle, so
+  // a photo uploaded on the live site shows up before the next deployment.
+  const [photo, setPhoto] = useState<{
+    active: string | null;
+    versions: readonly PhotoVersionRow[];
+  }>({
+    active: null,
+    versions: [],
+  });
+
   const load = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/depth', { cache: 'no-store' });
@@ -359,6 +374,21 @@ export function AdminPanel({ projects, localMode }: Props) {
       } catch {
         // The resume list is a convenience; failing to load it must not stop
         // the rest of the panel from working.
+      }
+
+      // Same shape, same reason, separate try: one list failing to load should
+      // not take the other down with it.
+      try {
+        const registry = await fetch('/api/admin/content/photo', { cache: 'no-store' });
+        if (registry.ok) {
+          const parsed = (await registry.json()) as {
+            ok: boolean;
+            data?: { active: string | null; versions: readonly PhotoVersionRow[] };
+          };
+          if (parsed.ok && parsed.data) setPhoto(parsed.data);
+        }
+      } catch {
+        // As above.
       }
     } catch {
       // A network failure is not a signed-out state. Assuming it is would drop
@@ -638,7 +668,11 @@ export function AdminPanel({ projects, localMode }: Props) {
       </div>
 
       {section === 'profile' ? <ProfileEditor /> : null}
+      {section === 'photo' ? (
+        <PhotoEditor active={photo.active} versions={photo.versions} onChanged={setPhoto} />
+      ) : null}
       {section === 'skills' ? <SkillsEditor /> : null}
+      {section === 'experience' ? <CareerEditors /> : null}
 
       <section className="surface-card p-5" hidden={section !== 'resume'}>
         <h2 className="font-display text-[1.05rem] text-[var(--text-primary)]">Resume</h2>

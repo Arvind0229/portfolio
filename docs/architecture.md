@@ -4,8 +4,8 @@ For whoever picks this project up next, human or agent. It answers the questions
 you would otherwise spend an hour of reading to answer, and it names the things
 that will bite you.
 
-**Last verified:** 2026-09-14, against `main` after CHANGE-003 — types, lint,
-357 unit tests, production build and 416 E2E tests all green, plus 41 browser
+**Last verified:** 2026-09-14, against `main` after CHANGE-004 — types, lint,
+400 unit tests, production build and 421 E2E tests all green, plus 43 browser
 UAT scenarios.
 If something below contradicts the code, the code is right and this file is
 stale — fix it.
@@ -34,12 +34,15 @@ runtime content fetch on any public page.
 | File | Holds | Editable from admin? |
 |---|---|---|
 | `profile.json` + `profile.ts` | name, title, bio, contact, socials | **Yes** |
+| `photo.json` + `photo.ts` | the portrait, and the two before it | **Yes** |
+| `companies.json` + `companies.ts` | each employer, once — see ADR-002 | **Yes** |
+| `experience.json` + `experience.ts` | roles, referencing a company by id | **Yes** |
 | `skills.json` + `skills.ts` | the stack, grouped | **Yes** |
 | `project-depth.json` | the deep per-project detail layer | **Yes** |
 | `resume-registry.json` | which resume the site serves + history | **Yes** |
 | `projects.ts` | the five case studies | Not yet |
 | `skill-notes.ts` | per-skill explainer notes | Not yet |
-| `experience.ts`, `impact.ts` | roles and headline numbers | Not yet |
+| `impact.ts` | headline numbers | Not yet |
 | `site.ts` | nav, themes, font sets, assistant modes | Not yet |
 | `reporting.ts` | **invented demo data.** See §8 | No, and must not be |
 
@@ -49,11 +52,13 @@ typed accessor, and an entry in `src/lib/content/registry.ts`. Adding a file to
 that registry is what gives it auth, rate limiting, a size cap, optimistic
 concurrency and conflict handling; there is no second route to write.
 
-**Two fields stay out of the editable layer deliberately.** `profile.photo` is
-measured from a specific JPEG (`width`, `height`, `blurDataURL`) — derived data,
-not content, and a text box around it is a save away from layout shift.
-`profile.resume` has its own registry with version history that a profile form
-has no business overwriting. Both are merged back in by `profile.ts`.
+**The photo and the resume are editable, but not from the profile form.** Each
+has its own registry, because each is a file plus derived measurements rather
+than prose. `photo.width`, `photo.height` and `blurDataURL` describe one
+specific JPEG — put them in a text box and a save is one keystroke away from
+layout shift — so they are computed at upload and stored beside the version they
+describe. `profile.ts` merges both back in, which is why `profile.photo` and
+`profile.resume` look exactly as they always did to every component.
 
 ---
 
@@ -80,8 +85,11 @@ docs). Short version: the site stays fully static so visitors depend on nothing
 that can fail, and versioning plus rollback come free from git.
 
 `WRITABLE` in `content-writer.ts` is a **closed allow-list of paths**. Callers
-pass a key or a validated target, never a path. The one parameterised family is
-resume files, and its id is minted server-side and re-validated at resolution.
+pass a key or a validated target, never a path. Two families are parameterised —
+resume files and portraits — and in both the id is produced server-side (a
+timestamp for resumes, a content hash for photos), never taken from the upload,
+and re-validated against `/^[a-z0-9][a-z0-9-]{0,63}$/` again at path
+resolution.
 
 ### What you must know before changing this
 
@@ -109,14 +117,23 @@ the bytes are accepted.
 |---|---|---|---|
 | Resume PDF | 8 MB | `%PDF-` magic bytes | `public/resume/<id>.pdf` |
 | Resume DOCX | 8 MB | ZIP magic + `[Content_Types].xml` member | `public/resume/<id>.docx` |
+| Portrait JPEG | 4 MB | `FF D8 FF` magic, plus width/height read from the JPEG header and bounded to 200–5000px | `public/profile/<sha256-16>.jpg` |
 
-Retention: `MAX_RESUME_VERSIONS = 5` bounds the registry. **It does not reclaim
+**The server never decodes an image.** `image-dimensions.ts` walks the JPEG's
+marker structure and reads the size out of the SOF segment; the browser does the
+resizing before upload. That is a deliberate security decision, not a missing
+feature — see ADR-003 before reaching for `sharp`.
+
+Retention: `MAX_RESUME_VERSIONS = 5` and `MAX_PHOTO_VERSIONS = 3` bound their
+registries. **It does not reclaim
 bytes** — anything committed stays in git history permanently. That is an
 accepted cost of §3, not an oversight. If binaries ever grow past a few tens of
 megabytes, the answer is object storage, not a cleverer prune.
 
-Other upload kinds (photo, project images, logos, knowledge documents) are not
+Other upload kinds (project images, company logos, knowledge documents) are not
 built yet. Follow the same shape: cap, magic-byte check, server-minted name.
+Company logos are currently a *path* field, validated to a site-relative image
+under this domain — there is no logo upload.
 
 ---
 
@@ -234,7 +251,7 @@ Each of these is load-bearing and each has cost someone real time:
   is written so the next person does not repeat a debugging session. Match that.
 - **Every claim in a comment should be checkable.** Prefer "measured X at 1440"
   over "should be fast".
-- **Tests are the safety net for everything above** — 357 unit/API, 416 E2E
+- **Tests are the safety net for everything above** — 400 unit/API, 421 E2E
   across four viewports. Run them; never report results you did not run.
 - **Before adding a dependency**: does existing code solve it? Does the platform?
   Is it maintained? What does it cost the bundle? The answer has been "no
@@ -289,8 +306,11 @@ Honest list. None of these is hypothetical.
 | 10 | **`skill-notes.ts` is 16 KB of data in the client bundle** for one component | Bundle weight |
 | 11 | **Lighthouse has never been run** on this project | Every performance figure in the docs is a target, not a measurement, unless it says otherwise |
 | 12 | **`tests/unit/data-integrity.test.ts` asserts the *order* of social links** | Now that socials are admin-editable, reordering them in the panel fails the unit suite even though the site is correct. The assertion's real intent is "no invented links". Relax it to a set comparison |
-| 13 | **The content editors have no dirty-state guard** | Navigating between sections with unsaved changes in a form discards them silently |
+| 13 | **The content editors have no dirty-state guard** | Navigating between sections with unsaved changes in a form discards them silently. Now affects six sections rather than four |
 | 14 | **Nothing rebuilds the site after a content save** | A save commits to the repository; the public page shows it on the next deployment. The deploy hook is not wired up (Phase 2) |
+| 15 | **The responsibilities/achievements split of the existing roles is a first pass** | Two lines were classified as achievements by their wording. Arvind should review the split; it is content, not code |
+| 16 | **Company logos are a path field, not an upload** | The validator accepts a site-relative image path. Nothing puts a file there yet |
+| 17 | **The public experience section still renders one flat list** | Responsibilities and achievements are separate in the data and concatenated for display. Showing them as two labelled groups is a design decision, not an oversight |
 
 ---
 
@@ -300,6 +320,8 @@ Honest list. None of these is hypothetical.
 |---|---|
 | ADR-001 | Content lives in the repo as JSON, written through `ContentWriter`, not in a managed database. Conditions that would reverse it are listed in the ADR |
 | CHANGE-001 | Resume is a registry with version history; upload writes the file then the pointer, in that order |
+| ADR-002 | A company is its own entity; roles reference it by id, and a dangling reference drops the role rather than rendering a blank employer |
+| ADR-003 | The browser resizes uploaded images; the server validates them without ever decoding one. Read before reaching for `sharp` |
 
 Change documents live in `docs/changes/`. Write one for anything non-trivial,
 and record what was *actually* tested rather than what should pass.

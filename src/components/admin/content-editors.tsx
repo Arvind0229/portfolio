@@ -40,7 +40,7 @@ type Status =
   | { kind: 'conflict'; message: string }
   | { kind: 'error'; message: string };
 
-interface ContentState<T> {
+export interface ContentState<T> {
   data: T | null;
   status: Status;
   /** True when this deployment can show content but not save it. */
@@ -58,7 +58,7 @@ interface ContentState<T> {
  * it must not cause a render, and a save must read the value at the moment of
  * the click rather than whatever a render closed over.
  */
-function useContent<T>(key: string): ContentState<T> {
+export function useContent<T>(key: string): ContentState<T> {
   const [data, setData] = useState<T | null>(null);
   const [status, setStatus] = useState<Status>({ kind: 'loading' });
   const [readOnly, setReadOnly] = useState(false);
