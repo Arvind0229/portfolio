@@ -1,0 +1,197 @@
+{
+  "$comment": "Written by the admin panel, not by hand. The id is the URL and is immutable once created — see docs/adr/ADR-004. Company, experience and skills are references, never copies.",
+  "projects": [
+    {
+      "id": "compliance-tracking",
+      "title": "Compliance Tracking & Exception Alerting",
+      "category": "Compliance",
+      "businessView": "Compliance checks that people used to chase manually are now watched by a bot, and the right team hears about a problem while there is still time to fix it.",
+      "technicalView": "Scheduled bot queries compliance datasets, evaluates exception rules, and dispatches alerts through email, SMS and WhatsApp APIs with an auditable message trail.",
+      "problem": "Compliance processes had to be tracked by hand across systems. Exceptions surfaced late, and getting them in front of the right team depended on someone noticing and forwarding them.",
+      "solution": "A bot that tracks the compliance processes continuously, flags exceptions in real time, and intimates the concerned teams and stakeholders over email, SMS and WhatsApp so corrective action starts immediately.",
+      "role": "Sole developer — requirement discussions, BRD, build, testing, UAT, deployment and ongoing production support.",
+      "process": [
+        "Ran requirement discussions with the business users who own the compliance process",
+        "Authored the BRD and took formal sign-off before development",
+        "Built the tracking and rule evaluation logic in TruBot over SQL data sources",
+        "Integrated SMS and WhatsApp APIs for auditable, timely customer and stakeholder messaging",
+        "Tested, ran UAT with the business, deployed, and monitored the bot in production"
+      ],
+      "impact": [
+        "Exceptions are raised in real time instead of being found during manual review",
+        "Alerts reach the concerned teams and stakeholders on three channels — email, SMS and WhatsApp",
+        "Communication is timely and auditable, which matters in a regulated lending environment"
+      ],
+      "technologies": [
+        "TruBot (Datamatics)",
+        "SQL",
+        "SMS API",
+        "WhatsApp API"
+      ],
+      "featured": true,
+      "companyId": "sbfc",
+      "experienceIds": [
+        "sbfc-rpa-developer"
+      ],
+      "skillIds": [],
+      "year": "",
+      "status": "",
+      "links": {},
+      "visible": true,
+      "order": 1
+    },
+    {
+      "id": "multi-product-mis",
+      "title": "Multi-Product MIS & Dashboard Automation",
+      "category": "Reporting & BI",
+      "businessView": "Management gets product-wise MIS and dashboards on schedule, consolidated automatically from every source system instead of assembled by hand.",
+      "technicalView": "SQL extraction across multiple databases, consolidation and calculation in Excel/Power BI, scheduled generation and distribution of product-wise MIS with dashboard views.",
+      "problem": "Product-wise MIS had to be pulled from multiple sources and consolidated manually before management and product teams could see it — slow, repetitive, and easy to get wrong.",
+      "solution": "Automated generation of multiple product-wise MIS reports with dashboard views, auto-consolidated from multiple sources and delivered on schedule.",
+      "role": "Sole developer — data model, SQL, automation, dashboard build and scheduling.",
+      "process": [
+        "Mapped each report to its underlying source systems with the business owners",
+        "Wrote and tuned the SQL / PL-SQL extraction across the relevant databases",
+        "Automated the consolidation, calculations and pivots that were previously manual",
+        "Built Power BI dashboards and dashboard views over the consolidated data",
+        "Scheduled the run and the delivery so reports arrive without anyone triggering them"
+      ],
+      "impact": [
+        "Multiple product-wise MIS delivered on schedule, without manual preparation",
+        "Unstructured data converted into decision-ready insight for management and product teams",
+        "Consolidation logic lives in one automated place instead of many spreadsheets"
+      ],
+      "technologies": [
+        "TruBot (Datamatics)",
+        "SQL",
+        "Power BI",
+        "Advanced Excel"
+      ],
+      "featured": true,
+      "companyId": "sbfc",
+      "experienceIds": [
+        "sbfc-rpa-developer"
+      ],
+      "skillIds": [],
+      "year": "",
+      "status": "",
+      "links": {},
+      "visible": true,
+      "order": 2
+    },
+    {
+      "id": "report-scheduling-mailer",
+      "title": "Automated Report Scheduling & Mailer",
+      "category": "Reporting & BI",
+      "businessView": "Business and product teams open their inbox and the report is already there, formatted and readable — no one prepares or sends it.",
+      "technicalView": "Python and RPA driven report generation on a schedule, rendered as formatted HTML mail-body dashboards and dispatched to distribution lists.",
+      "problem": "Recurring reports were prepared and mailed manually. That consumed hours every cycle and made delivery dependent on a person being available.",
+      "solution": "Scheduled Python/RPA-driven reports that are generated and auto-delivered as formatted HTML mail-body dashboards to business and product teams, removing manual report preparation entirely.",
+      "role": "Sole developer — Python scripting, RPA orchestration, HTML mail-body design and scheduling.",
+      "process": [
+        "Identified the recurring reports and their exact schedules with stakeholders",
+        "Wrote Python scripts for the heavy calculations that native RPA or SQL alone could not handle well",
+        "Rendered the output as formatted HTML mail-body dashboards so it is readable without attachments",
+        "Scheduled the jobs and added exception handling so a failed run is visible, not silent"
+      ],
+      "impact": [
+        "Manual report preparation removed from the recurring cycle",
+        "Reports arrive on time, formatted, in the mail body itself",
+        "Effort released back to the team for higher-value work"
+      ],
+      "technologies": [
+        "TruBot (Datamatics)",
+        "Python",
+        "SQL",
+        "HTML Mail-Body Automation"
+      ],
+      "featured": true,
+      "companyId": "sbfc",
+      "experienceIds": [
+        "sbfc-rpa-developer"
+      ],
+      "skillIds": [],
+      "year": "",
+      "status": "",
+      "links": {},
+      "visible": true,
+      "order": 3
+    },
+    {
+      "id": "user-id-lifecycle",
+      "title": "User ID Creation & Deactivation Automation",
+      "category": "IT & Access Management",
+      "businessView": "A new joiner gets their access on day one, and a leaver loses it on the right day — automatically, every time.",
+      "technicalView": "Front-end and SQL driven automation of employee ID provisioning and de-provisioning across applications, aligned to IT and compliance policy.",
+      "problem": "Employee ID creation and deactivation for onboarding and offboarding was manual, which risked slow provisioning for joiners and, more seriously, delayed de-provisioning for leavers.",
+      "solution": "A bot that creates and deactivates employee IDs as part of the onboarding/offboarding flow, ensuring accurate and timely access provisioning and de-provisioning in line with IT and compliance policies.",
+      "role": "Sole developer — including front-end automation for applications with no back-end access.",
+      "process": [
+        "Documented the joiner and leaver access flow with IT and HR stakeholders",
+        "Built UI / recorder-based front-end automation where applications exposed no back-end interface",
+        "Used SQL to drive and verify the underlying records",
+        "Added exception handling so failures are surfaced rather than silently skipped",
+        "Deployed and monitored, with daily production checks"
+      ],
+      "impact": [
+        "Faster turnaround on access provisioning for onboarding",
+        "More accurate, policy-aligned de-provisioning for offboarding",
+        "Access management moved from best-effort manual work to a repeatable, auditable run"
+      ],
+      "technologies": [
+        "TruBot (Datamatics)",
+        "SQL",
+        "Front-End / Recorder Automation"
+      ],
+      "featured": false,
+      "companyId": "sbfc",
+      "experienceIds": [
+        "sbfc-rpa-developer"
+      ],
+      "skillIds": [],
+      "year": "",
+      "status": "",
+      "links": {},
+      "visible": true,
+      "order": 4
+    },
+    {
+      "id": "hr-process-automation",
+      "title": "HR Process Automation",
+      "category": "Operations Automation",
+      "businessView": "Recurring HR reporting happens on its own and lands correctly formatted, so the HR team spends its time on people rather than on spreadsheets.",
+      "technicalView": "Automated data processing, report generation and mailer delivery for recurring HR operations and MIS using TruBot, SQL and advanced Excel workflows.",
+      "problem": "Recurring HR operations and MIS involved repetitive data processing and report preparation each cycle, which cost hours and left room for manual error.",
+      "solution": "Automated the recurring HR operations and MIS end to end — data processing, report generation and formatted mailers — cutting manual effort and ensuring timely, error-free HR reporting.",
+      "role": "Sole developer — requirement gathering through to production support.",
+      "process": [
+        "Discussed the recurring HR workflows with the process owners and authored the BRD",
+        "Automated the multi-step Excel calculations, pivots and summary generation",
+        "Built the SQL extraction and the formatted mailer delivery",
+        "Tested, ran UAT, deployed and supported the automation in production"
+      ],
+      "impact": [
+        "Manual effort on recurring HR reporting cut substantially",
+        "Timely, error-free HR MIS delivered on schedule",
+        "Reporting no longer depends on one person being available to run it"
+      ],
+      "technologies": [
+        "TruBot (Datamatics)",
+        "SQL",
+        "Advanced Excel",
+        "Mailer Automation"
+      ],
+      "featured": false,
+      "companyId": "sbfc",
+      "experienceIds": [
+        "sbfc-rpa-developer"
+      ],
+      "skillIds": [],
+      "year": "",
+      "status": "",
+      "links": {},
+      "visible": true,
+      "order": 5
+    }
+  ]
+}

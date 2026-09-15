@@ -75,9 +75,10 @@ Added, because nothing holds them: `overview`, `businessProblem`,
 build, UAT, deploy); **`workflow` is what it does when it runs**. Both are
 useful and they are not the same list.
 
-`integrations` was proposed and is **not** being added, because the existing
-`systems[]` already means "the applications, databases and interfaces it works
-against". Two names for one fact is how a schema starts rotting.
+`integrations` was proposed and is **not** being added — confirmed at G1 review
+— because the existing `systems[]` already means "the applications, databases
+and interfaces it works against". Two names for one fact is how a schema starts
+rotting. It returns only if a concrete, documented case shows they differ.
 
 ### 4. Relationships point outward; they never copy
 
@@ -99,9 +100,14 @@ consistency, so it is recorded here as intentional.
 
 ### 5. Visibility is enforced at serialization, and confidential is refused
 
-Each depth record carries `visibility: 'public' | 'internal'`. Internal content
-is filtered out before it reaches a rendered page or a retrieval chunk, and a
-test asserts that.
+Each depth record carries `visibility: 'public' | 'internal'`, **at record
+level**. One setting for the whole depth record, not one per field: field-level
+visibility multiplies the number of places a mis-classification can happen and
+the number of filters that must each be correct, for a portfolio with five
+projects. It is not built unless a concrete requirement demands it.
+
+Internal content is filtered out before it reaches a rendered page or a
+retrieval chunk, and a test asserts that.
 
 There is no `confidential` storage level. Credentials, tokens, PAN, PII and
 customer data are not a class to be stored carefully — they must not enter the

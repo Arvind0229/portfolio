@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CareerEditors } from '@/components/admin/career-editors';
+import { ProjectEditor } from '@/components/admin/project-editor';
 import { PhotoEditor, type PhotoVersionRow } from '@/components/admin/photo-editor';
 import { cn } from '@/lib/utils/cn';
 import {
@@ -64,15 +65,16 @@ interface Props {
  * the panel to change. Project details last because it is the longest form and
  * the one edited least.
  */
-type Section = 'profile' | 'photo' | 'skills' | 'experience' | 'resume' | 'projects';
+type Section = 'profile' | 'photo' | 'skills' | 'experience' | 'work' | 'resume' | 'projects';
 
 const SECTIONS: readonly { id: Section; label: string }[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'photo', label: 'Photo' },
   { id: 'skills', label: 'Skills' },
   { id: 'experience', label: 'Experience' },
+  { id: 'work', label: 'Projects' },
   { id: 'resume', label: 'Resume' },
-  { id: 'projects', label: 'Project details' },
+  { id: 'projects', label: 'Project depth' },
 ];
 
 /**
@@ -673,6 +675,7 @@ export function AdminPanel({ projects, localMode }: Props) {
       ) : null}
       {section === 'skills' ? <SkillsEditor /> : null}
       {section === 'experience' ? <CareerEditors /> : null}
+      {section === 'work' ? <ProjectEditor /> : null}
 
       <section className="surface-card p-5" hidden={section !== 'resume'}>
         <h2 className="font-display text-[1.05rem] text-[var(--text-primary)]">Resume</h2>

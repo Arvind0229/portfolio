@@ -37,6 +37,7 @@ export const WRITABLE = {
   photoRegistry: 'src/data/photo.json',
   companies: 'src/data/companies.json',
   experience: 'src/data/experience.json',
+  projects: 'src/data/projects.json',
 } as const;
 
 export type WritableKey = keyof typeof WRITABLE;

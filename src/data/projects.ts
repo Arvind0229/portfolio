@@ -1,183 +1,244 @@
+import raw from '@/data/projects.json';
 import { depthFor } from '@/data/project-depth';
-import type { ProjectCaseStudy, ProjectCategory } from '@/types';
+import { companyById } from '@/data/companies';
+import { experienceRecords } from '@/data/experience';
+import { skillGroups } from '@/data/skills';
+import { id as safeId, isRecord, safeUrl, str, strList } from '@/lib/content/validate';
+import type { ProjectCaseStudy, ProjectCategory, ProjectRecord } from '@/types';
 
 /**
- * Case studies derived strictly from the "Key Projects" section of the resume,
- * plus responsibilities listed under the SBFC Finance role. Process steps
- * describe the delivery lifecycle the resume states was owned end to end.
- * No client names, no invented metrics, no per-project numbers that the
- * resume does not contain.
+ * The case studies, and the relationships that place them.
  *
- * ## The depth layer
+ * ## What changed, and what deliberately did not
  *
- * Everything below is the *baseline* — what the resume itself supports. The
- * detail an interviewer actually probes (volumes, systems, what went wrong,
- * why one approach over another) is not on a resume and cannot be inferred
- * from one, so it lives in `project-depth.json`, written by Arvind through the
- * admin panel, and is attached to each project as `depth` at the bottom of
- * this file.
+ * This file used to be a hand-written TypeScript literal. It is now a validator
+ * and a join over `projects.json`, which the admin panel writes — the same
+ * shape as `experience.ts`, for the same reasons (ADR-001, ADR-004).
  *
- * Keeping the two apart is the point. This file stays hand-written and
- * reviewable; the other is machine-written and validated on load. Neither can
- * corrupt the other, and a project with no depth entry renders and answers
- * exactly as it did before the layer existed.
+ * **`projects` still exports `readonly ProjectCaseStudy[]` with exactly the
+ * fields it always had.** The public sections, the project page and the whole
+ * AI knowledge layer read that export and were not touched. `ProjectRecord` —
+ * the stored shape, with the references and the publishing flags — is a
+ * separate export for the admin panel and for anything that genuinely needs
+ * the relationships.
+ *
+ * ## Where each fact lives
+ *
+ * Nothing here copies a company name, a designation or a skill label. A project
+ * stores `companyId`, `experienceIds[]` and `skillIds[]`; the accessors below
+ * resolve them at build time. That is ADR-002's rule, applied again.
+ *
+ * ## The one rule that differs from ADR-002
+ *
+ * A role whose company is missing is **dropped** — a role with a blank employer
+ * reads as broken. A project whose company is missing **still renders**, just
+ * without the employer line. A project is a thing he built; the employer is
+ * context, and losing the context is a smaller harm than hiding the work.
+ *
+ * That asymmetry is intentional and is recorded in ADR-004 §4, because it is
+ * exactly the kind of thing a later reader would otherwise "fix" into
+ * consistency.
  */
-const baseline: readonly Omit<ProjectCaseStudy, 'depth'>[] = [
-  {
-    id: 'compliance-tracking',
-    title: 'Compliance Tracking & Exception Alerting',
-    category: 'Compliance',
-    businessView:
-      'Compliance checks that people used to chase manually are now watched by a bot, and the right team hears about a problem while there is still time to fix it.',
-    technicalView:
-      'Scheduled bot queries compliance datasets, evaluates exception rules, and dispatches alerts through email, SMS and WhatsApp APIs with an auditable message trail.',
-    problem:
-      'Compliance processes had to be tracked by hand across systems. Exceptions surfaced late, and getting them in front of the right team depended on someone noticing and forwarding them.',
-    solution:
-      'A bot that tracks the compliance processes continuously, flags exceptions in real time, and intimates the concerned teams and stakeholders over email, SMS and WhatsApp so corrective action starts immediately.',
-    role: 'Sole developer — requirement discussions, BRD, build, testing, UAT, deployment and ongoing production support.',
-    process: [
-      'Ran requirement discussions with the business users who own the compliance process',
-      'Authored the BRD and took formal sign-off before development',
-      'Built the tracking and rule evaluation logic in TruBot over SQL data sources',
-      'Integrated SMS and WhatsApp APIs for auditable, timely customer and stakeholder messaging',
-      'Tested, ran UAT with the business, deployed, and monitored the bot in production',
-    ],
-    impact: [
-      'Exceptions are raised in real time instead of being found during manual review',
-      'Alerts reach the concerned teams and stakeholders on three channels — email, SMS and WhatsApp',
-      'Communication is timely and auditable, which matters in a regulated lending environment',
-    ],
-    technologies: ['TruBot (Datamatics)', 'SQL', 'SMS API', 'WhatsApp API'],
-    featured: true,
-  },
-  {
-    id: 'multi-product-mis',
-    title: 'Multi-Product MIS & Dashboard Automation',
-    category: 'Reporting & BI',
-    businessView:
-      'Management gets product-wise MIS and dashboards on schedule, consolidated automatically from every source system instead of assembled by hand.',
-    technicalView:
-      'SQL extraction across multiple databases, consolidation and calculation in Excel/Power BI, scheduled generation and distribution of product-wise MIS with dashboard views.',
-    problem:
-      'Product-wise MIS had to be pulled from multiple sources and consolidated manually before management and product teams could see it — slow, repetitive, and easy to get wrong.',
-    solution:
-      'Automated generation of multiple product-wise MIS reports with dashboard views, auto-consolidated from multiple sources and delivered on schedule.',
-    role: 'Sole developer — data model, SQL, automation, dashboard build and scheduling.',
-    process: [
-      'Mapped each report to its underlying source systems with the business owners',
-      'Wrote and tuned the SQL / PL-SQL extraction across the relevant databases',
-      'Automated the consolidation, calculations and pivots that were previously manual',
-      'Built Power BI dashboards and dashboard views over the consolidated data',
-      'Scheduled the run and the delivery so reports arrive without anyone triggering them',
-    ],
-    impact: [
-      'Multiple product-wise MIS delivered on schedule, without manual preparation',
-      'Unstructured data converted into decision-ready insight for management and product teams',
-      'Consolidation logic lives in one automated place instead of many spreadsheets',
-    ],
-    technologies: ['TruBot (Datamatics)', 'SQL', 'Power BI', 'Advanced Excel'],
-    featured: true,
-  },
-  {
-    id: 'report-scheduling-mailer',
-    title: 'Automated Report Scheduling & Mailer',
-    category: 'Reporting & BI',
-    businessView:
-      'Business and product teams open their inbox and the report is already there, formatted and readable — no one prepares or sends it.',
-    technicalView:
-      'Python and RPA driven report generation on a schedule, rendered as formatted HTML mail-body dashboards and dispatched to distribution lists.',
-    problem:
-      'Recurring reports were prepared and mailed manually. That consumed hours every cycle and made delivery dependent on a person being available.',
-    solution:
-      'Scheduled Python/RPA-driven reports that are generated and auto-delivered as formatted HTML mail-body dashboards to business and product teams, removing manual report preparation entirely.',
-    role: 'Sole developer — Python scripting, RPA orchestration, HTML mail-body design and scheduling.',
-    process: [
-      'Identified the recurring reports and their exact schedules with stakeholders',
-      'Wrote Python scripts for the heavy calculations that native RPA or SQL alone could not handle well',
-      'Rendered the output as formatted HTML mail-body dashboards so it is readable without attachments',
-      'Scheduled the jobs and added exception handling so a failed run is visible, not silent',
-    ],
-    impact: [
-      'Manual report preparation removed from the recurring cycle',
-      'Reports arrive on time, formatted, in the mail body itself',
-      'Effort released back to the team for higher-value work',
-    ],
-    technologies: ['TruBot (Datamatics)', 'Python', 'SQL', 'HTML Mail-Body Automation'],
-    featured: true,
-  },
-  {
-    id: 'user-id-lifecycle',
-    title: 'User ID Creation & Deactivation Automation',
-    category: 'IT & Access Management',
-    businessView:
-      'A new joiner gets their access on day one, and a leaver loses it on the right day — automatically, every time.',
-    technicalView:
-      'Front-end and SQL driven automation of employee ID provisioning and de-provisioning across applications, aligned to IT and compliance policy.',
-    problem:
-      'Employee ID creation and deactivation for onboarding and offboarding was manual, which risked slow provisioning for joiners and, more seriously, delayed de-provisioning for leavers.',
-    solution:
-      'A bot that creates and deactivates employee IDs as part of the onboarding/offboarding flow, ensuring accurate and timely access provisioning and de-provisioning in line with IT and compliance policies.',
-    role: 'Sole developer — including front-end automation for applications with no back-end access.',
-    process: [
-      'Documented the joiner and leaver access flow with IT and HR stakeholders',
-      'Built UI / recorder-based front-end automation where applications exposed no back-end interface',
-      'Used SQL to drive and verify the underlying records',
-      'Added exception handling so failures are surfaced rather than silently skipped',
-      'Deployed and monitored, with daily production checks',
-    ],
-    impact: [
-      'Faster turnaround on access provisioning for onboarding',
-      'More accurate, policy-aligned de-provisioning for offboarding',
-      'Access management moved from best-effort manual work to a repeatable, auditable run',
-    ],
-    technologies: ['TruBot (Datamatics)', 'SQL', 'Front-End / Recorder Automation'],
-    featured: false,
-  },
-  {
-    id: 'hr-process-automation',
-    title: 'HR Process Automation',
-    category: 'Operations Automation',
-    businessView:
-      'Recurring HR reporting happens on its own and lands correctly formatted, so the HR team spends its time on people rather than on spreadsheets.',
-    technicalView:
-      'Automated data processing, report generation and mailer delivery for recurring HR operations and MIS using TruBot, SQL and advanced Excel workflows.',
-    problem:
-      'Recurring HR operations and MIS involved repetitive data processing and report preparation each cycle, which cost hours and left room for manual error.',
-    solution:
-      'Automated the recurring HR operations and MIS end to end — data processing, report generation and formatted mailers — cutting manual effort and ensuring timely, error-free HR reporting.',
-    role: 'Sole developer — requirement gathering through to production support.',
-    process: [
-      'Discussed the recurring HR workflows with the process owners and authored the BRD',
-      'Automated the multi-step Excel calculations, pivots and summary generation',
-      'Built the SQL extraction and the formatted mailer delivery',
-      'Tested, ran UAT, deployed and supported the automation in production',
-    ],
-    impact: [
-      'Manual effort on recurring HR reporting cut substantially',
-      'Timely, error-free HR MIS delivered on schedule',
-      'Reporting no longer depends on one person being available to run it',
-    ],
-    technologies: ['TruBot (Datamatics)', 'SQL', 'Advanced Excel', 'Mailer Automation'],
-    featured: false,
-  },
-];
 
-/**
- * The baseline with any depth Arvind has supplied attached.
- *
- * Done here, once, rather than at each call site: the site and the AI
- * knowledge layer both read `projects`, and a merge either of them could
- * forget is a merge that will eventually be forgotten in one of them.
- */
-export const projects: readonly ProjectCaseStudy[] = baseline.map((project) => {
-  const depth = depthFor(project.id);
-  return depth ? { ...project, depth } : project;
-});
-
-export const projectCategories: readonly ProjectCategory[] = [
+const CATEGORIES = [
   'Operations Automation',
   'Reporting & BI',
   'Compliance',
   'IT & Access Management',
-];
+] as const satisfies readonly ProjectCategory[];
+
+/** The fallback when a stored category is not one we know. */
+const DEFAULT_CATEGORY: ProjectCategory = 'Operations Automation';
+
+export const projectCategories = CATEGORIES;
+
+const STATUSES = ['completed', 'ongoing', 'maintained'] as const;
+export type ProjectStatus = (typeof STATUSES)[number];
+
+/**
+ * Derive an id from a title.
+ *
+ * Deterministic, URL-safe, and the same function the admin panel uses so that
+ * what it previews is what gets stored. The id **is** the URL (ADR-004 §2), so
+ * once a project exists this is never run against it again.
+ */
+export function deriveProjectId(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64)
+    .replace(/-+$/, '');
+}
+
+/** `deriveProjectId`, plus a numeric suffix if that id is already taken. */
+export function uniqueProjectId(title: string, taken: Iterable<string>): string {
+  const base = deriveProjectId(title) || 'project';
+  const used = new Set(taken);
+  if (!used.has(base)) return base;
+  for (let n = 2; n < 1000; n += 1) {
+    const candidate = `${base}-${n}`.slice(0, 64);
+    if (!used.has(candidate)) return candidate;
+  }
+  return `${base}-${Date.now().toString(36)}`.slice(0, 64);
+}
+
+function parseLinks(value: unknown): ProjectRecord['links'] {
+  if (!isRecord(value)) return {};
+  const links: Record<string, string> = {};
+  for (const key of ['live', 'github', 'caseStudy'] as const) {
+    // `safeUrl` refuses `javascript:` and plain http. A link that does not
+    // survive it is dropped rather than rendered as a broken or unsafe anchor.
+    const url = safeUrl(value[key]);
+    if (url) links[key] = url;
+  }
+  return links;
+}
+
+function parseRecord(value: unknown): ProjectRecord | null {
+  if (!isRecord(value)) return null;
+
+  const id = safeId(value.id);
+  const title = str(value.title, 160);
+  // Without an id there is no URL and no React key; without a title there is
+  // nothing to show. Everything else can be absent and the page still reads.
+  if (!id || !title) return null;
+
+  const declaredCategory = str(value.category, 60);
+  const category: ProjectCategory =
+    CATEGORIES.find((entry) => entry === declaredCategory) ?? DEFAULT_CATEGORY;
+
+  const declaredStatus = str(value.status, 20);
+  const status: ProjectRecord['status'] =
+    STATUSES.find((entry) => entry === declaredStatus) ?? '';
+
+  const order =
+    typeof value.order === 'number' && Number.isFinite(value.order)
+      ? Math.trunc(value.order)
+      : Number.MAX_SAFE_INTEGER;
+
+  return {
+    id,
+    title,
+    category,
+    businessView: str(value.businessView, 600) ?? '',
+    technicalView: str(value.technicalView, 600) ?? '',
+    problem: str(value.problem, 2_000) ?? '',
+    solution: str(value.solution, 2_000) ?? '',
+    role: str(value.role, 600) ?? '',
+    process: strList(value.process, 400, 20),
+    impact: strList(value.impact, 400, 20),
+    technologies: strList(value.technologies, 80, 40),
+    companyId: safeId(value.companyId) ?? '',
+    experienceIds: strList(value.experienceIds, 64, 10).filter((entry) => safeId(entry)),
+    skillIds: strList(value.skillIds, 64, 20).filter((entry) => safeId(entry)),
+    year: str(value.year, 20) ?? '',
+    status,
+    links: parseLinks(value.links),
+    featured: value.featured === true,
+    // Absent means visible. A project that vanishes because nobody wrote
+    // `"visible": true` is a worse default than one hidden on purpose.
+    visible: value.visible !== false,
+    order,
+  };
+}
+
+/**
+ * Validate and drop, like every parser here: a malformed project is ignored and
+ * rubbish yields an empty list rather than throwing. One bad save must never be
+ * able to take the site down.
+ *
+ * Accepts both the file shape (`{ projects: [...] }`) and a bare array, because
+ * the admin route hands the *parsed* value straight back on a save and a parser
+ * that cannot read its own output silently discards every edit. That mistake
+ * shipped once already — see the note in `skills.ts`.
+ */
+export function parseProjects(value: unknown): readonly ProjectRecord[] {
+  const source = Array.isArray(value)
+    ? value
+    : isRecord(value) && Array.isArray(value.projects)
+      ? value.projects
+      : [];
+
+  const out: ProjectRecord[] = [];
+  const seen = new Set<string>();
+  for (const entry of source) {
+    const record = parseRecord(entry);
+    if (!record || seen.has(record.id)) continue;
+    seen.add(record.id);
+    out.push(record);
+  }
+  return out;
+}
+
+export const projectRecords: readonly ProjectRecord[] = parseProjects(raw);
+
+/** Visible projects in display order. The order the site and the admin agree on. */
+const ordered: readonly ProjectRecord[] = projectRecords
+  .filter((record) => record.visible)
+  .slice()
+  .sort((a, b) => a.order - b.order);
+
+/**
+ * What every existing consumer reads. Shape unchanged from before the
+ * migration, which is the entire point of doing it this way.
+ */
+export const projects: readonly ProjectCaseStudy[] = ordered.map((record) => {
+  const { companyId, experienceIds, skillIds, year, status, links, visible, order, ...study } =
+    record;
+  void companyId;
+  void experienceIds;
+  void skillIds;
+  void year;
+  void status;
+  void links;
+  void visible;
+  void order;
+
+  const depth = depthFor(record.id);
+  return depth ? { ...study, depth } : study;
+});
+
+/* ------------------------------------------------------------------ */
+/* Relationship accessors                                              */
+/* ------------------------------------------------------------------ */
+
+export interface ProjectRelations {
+  /** `null` when the company was removed. The project still renders. */
+  readonly company: ReturnType<typeof companyById>;
+  readonly roles: readonly { id: string; designation: string }[];
+  readonly skills: readonly { id: string; name: string }[];
+}
+
+/**
+ * Resolve a project's references.
+ *
+ * Every lookup that misses is **skipped**, never substituted. A removed skill
+ * loses its chip; a removed role loses its line; a removed company loses the
+ * employer line and nothing else. Nothing invents a placeholder, because a
+ * placeholder on this site would be a fact that is not true.
+ */
+export function relationsFor(id: string): ProjectRelations {
+  const record = projectRecords.find((entry) => entry.id === id);
+  if (!record) return { company: null, roles: [], skills: [] };
+
+  return {
+    company: record.companyId ? companyById(record.companyId) : null,
+    roles: record.experienceIds
+      .map((roleId) => experienceRecords.find((role) => role.id === roleId))
+      .filter((role): role is NonNullable<typeof role> => Boolean(role))
+      .map((role) => ({ id: role.id, designation: role.designation })),
+    skills: record.skillIds
+      .map((skillId) => skillGroups.find((group) => group.id === skillId))
+      .filter((group): group is NonNullable<typeof group> => Boolean(group))
+      .map((group) => ({ id: group.id, name: group.name })),
+  };
+}
+
+/** The projects belonging to one company, in display order. */
+export function projectsForCompany(companyId: string): readonly ProjectCaseStudy[] {
+  const ids = new Set(
+    ordered.filter((record) => record.companyId === companyId).map((record) => record.id),
+  );
+  return projects.filter((project) => ids.has(project.id));
+}

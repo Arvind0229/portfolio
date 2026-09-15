@@ -83,7 +83,14 @@ again.
 
 ### Non-negotiables
 
-- `transform` and `opacity` only. Nothing that triggers layout.
+- `transform` and `opacity` are the default. **No layout property is ever
+  animated** — not width, height, top, left, margin or padding.
+- **One documented exception:** Crimson may animate `box-shadow`, because
+  elevation *is* its identity and displacing the card instead would be a
+  different design. `box-shadow` is a paint-level property: cheaper than layout,
+  more expensive than compositing. It is used on discrete state changes (hover,
+  press), never in a continuous loop, and the frame cost is measured at G5
+  rather than assumed.
 - No `requestAnimationFrame` loop that writes React state.
 - Every decorative loop is named in the reduced-motion suppression list.
 - A decorative element is `aria-hidden` and `pointer-events: none`.
@@ -129,8 +136,10 @@ in the hero. Only at `xl:` and above. In **all three themes**.
 - Safe zones expressed as a bounded X range; the figure never enters the header,
   the CTA column, or any form.
 - `pointer-events: none`, `aria-hidden="true"`.
-- Reduced motion: `WALKING` disabled entirely, `PEEKING` reduced to a fade, the
-  figure remains visible and still — identity preserved without movement.
+- **Reduced motion: the robot does not walk, roam, or animate continuously.**
+  It may appear as a still identity element — no transform loop, no internal
+  part animation — and it remains `aria-hidden="true"`, `pointer-events: none`
+  and out of the way of every control. Identity preserved; movement removed.
 - Below 1280px the robot does not render at all. This is the existing
   behaviour and it is correct: there is no safe zone on a phone.
 
@@ -225,8 +234,8 @@ suppression list by name.
 |---|---|
 | `--motion-scale` | 0 |
 | Mandala rotation | stopped; geometry stays |
-| Robot walking | disabled |
-| Robot peeking | fade only |
+| Robot walking / roaming | disabled |
+| Robot continuous animation | disabled — still figure, still `aria-hidden` |
 | Scroll reveals | content visible immediately |
 | Stagger | none |
 
@@ -234,7 +243,12 @@ suppression list by name.
 
 ## 6. The library question
 
-**Framer-quality motion is mandatory. A motion library is not.**
+**"Framer-quality" is a quality bar, not an instruction to animate everything.**
+It means motion that improves hierarchy, feedback, navigation or storytelling.
+Motion that does none of those is decoration, and decoration is a regression
+with extra steps. The existing CSS, IntersectionObserver and motion tokens are
+extended first; a library is considered only when they demonstrably cannot
+serve a named interaction.
 
 Three capabilities genuinely cannot be built well in CSS: coordinated exit
 animations, shared-element / FLIP layout transitions, and spring physics.

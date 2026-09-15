@@ -8,7 +8,8 @@ that will bite you.
 400 unit tests, production build and 421 E2E tests all green, plus 43 browser
 UAT scenarios.
 
-**Phase 2 is in progress at gate G1 (analysis only; no Phase 2 code written).**
+**Phase 2 is in progress. G1 (analysis) and G2 (project data layer + CRUD) are
+complete; G3 onwards is not started.**
 Start at `docs/AI-CONTEXT.md` for where the work stands, then `docs/BRD-PHASE-2.md`
 for what is planned and `docs/MOTION-SYSTEM.md` for how motion is organised.
 If something below contradicts the code, the code is right and this file is
@@ -44,7 +45,7 @@ runtime content fetch on any public page.
 | `skills.json` + `skills.ts` | the stack, grouped | **Yes** |
 | `project-depth.json` | deep per-project detail | **Yes, and currently empty** — see the note below |
 | `resume-registry.json` | which resume the site serves + history | **Yes** |
-| `projects.ts` | the five case studies | Not yet — Phase 2 G2 |
+| `projects.json` + `projects.ts` | the case studies, plus company/role/skill references and publishing flags | **Yes** — Phase 2 G2 |
 | `skill-notes.ts` | per-skill explainer notes | Not yet |
 | `impact.ts` | headline numbers | Not yet |
 | `site.ts` | nav, themes, font sets, assistant modes | Not yet |

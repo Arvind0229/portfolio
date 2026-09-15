@@ -29,7 +29,13 @@ project's history without opening five documents.
 | [`MOTION-SYSTEM.md`](MOTION-SYSTEM.md) | Global vs theme-specific motion, tokens, robot states, Mandala layers |
 | [`DESIGN-RESEARCH-PHASE-2.md`](DESIGN-RESEARCH-PHASE-2.md) | Principles taken from current practice, and what was deliberately not taken |
 
-Gate G1 (analysis) is complete. No Phase 2 production code has been written.
+**G1** (analysis) and **G2** (project data layer + CRUD) are complete. G3
+onwards is not started.
+
+| Gate | Delivered |
+|---|---|
+| G1 | BRD, ADR-004, motion system, design research, AI context, restore point |
+| G2 | `projects.json` + validator + accessor + registry entry; admin CRUD with create, edit, duplicate, delete, reorder, publish and feature; company / role / skill references |
 
 ## Where to start
 

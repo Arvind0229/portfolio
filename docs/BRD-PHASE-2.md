@@ -192,7 +192,7 @@ architecture or workflow, no lessons learned, no related-projects logic beyond
 | # | Requirement | Measure |
 |---|---|---|
 | N1 | No performance regression beyond an agreed budget | Shared JS ≤ 115 kB (from 102 kB) |
-| N2 | Animation stays compositor-only | `transform` / `opacity` only; no animated layout properties |
+| N2 | Animation stays cheap, and layout is never animated | `transform` / `opacity` are the default. **Crimson Claymorphism may animate `box-shadow`** where depth is the identity — measured, not assumed. No layout property is animated anywhere. |
 | N3 | Reduced motion fully honoured | Existing two-part check extended to every new animation |
 | N4 | No horizontal overflow at 320/390/430/768/1280/1440 | Measured, per page and per component box |
 | N5 | Accessibility does not regress | 0 axe WCAG A/AA violations, all routes, all themes |
@@ -267,15 +267,15 @@ Extension only — every existing field stays.
 | `businessProblem` | string | The long form. `problem` is the summary. |
 | `architecture` | string[] | Components and how they connect. Nothing holds this today. |
 | `workflow` | string[] | The runtime sequence. `process[]` is how it was *built*, not how it *runs* — a genuine distinction. |
-| `integrations` | string[] | Named systems it talks to. `systems[]` is what it works against; overlapping enough to merge **if review says so**. |
 | `metrics` | {label, value, note?}[] | Quantified outcomes. `impact[]` is prose. |
 | `lessonsLearned` | string[] | — |
 | `futureEnhancements` | string[] | — |
-| `visibility` | 'public' \| 'internal' | Per §4.3 |
+| `visibility` | 'public' \| 'internal' | Per §4.3. **Record-level for Phase 2** — one setting per project's depth record, not per field. Field-level visibility is not built unless a concrete requirement demands it. |
 
-**Open question for review:** `integrations` vs the existing `systems` may be
-the same fact under two names. Recommendation: **drop `integrations`, keep
-`systems`** unless Arvind can state a case where they differ.
+**Resolved at G1 review:** `integrations` is **not added**. The existing
+`systems[]` already means "the applications, databases and interfaces it works
+against". It may be reconsidered only if a concrete, documented case shows the
+two are different facts.
 
 Rejected from the proposed schema because they already exist:
 `solution`, `technologies`, `businessImpact`, `challenges`, `security`,

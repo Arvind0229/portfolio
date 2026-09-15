@@ -1,6 +1,7 @@
 import { parseProfileContent } from '@/data/profile';
 import { parseCompanies } from '@/data/companies';
 import { parseExperienceRecords } from '@/data/experience';
+import { parseProjects } from '@/data/projects';
 import { parsePhotoRegistry, photoRegistry } from '@/data/photo';
 import { parseResumeRegistry, resumeRegistry } from '@/data/resume-registry';
 import { parseSkillGroups } from '@/data/skills';
@@ -8,6 +9,7 @@ import bundledProfile from '@/data/profile.json';
 import bundledSkills from '@/data/skills.json';
 import bundledCompanies from '@/data/companies.json';
 import bundledExperience from '@/data/experience.json';
+import bundledProjects from '@/data/projects.json';
 import type { WritableKey } from '@/lib/admin/content-writer';
 
 /**
@@ -59,6 +61,9 @@ export interface ContentDefinition {
 
 const COMPANY_COMMENT =
   "Public facts about each employer, checked against the company's own site and public reporting — a different provenance from the roles in experience.json, which come from the resume. Referenced by companyId; never duplicated into a role.";
+
+const PROJECT_COMMENT =
+  'Written by the admin panel, not by hand. The id is the URL and is immutable once created — see docs/adr/ADR-004. Company, experience and skills are references, never copies.';
 
 const EXPERIENCE_COMMENT =
   'Roles, as the resume states them. Each references a company by id rather than repeating it.';
@@ -125,6 +130,19 @@ export const CONTENT: Record<string, ContentDefinition> = {
     }),
     message: 'Update companies',
     bundled: () => bundledCompanies,
+  },
+  /*
+   * The last large content file to join the layer. Its id is the public URL
+   * (ADR-004), so `parse` never rewrites one — a stored id either validates and
+   * survives, or the record is dropped.
+   */
+  projects: {
+    target: 'projects',
+    label: 'Projects',
+    parse: parseProjects,
+    serialize: (parsed) => ({ $comment: PROJECT_COMMENT, projects: parsed }),
+    message: 'Update projects',
+    bundled: () => bundledProjects,
   },
   experience: {
     target: 'experience',

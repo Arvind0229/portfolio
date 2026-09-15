@@ -247,6 +247,43 @@ export interface ProjectCaseStudy {
   depth?: ProjectDepth;
 }
 
+/**
+ * A project as it is stored: the case study plus the relationships and the
+ * publishing flags the admin panel controls.
+ *
+ * Separate from `ProjectCaseStudy` on purpose. That type is what forty-odd
+ * components and the AI knowledge layer read, and it was not changed by the
+ * migration — `projects.ts` strips the fields below before exporting it. Only
+ * the admin panel and the relationship accessors need the full record.
+ */
+export interface ProjectRecord {
+  id: string;
+  title: string;
+  category: ProjectCategory;
+  businessView: string;
+  technicalView: string;
+  problem: string;
+  solution: string;
+  role: string;
+  process: readonly string[];
+  impact: readonly string[];
+  technologies: readonly string[];
+  /** → companies.json. Empty, or a company that was removed, hides the employer line — it never hides the project. */
+  companyId: string;
+  /** → experience.json. Unresolved entries are skipped. */
+  experienceIds: readonly string[];
+  /** → skills.json group ids. Unresolved entries are skipped. */
+  skillIds: readonly string[];
+  year: string;
+  status: '' | 'completed' | 'ongoing' | 'maintained';
+  links: { live?: string; github?: string; caseStudy?: string };
+  featured: boolean;
+  /** Hidden projects stay in the file and off the site — a draft, not a delete. */
+  visible: boolean;
+  /** Lower sorts first. */
+  order: number;
+}
+
 export interface SkillGroup {
   id: string;
   name: string;

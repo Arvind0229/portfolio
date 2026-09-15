@@ -5,8 +5,8 @@ the system works; this file explains **where the project stands, what has been
 decided, and which mistakes have already been made here** so they are not made
 again.
 
-**Current phase:** Phase 2, gate G1 (analysis) complete. No Phase 2 production
-code written.
+**Current phase:** Phase 2, gate G2 complete (project data layer and CRUD).
+G3 onwards not started.
 **Last verified:** 2026-09-15.
 
 ---
@@ -36,8 +36,9 @@ page fetches content at runtime.
 | CHANGE-002 | Admin security — bypass, middleware, rate limits, real concurrency |
 | CHANGE-003 | Content layer — profile, socials, skills admin-editable |
 | CHANGE-004 | Phase 1 gaps — photo, company as an entity, admin entry |
-| **Phase 2 G1** | **Analysis complete, approved shape, no code** |
-| Phase 2 G2–G6 | Not started |
+| Phase 2 G1 | Analysis complete, approved |
+| **Phase 2 G2** | **Projects are admin-editable: data layer, CRUD, relationships** |
+| Phase 2 G3–G6 | Not started |
 
 Phase 2 gates: G2 project data + CRUD · G3 case-study page · G4 motion + robot ·
 G5 Mandala + Crimson · G6 AI + performance + release.
@@ -55,6 +56,8 @@ G5 Mandala + Crimson · G6 AI + performance + release.
 | A dangling `companyId` on a **project** keeps the project | ADR-004 | Deliberately the opposite of the role rule. A project without an employer is still a project |
 | Theme id `enterprise` is not renamed | BRD Phase 2 | Renaming invalidates every saved `localStorage` preference |
 | Extend `ProjectDepth`; never create a second details store | ADR-004 | The proposed schema duplicated four existing fields |
+| A project's id is derived from its title, then frozen | G2 | The admin panel renders it as text, not an input. Editing it breaks a live URL |
+| New and duplicated projects start **hidden** | G2 | Publishing is a deliberate act; a half-written project must not appear the moment it is created |
 
 ---
 
@@ -70,6 +73,7 @@ A `grep` before building is worth more here than anywhere else.
 | Per-theme motion intensity | `--motion-scale` (0.8 / 1.1 / 1.0) |
 | Scroll reveals | `Reveal` + `use-in-view` + `.reveal`, stagger via `--reveal-delay` |
 | A count-up animation | `use-count-up` |
+| A projects store | `projects.json` + `parseProjects` + `relationsFor()` + a registry entry |
 | An upload pipeline | Resume and photo routes: magic bytes, size cap, content-hash filename, pointer-then-file ordering, rollback |
 | Optimistic concurrency + conflict UI | `useContent<T>()` — inherit it, do not reimplement |
 | A rate limiter | `createRateLimiter`, separate read and write budgets |
@@ -131,9 +135,9 @@ Recorded so the next agent does not repeat them. Each cost real time.
 | Shared JS | 102 kB |
 | Homepage | 153 kB |
 | `/projects/[id]` | 109 kB |
-| `/admin` | 118 kB |
+| `/admin` | 121 kB (118 kB before G2) |
 | Middleware | 33.9 kB |
-| Unit + API tests | 400 passing |
+| Unit + API tests | 428 passing (400 before G2) |
 | E2E tests | 421 passing, 3 intentional skips |
 | Accessibility | 0 axe WCAG A/AA violations |
 | **Lighthouse** | **never run** |
