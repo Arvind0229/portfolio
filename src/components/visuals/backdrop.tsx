@@ -18,57 +18,36 @@ export function Backdrop() {
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       {/*
-        Ambient light — every theme, tuned by --glow-opacity.
+        Each theme owns its ground. Nothing is shared.
 
-        Neither orb carries `will-change: transform`, and it should not be added
-        back. They animate continuously, so the browser composites them anyway;
-        the hint bought nothing and forced the layer to exist even when the
-        animation is not running — including under reduced motion, where these
-        are stopped outright. Two layers this large and this blurred are exactly
-        the kind a phone runs out of memory for, and when it does, other layers
-        on the page start coming back blank.
+        Until now two ambient orbs and the moving grid rendered on *every*
+        theme, with only the signature layer swapped on top. That is why the
+        four read as relatives however different their palettes were: the
+        floor under them was the same floor. The grid in particular is a
+        technical idiom — it belongs to Midnight and it was showing faintly
+        behind pastel clay and behind a mandala, where it means nothing.
+
+        So the orbs and the grid moved *into* Midnight, and the other three
+        bring their own atmosphere. The layer is still exactly one component
+        and still mounts exactly one signature at a time, which is what keeps
+        the isolation guarantee.
       */}
-      <div
-        className="orb-drift-a absolute -left-[18%] -top-[22%] h-[24rem] w-[24rem] sm:h-[42rem] sm:w-[42rem] rounded-full blur-[40px] sm:blur-[70px]"
-        style={{
-          background:
-            'radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 55%, transparent) 0%, transparent 68%)',
-          opacity: 'var(--glow-opacity)',
-        }}
-      />
-      {/* Both glows are anchored to the top of the page. An ambient blob sitting
-          behind the middle of the document tints the text that scrolls over it,
-          which costs contrast for decoration nobody asked for. */}
-      <div
-        className="orb-drift-b absolute -right-[16%] -top-[10%] h-[20rem] w-[20rem] sm:h-[34rem] sm:w-[34rem] rounded-full blur-[40px] sm:blur-[70px]"
-        style={{
-          background:
-            'radial-gradient(circle, color-mix(in srgb, var(--accent-secondary) 50%, transparent) 0%, transparent 70%)',
-          opacity: 'calc(var(--glow-opacity) * 0.7)',
-        }}
-      />
+      {theme === 'engineering' ? <MidnightGround /> : null}
 
-      {/* The moving ground. Two grids at different scales and speeds, inside a
-          static masked window — the mask cannot sit on the moving element or
-          the fade travels with it and slides off the page. Studio sets
-          --grid-opacity to 0 and gets its own language instead. */}
-      <div className="grid-window">
-        <div className="grid-plane-far" />
-        <div className="grid-plane" />
-      </div>
-
-      {/*
-        Exactly one signature layer is mounted at a time.
-
-        This is what enforces theme isolation: a layer that is not the
-        active theme's does not exist in the DOM, so it cannot animate, hold
-        a timer, or leak into a screenshot. Switching theme unmounts the old
-        one, which is the cleanup — there is nothing to tear down by hand.
-      */}
       {theme === 'clay' ? <ClayLayer /> : null}
       {theme === 'engineering' ? <NetworkLayer /> : null}
-      {theme === 'studio' ? <MandalaLayer /> : null}
-      {theme === 'enterprise' ? <CrimsonLayer /> : null}
+      {theme === 'studio' ? (
+        <>
+          <StudioField />
+          <MandalaLayer />
+        </>
+      ) : null}
+      {theme === 'enterprise' ? (
+        <>
+          <CrimsonGround />
+          <CrimsonLayer />
+        </>
+      ) : null}
     </div>
   );
 }
@@ -407,6 +386,114 @@ function MandalaLayer() {
         }}
       />
     </>
+  );
+}
+
+/**
+ * Midnight's ground: two ambient orbs and the moving grid.
+ *
+ * This is the original shared backdrop, now scoped to the one theme it was
+ * ever really designed for. A drifting technical grid under a control-room
+ * palette is the theme's whole atmosphere; under pastel clay it was a faint
+ * graph-paper artefact nobody asked for.
+ *
+ * Neither orb carries `will-change: transform`, and it must not be added
+ * back. They animate continuously, so the browser composites them anyway; the
+ * hint bought nothing and forced the layer to exist even when the animation
+ * was not running — including under reduced motion, where these stop
+ * outright. Two layers this large and this blurred are exactly the kind a
+ * phone runs out of memory for, and when it does, other layers on the page
+ * start coming back blank.
+ */
+function MidnightGround() {
+  return (
+    <>
+      <div
+        className="orb-drift-a absolute -left-[18%] -top-[22%] h-[24rem] w-[24rem] sm:h-[42rem] sm:w-[42rem] rounded-full blur-[40px] sm:blur-[70px]"
+        style={{
+          background:
+            'radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 55%, transparent) 0%, transparent 68%)',
+          opacity: 'var(--glow-opacity)',
+        }}
+      />
+      {/* Both glows are anchored to the top of the page. An ambient blob behind
+          the middle of the document tints the text that scrolls over it, which
+          costs contrast for decoration nobody asked for. */}
+      <div
+        className="orb-drift-b absolute -right-[16%] -top-[10%] h-[20rem] w-[20rem] sm:h-[34rem] sm:w-[34rem] rounded-full blur-[40px] sm:blur-[70px]"
+        style={{
+          background:
+            'radial-gradient(circle, color-mix(in srgb, var(--accent-secondary) 50%, transparent) 0%, transparent 70%)',
+          opacity: 'calc(var(--glow-opacity) * 0.7)',
+        }}
+      />
+      {/* Two grids at different scales and speeds inside a static masked
+          window — the mask cannot sit on the moving element or the fade
+          travels with it and slides off the page. */}
+      <div className="grid-window">
+        <div className="grid-plane-far" />
+        <div className="grid-plane" />
+      </div>
+    </>
+  );
+}
+
+/**
+ * Studio's ground: a slow particle field and two light streaks.
+ *
+ * The mandala needs something to float in. The reference for this theme is a
+ * field of drifting points with soft ribbons of light crossing it, which is
+ * also the cheapest thing that reads as depth: eighteen absolutely-positioned
+ * dots and two blurred gradients, all animating `transform` and `opacity`.
+ *
+ * Positions come from a fixed table rather than `Math.random()` — a random
+ * field re-rolls on every render and cannot be tuned, and it would differ
+ * between the server and the client.
+ */
+function StudioField() {
+  const motes = [
+    [6, 18, 0], [14, 62, 3], [22, 34, 6], [29, 78, 1], [37, 12, 8], [44, 52, 4],
+    [52, 88, 2], [58, 26, 7], [66, 68, 5], [72, 8, 9], [79, 44, 1], [85, 74, 6],
+    [91, 22, 3], [12, 90, 7], [48, 4, 2], [95, 56, 8], [34, 96, 5], [60, 40, 0],
+  ] as const;
+
+  return (
+    <>
+      <div className="studio-streak studio-streak-a" />
+      <div className="studio-streak studio-streak-b" />
+      {motes.map(([left, top, delay]) => (
+        <span
+          key={`${left}-${top}`}
+          className="studio-mote"
+          style={{
+            left: `${left}%`,
+            top: `${top}%`,
+            animationDelay: `${-delay * 2.4}s`,
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * Crimson's ground: one soft crimson rise from below the fold.
+ *
+ * Not the shared orbs — those are keyed to `--accent-primary` and
+ * `--accent-secondary`, which on this theme would put a blue glow in a
+ * crimson room. One low, wide radial instead, anchored to the bottom so it
+ * lifts the web geometry off the near-black without tinting the text that
+ * scrolls over the top of the page.
+ */
+function CrimsonGround() {
+  return (
+    <div
+      className="crimson-rise absolute inset-x-0 bottom-0 h-[70vh]"
+      style={{
+        background:
+          'radial-gradient(60% 100% at 50% 100%, color-mix(in srgb, var(--crimson) 42%, transparent) 0%, transparent 72%)',
+      }}
+    />
   );
 }
 

@@ -3035,6 +3035,109 @@ a {
   & .clay-metrics > *:nth-child(4) { --h: var(--h-pink); }
 }
 
+/* ========================= STUDIO PARTICLE FIELD =================== *
+ * Eighteen motes and two ribbons of light. Everything animates transform
+ * and opacity only; there is no canvas and no per-frame JavaScript.
+ * ================================================================== */
+
+.studio-mote {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent-tertiary);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--accent-tertiary) 55%, transparent);
+  opacity: 0.5;
+  animation: mote-drift calc(30s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+}
+
+.studio-mote:nth-child(3n) {
+  background: var(--accent-primary);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--accent-primary) 55%, transparent);
+}
+
+.studio-mote:nth-child(4n) {
+  width: 2px;
+  height: 2px;
+  opacity: 0.34;
+}
+
+@keyframes mote-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate3d(calc(14px * var(--motion-scale)), calc(-30px * var(--motion-scale)), 0);
+    opacity: 0.62;
+  }
+}
+
+/* Two very wide, very soft ribbons. Blurred gradients rather than SVG paths:
+   a ribbon is an area of light, and an area is cheaper than a stroke with a
+   filter on it. */
+.studio-streak {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  height: 16rem;
+  filter: blur(46px);
+  opacity: 0.2;
+  border-radius: 50%;
+}
+
+.studio-streak-a {
+  top: 18%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    color-mix(in srgb, var(--accent-tertiary) 60%, transparent),
+    transparent
+  );
+  animation: streak-sway calc(48s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+}
+
+.studio-streak-b {
+  top: 64%;
+  background: linear-gradient(
+    80deg,
+    transparent,
+    color-mix(in srgb, var(--accent-primary) 50%, transparent),
+    transparent
+  );
+  animation: streak-sway calc(62s / max(var(--motion-scale), 0.4)) var(--ease-in-out) -18s infinite;
+}
+
+@keyframes streak-sway {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-3deg);
+  }
+  50% {
+    transform: translate3d(0, calc(-40px * var(--motion-scale)), 0) rotate(3deg);
+  }
+}
+
+/* --------------------------- CRIMSON RISE -------------------------- */
+
+.crimson-rise {
+  opacity: 0.55;
+  animation: crimson-breathe calc(24s / max(var(--motion-scale), 0.4)) var(--ease-in-out) infinite;
+}
+
+@keyframes crimson-breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 0.62;
+    transform: translate3d(0, calc(-18px * var(--motion-scale)), 0);
+  }
+}
+
 /* ============================ CLAY BUBBLES ========================= *
  * Soft 3D pastel objects, not flat circles: an off-centre radial
  * highlight gives each one a lit side, and a colour-keyed drop shadow
@@ -3293,6 +3396,17 @@ a {
     display: none;
   }
 
+  /* Half the field on a phone, and nothing in it moves. */
+  .studio-mote:nth-child(2n) {
+    display: none;
+  }
+
+  .studio-mote,
+  .studio-streak,
+  .crimson-rise {
+    animation: none;
+  }
+
   .mandala-l2,
   .mandala-l1,
   .mandala-l0,
@@ -3530,6 +3644,9 @@ a {
     & .clay-wash-b,
     & .clay-wash-c,
     & .robot-stage-body,
+    & .studio-mote,
+    & .studio-streak,
+    & .crimson-rise,
     & .clay-bubble,
     & .bubble-1,
     & .bubble-2,
