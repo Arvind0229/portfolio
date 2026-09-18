@@ -68,6 +68,28 @@ const uri = `otpauth://totp/${encodeURIComponent(`${issuer}:${account}`)}?secret
 
 const grouped = totpSecret.match(/.{1,4}/g).join(' ');
 
+/*
+ * The QR is drawn in the terminal and never written to a file.
+ *
+ * A .png or .svg would be a file on disk holding the TOTP secret, sitting in
+ * the repository folder one `git add .` away from being permanent. This
+ * script exists to print the secret and then forget it, and a file would
+ * quietly undo that. The scrollback is the only copy; closing the window
+ * disposes of it.
+ *
+ * `qrcode` is already a devDependency — scripts/whatsapp-qr.mjs uses it — so
+ * this installs nothing and reaches no bundle. If it is missing, or the
+ * terminal cannot draw block characters, the manual key below is the same
+ * secret and works identically. The QR is a convenience, not the path.
+ */
+let qr;
+try {
+  const { default: QRCode } = await import('qrcode');
+  qr = await QRCode.toString(uri, { type: 'terminal', small: true, errorCorrectionLevel: 'M' });
+} catch {
+  qr = '       (QR unavailable here — use the manual key below. Same secret.)';
+}
+
 console.log(`
 Admin sign-in setup
 ===================
@@ -79,7 +101,10 @@ Admin sign-in setup
        Key       ${grouped}
        Type      Time based
 
-   If your app can open a link instead, this is the same thing:
+   Or scan this with the app's camera instead — it holds the same secret:
+
+${qr}
+   If your app takes a link rather than a camera:
 
        ${uri}
 
