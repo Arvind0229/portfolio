@@ -1,5 +1,5 @@
 {
-  "active": "arvind-gupta-rpa-developer",
+  "active": "20260922-arvind-gupta-rpa-developer",
   "versions": [
     {
       "id": "arvind-gupta-rpa-developer",
@@ -12,10 +12,9 @@
     {
       "id": "20260922-arvind-gupta-rpa-developer",
       "label": "Arvind Gupta — RPA Developer",
-      "pdf": "",
-      "docx": "/resume/20260922-arvind-gupta-rpa-developer.docx",
-      "uploadedAt": "2026-09-22T09:56:01.172Z",
-      "bytes": 18042
+      "pdf": "/resume/20260922-arvind-gupta-rpa-developer.pdf",
+      "uploadedAt": "2026-09-22T10:17:31.623Z",
+      "bytes": 514217
     }
   ]
 }
