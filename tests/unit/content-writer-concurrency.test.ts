@@ -67,7 +67,7 @@ describe('the GitHub writer', () => {
   });
 
   it('turns a 409 into a conflict the route can report', async () => {
-    vi.stubGlobal('fetch', async () => githubResponse({ message: 'conflict' }, 409));
+    vi.stubGlobal('fetch', async () => githubResponse({ message: 'src/data/project-depth.json does not match stale-sha' }, 409));
     const writer = createGitHubWriter(config);
     await expect(
       writer.write('projectDepth', Buffer.from('{}'), 'msg', 'stale-sha'),
@@ -77,7 +77,7 @@ describe('the GitHub writer', () => {
   it('treats 422 as a conflict too', async () => {
     // GitHub answers 422 when the sha does not match the file it names — the
     // same "somebody wrote since you read" in a different costume.
-    vi.stubGlobal('fetch', async () => githubResponse({ message: 'sha mismatch' }, 422));
+    vi.stubGlobal('fetch', async () => githubResponse({ message: 'src/data/project-depth.json does not match stale-sha' }, 422));
     const writer = createGitHubWriter(config);
     await expect(
       writer.write('projectDepth', Buffer.from('{}'), 'msg', 'stale-sha'),

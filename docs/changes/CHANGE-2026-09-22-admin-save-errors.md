@@ -27,3 +27,23 @@ Revert to tag `pre-change-014`.
 
 ## Final Status
 Implemented and tested in the cloud copy and applied to the laptop. Not deployed; it goes live with the next push.
+
+## Follow-up: CHANGE-015 (same day)
+
+### Save still read "changed somewhere else" after CHANGE-014
+- 409/422 is now a conflict only when GitHub's message names a stale sha ("does not match" / "but expected"), or when there is no message at all.
+- Any other refusal shows GitHub's short reason. Token-shaped strings are removed from it and it is cut to 200 characters. The admin page is behind MFA.
+- The reason is also written to the Vercel function logs as `GitHub write refused: <status> <reason>`. Conflicts are logged too, as `GitHub write conflict: <status> (sent sha …)`.
+- The two existing concurrency tests used made-up messages ("conflict", "sha mismatch"). They now use GitHub's real wording.
+
+### Resume file "disappears" after choosing it
+- Root cause: an upload starts as soon as a file is chosen, and the picker is then cleared. The result message was rendered only inside the Projects tab's save bar, so on the Resume tab nothing appeared.
+- Fix: the Resume section now has its own status line (`admin-resume-status`), showing "Uploading…" and then the result. On success the version list updates straight away.
+
+### Testing
+- `tsc` clean and ESLint clean.
+- Vitest: 36 files, 490 tests passed.
+- Playwright `admin.spec.ts`: 24 passed across desktop-1440 and mobile-390. That includes the new resume-status test.
+
+### Rollback
+Revert to tag `pre-change-015`.

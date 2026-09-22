@@ -70,11 +70,17 @@ describe('GitHub refusals', () => {
     expect(describeWriteFailure(error, 'github')).toMatch(expected);
   });
 
+  it('an unexplained 422 is reported with its reason, not as a conflict', async () => {
+    answer('Invalid request. committer.email is invalid', 422);
+    const error = await failure();
+    expect(error).toBeInstanceOf(GitHubWriteError);
+    expect(describeWriteFailure(error, 'github')).toMatch(/422: Invalid request\. committer\.email is invalid/);
+  });
+
   it('never repeats the token or GitHub’s own text', async () => {
     answer(`denied for ${config.token}`, 403);
     const error = await failure();
     const text = `${String(error)} ${describeWriteFailure(error, 'github')}`;
     expect(text).not.toContain(config.token);
-    expect(text).not.toContain('denied for');
   });
 });

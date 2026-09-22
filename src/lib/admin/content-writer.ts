@@ -168,6 +168,8 @@ export class GitHubWriteError extends Error {
   constructor(
     readonly status: number,
     readonly kind: 'auth' | 'forbidden' | 'not-found' | 'rule' | 'other',
+    /** GitHub's short reason, with anything token-shaped removed. Admin-only. */
+    readonly detail = '',
   ) {
     super(`GitHub write failed (${status})`);
     this.name = 'GitHubWriteError';
@@ -190,7 +192,7 @@ export function describeWriteFailure(error: unknown, mode: 'local' | 'github'): 
       case 'rule':
         return `A rule on the branch blocks direct commits (${error.status}). Remove the rule in the repository settings, or point ADMIN_GITHUB_BRANCH at a branch without it.`;
       default:
-        return `Could not save to GitHub (GitHub answered ${error.status}). Try again in a minute.`;
+        return `GitHub refused the save (${error.status}${error.detail ? `: ${error.detail}` : ''}). Send this message to whoever maintains the site.`;
     }
   }
   return 'Could not save to GitHub. Check that the token is still valid and has contents write access.';
@@ -396,8 +398,13 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
           .catch(() => '')) as string;
         const blockedByRule = /rule|protected branch|branch protection/i.test(detail);
         const missingBranch = /branch .*not found|no commit found|not found/i.test(detail);
+        // GitHub's lost-update answer names the sha it expected ("… does not
+        // match <sha>"). A 409/422 that says anything else is a refusal no
+        // reload can fix, and must not be reported as one.
+        const staleSha = detail === '' || /does not match|but expected/i.test(detail);
 
-        if ((response.status === 409 || response.status === 422) && !blockedByRule && !missingBranch) {
+        if ((response.status === 409 || response.status === 422) && staleSha && !blockedByRule) {
+          console.warn(`GitHub write conflict: ${response.status} (sent sha ${sha ?? 'none'})`);
           throw new ConflictError();
         }
         const kind =
@@ -410,7 +417,17 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
                 : response.status === 403
                   ? 'forbidden'
                   : 'other';
-        throw new GitHubWriteError(response.status, kind);
+        const safeDetail = detail
+          .split(config.token)
+          .join('[token]')
+          .replace(/\b(gh[pousr]_|github_pat_)[A-Za-z0-9_]+/g, '[token]')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 200);
+        // Visible in the Vercel function logs, so a refusal can be diagnosed
+        // without reproducing it.
+        console.error(`GitHub write refused: ${response.status} ${safeDetail}`);
+        throw new GitHubWriteError(response.status, kind, safeDetail);
       }
 
       /*

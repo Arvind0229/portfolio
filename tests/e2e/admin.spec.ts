@@ -207,6 +207,22 @@ test.describe('admin', () => {
     await expect(page.getByTestId('admin-config-warning')).toContainText(/ADMIN_GITHUB_REPO/);
   });
 
+  test('a resume upload says what happened on the Resume tab itself', async ({ page }) => {
+    // The picker clears after an upload. Before CHANGE-015 the result was
+    // written only to the Projects tab, so the chosen file just vanished.
+    await page.goto('/admin');
+    await page.getByTestId('admin-code').fill(currentCode());
+    await page.getByTestId('admin-signin').click();
+    await page.getByTestId('admin-section-resume').click();
+    await page.getByTestId('admin-resume-input').setInputFiles({
+      name: 'resume.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
+    });
+    // No repository on the test server, so the upload is refused — and says so here.
+    await expect(page.getByTestId('admin-resume-status')).toContainText(/ADMIN_GITHUB_REPO|uploaded/);
+  });
+
   test('is kept out of search results and out of the sitemap', async ({ page, request }) => {
     await page.goto('/admin');
     const robots = await page.locator('meta[name="robots"]').getAttribute('content');

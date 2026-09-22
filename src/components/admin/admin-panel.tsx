@@ -573,12 +573,18 @@ export function AdminPanel({ projects, localMode }: Props) {
         code?: 'conflict';
         version?: string;
         pendingDeploy?: boolean;
+        active?: string | null;
+        versions?: ResumeVersion[];
       };
+      // The new upload appears in the list straight away.
+      if (body.ok && body.versions) {
+        setResume({ active: body.active ?? null, versions: body.versions });
+      }
       setStatus(
         body.ok
           ? body.pendingDeploy
-            ? 'Resume committed. It goes live when the deployment finishes.'
-            : 'Resume replaced in your project files.'
+            ? `${file.name} uploaded. It goes live when the deployment finishes.`
+            : `${file.name} uploaded to your project files.`
           : (body.error ?? 'Upload failed.'),
       );
     } catch {
@@ -770,6 +776,14 @@ export function AdminPanel({ projects, localMode }: Props) {
           data-testid="admin-resume-input"
           className="mt-3 block w-full text-[0.85rem] text-[var(--text-secondary)] file:mr-3 file:rounded-[var(--radius-sm)] file:border file:border-[var(--border)] file:bg-transparent file:px-3 file:py-1.5 file:text-[var(--text-primary)]"
         />
+        {/*
+          The upload starts as soon as a file is chosen, and the picker is
+          cleared afterwards. Without its own status line here the result was
+          only written to the Projects tab, so the file seemed to vanish.
+        */}
+        <p role="status" data-testid="admin-resume-status" className="mt-2 min-h-[1.2em] text-[0.82rem] text-[var(--text-secondary)]">
+          {section === 'resume' ? (busy ? 'Uploading…' : status) : null}
+        </p>
 
         <div className="mt-6">
           <h3 className="text-[0.85rem] font-medium text-[var(--text-primary)]">Versions</h3>
