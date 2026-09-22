@@ -7,9 +7,14 @@ import { PhotoEditor, type PhotoVersionRow } from '@/components/admin/photo-edit
 import { cn } from '@/lib/utils/cn';
 import {
   ProfileEditor,
+  ScenesEditor,
+  SiteSettingsEditor,
   ResumeVersions,
   SkillsEditor,
+  SkillNotesEditor,
+  ImpactEditor,
 } from '@/components/admin/content-editors';
+import { StatusOrb } from '@/components/ui/status-orb';
 import type { ProjectDepth, ResumeVersion } from '@/types';
 
 /**
@@ -65,16 +70,31 @@ interface Props {
  * the panel to change. Project details last because it is the longest form and
  * the one edited least.
  */
-type Section = 'profile' | 'photo' | 'skills' | 'experience' | 'work' | 'resume' | 'projects';
+type Section =
+  | 'profile'
+  | 'photo'
+  | 'skills'
+  | 'notes'
+  | 'impact'
+  | 'experience'
+  | 'work'
+  | 'resume'
+  | 'projects'
+  | 'scenes'
+  | 'site';
 
 const SECTIONS: readonly { id: Section; label: string }[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'photo', label: 'Photo' },
   { id: 'skills', label: 'Skills' },
+  { id: 'notes', label: 'Skill notes' },
+  { id: 'impact', label: 'Impact' },
   { id: 'experience', label: 'Experience' },
   { id: 'work', label: 'Projects' },
   { id: 'resume', label: 'Resume' },
   { id: 'projects', label: 'Project depth' },
+  { id: 'scenes', label: 'Scenes' },
+  { id: 'site', label: 'Site defaults' },
 ];
 
 /**
@@ -254,6 +274,7 @@ export function AdminPanel({ projects, localMode }: Props) {
   const [authed, setAuthed] = useState<boolean | null>(localMode ? true : null);
   const [code, setCode] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [verify, setVerify] = useState<'idle' | 'checking' | 'verifying' | 'verified' | 'failed'>('idle');
 
   const [depth, setDepth] = useState<DepthMap>({});
   const [activeId, setActiveId] = useState(projects[0]?.id ?? '');
@@ -406,25 +427,43 @@ export function AdminPanel({ projects, localMode }: Props) {
     if (authed !== false) void load();
   }, [authed, load]);
 
+  /*
+   * The sign-in check, shown as it happens (CHANGE-011): Checking while the
+   * request is out, Verifying once the server has answered and the answer is
+   * being read, Verified only when the server said yes. The success mark never
+   * shows for a code the server rejected, and the panel opens a moment after
+   * the mark draws so the confirmation is actually seen.
+   */
   async function signIn(event: React.FormEvent) {
     event.preventDefault();
     setAuthError(null);
     setBusy(true);
+    setVerify('checking');
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });
-      const body = (await response.json()) as { ok: boolean; error?: string };
+      setVerify('verifying');
+      const body = (await response.json().catch(() => ({ ok: false }))) as { ok: boolean; error?: string };
       if (body.ok) {
-        setAuthed(true);
+        setVerify('verified');
         setCode('');
+        await new Promise((resolve) => setTimeout(resolve, 1300));
+        setAuthed(true);
+        setVerify('idle');
       } else {
-        setAuthError(body.error ?? 'Sign-in failed.');
+        setVerify('failed');
+        setAuthError(
+          response.status === 429
+            ? 'Too many attempts. Wait a minute, then try a fresh code.'
+            : (body.error ?? 'That code was not accepted. Codes change every 30 seconds — try the current one.'),
+        );
       }
     } catch {
-      setAuthError('Could not reach the server.');
+      setVerify('failed');
+      setAuthError('Could not reach the server. Check your connection and try again.');
     } finally {
       setBusy(false);
     }
@@ -565,7 +604,37 @@ export function AdminPanel({ projects, localMode }: Props) {
 
   if (!authed) {
     return (
-      <form onSubmit={signIn} className="surface-card mx-auto max-w-sm p-6">
+      <form onSubmit={signIn} className="surface-card mx-auto max-w-sm p-6" data-verify={verify}>
+        <div className="verify-stage" data-testid="admin-verify" data-phase={verify}>
+          <StatusOrb
+            size={84}
+            state={
+              verify === 'checking'
+                ? 'checking'
+                : verify === 'verifying'
+                  ? 'working'
+                  : verify === 'verified'
+                    ? 'success'
+                    : verify === 'failed'
+                      ? 'error'
+                      : 'idle'
+            }
+          />
+          <ol className="verify-steps" aria-hidden="true">
+            <li data-on={verify !== 'idle'}>Checking…</li>
+            <li data-on={verify === 'verifying' || verify === 'verified'}>Verifying…</li>
+            <li data-on={verify === 'verified'}>Verified</li>
+          </ol>
+          <p role="status" className="verify-headline">
+            {verify === 'verified'
+              ? 'Verified successfully!'
+              : verify === 'failed'
+                ? 'Verification failed'
+                : verify === 'idle'
+                  ? ''
+                  : 'Checking your code…'}
+          </p>
+        </div>
         <h2 className="font-display text-[1.1rem] text-[var(--text-primary)]">Sign in</h2>
         <p className="mt-2 text-[0.82rem] leading-relaxed text-[var(--text-secondary)]">
           Open your authenticator app and enter the six-digit code for this site.
@@ -580,21 +649,27 @@ export function AdminPanel({ projects, localMode }: Props) {
             placeholder="000000"
             maxLength={7}
             data-testid="admin-code"
-            className={cn(inputClass, 'text-center font-mono text-[1.3rem] tracking-[0.4em]')}
+            aria-invalid={!/^[\d\s]*$/.test(code) || verify === 'failed'}
+            className={cn(inputClass, 'text-center font-mono text-[1.3rem] tracking-[0.4em]', 'field-input')}
           />
         </label>
+        {/^[\d\s]*$/.test(code) ? null : (
+          <p role="alert" className="field-error mt-3" data-testid="admin-code-invalid">
+            Numbers only — the code is six digits from your authenticator app.
+          </p>
+        )}
         {authError ? (
-          <p role="alert" className="mt-3 text-[0.8rem] text-[var(--error, #dc2626)]">
+          <p role="alert" className="field-error mt-3">
             {authError}
           </p>
         ) : null}
         <button
           type="submit"
-          disabled={busy || code.trim().length < 6}
+          disabled={busy || code.replace(/\s/g, '').length !== 6 || !/^[\d\s]*$/.test(code)}
           data-testid="admin-signin"
           className="mt-4 w-full rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-4 py-2.5 text-[0.9rem] font-medium text-white disabled:opacity-50"
         >
-          {busy ? 'Checking…' : 'Sign in'}
+          {verify === 'verified' ? 'Verified ✓' : busy ? 'Checking…' : 'Sign in'}
         </button>
       </form>
     );
@@ -674,8 +749,12 @@ export function AdminPanel({ projects, localMode }: Props) {
         <PhotoEditor active={photo.active} versions={photo.versions} onChanged={setPhoto} />
       ) : null}
       {section === 'skills' ? <SkillsEditor /> : null}
+      {section === 'notes' ? <SkillNotesEditor /> : null}
+      {section === 'impact' ? <ImpactEditor /> : null}
       {section === 'experience' ? <CareerEditors /> : null}
       {section === 'work' ? <ProjectEditor /> : null}
+      {section === 'scenes' ? <ScenesEditor /> : null}
+      {section === 'site' ? <SiteSettingsEditor /> : null}
 
       <section className="surface-card p-5" hidden={section !== 'resume'}>
         <h2 className="font-display text-[1.05rem] text-[var(--text-primary)]">Resume</h2>

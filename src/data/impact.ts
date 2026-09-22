@@ -1,191 +1,127 @@
+import raw from '@/data/impact.json';
 import type { ArchitectureFlow, ExpertisePillar, ImpactMetric } from '@/types';
 
 /**
- * Every number here appears in the resume. Nothing is estimated, extrapolated
- * or rounded up. "Hundreds of operational hours a year" is a range in the
- * source document, so it is shown as text rather than as a fake precise count.
+ * Impact figures, the expertise pillars and the architecture flows.
+ *
+ * Every number here must appear in the resume. Nothing is estimated,
+ * extrapolated or rounded up. "Hundreds of operational hours a year" is a range
+ * in the source document, so it is shown as text rather than as a fake precise
+ * count.
+ *
+ * Since CHANGE-011 the content lives in `impact.json`, which the admin panel
+ * edits (Impact tab). This module validates it. The validator follows the same
+ * rule as every other content file: it never throws, it drops a malformed
+ * entry, and it runs both when the site builds and when the admin saves. One
+ * bad edit can therefore never take the page down.
  */
-export const impactMetrics: readonly ImpactMetric[] = [
-  {
-    id: 'automations',
-    value: 80,
-    prefix: '',
-    suffix: '+',
-    label: 'Production automations',
-    detail: 'Built single-handedly across retail lending operations, reporting and compliance.',
-  },
-  {
-    id: 'effort',
-    value: 80,
-    prefix: '',
-    suffix: '%+',
-    // A percentage is a share of a hundred, so this one can carry a meter.
-    // None of the others can — see `outOf` in `src/types/index.ts`.
-    outOf: 100,
-    label: 'Manual effort reduced',
-    detail: 'Across the processes automated at SBFC Finance Limited.',
-  },
-  {
-    id: 'databases',
-    value: 5,
-    prefix: '',
-    suffix: '',
-    label: 'Database engines in daily use',
-    detail: 'Oracle, MS SQL Server, MySQL, PostgreSQL and Redshift.',
-  },
-  {
-    id: 'interns',
-    value: 3,
-    prefix: '',
-    suffix: '',
-    label: 'Interns mentored',
-    detail: 'All three now contribute as independent RPA developers.',
-  },
-];
 
-export const impactNarrative =
-  'Hundreds of operational hours saved every year — the direct result of removing repetitive preparation, consolidation and reporting work from teams across the business.';
+export interface ImpactContent {
+  metrics: ImpactMetric[];
+  narrative: string;
+  achievements: string[];
+  pillars: ExpertisePillar[];
+  flows: ArchitectureFlow[];
+}
 
-export const achievements: readonly string[] = [
-  'Built 80+ enterprise automations independently across retail lending operations.',
-  'Reduced manual effort by 80%+ and saved hundreds of operational hours annually.',
-  'Trained 3 interns into productive, independent RPA developers.',
-  'Progressed from IT Executive to on-role RPA Developer on the strength of delivery performance.',
-];
+type Rec = Record<string, unknown>;
+const rec = (value: unknown): Rec =>
+  typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Rec) : {};
+const str = (value: unknown, max = 600): string =>
+  typeof value === 'string' ? value.trim().slice(0, max) : '';
+const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+const strings = (value: unknown, max = 300): string[] =>
+  list(value)
+    .map((entry) => str(entry, max))
+    .filter(Boolean);
 
-export const expertisePillars: readonly ExpertisePillar[] = [
-  {
-    id: 'delivery',
-    title: 'End-to-end delivery ownership',
-    description:
-      'Automation is not just the build. I run the whole cycle, which is why these bots stay alive in production.',
-    points: [
-      'Requirement discussions with business users',
-      'BRD authoring and formal sign-off',
-      'Development, testing and UAT',
-      'Deployment and daily production support',
-    ],
-  },
-  {
-    id: 'engineering',
-    title: 'Engineering beyond the RPA canvas',
-    description:
-      'When a drag-and-drop step is the wrong tool, I write the code — SQL, PL/SQL or Python — instead of forcing the platform.',
-    points: [
-      'SQL / PL-SQL developed and tuned across five engines',
-      'Python for heavy calculations and report generation',
-      'Queues, triggers and the RE Framework for resilient bot design',
-      'Front-end automation where no back-end access exists',
-    ],
-  },
-  {
-    id: 'domain',
-    title: 'Retail lending domain fluency',
-    description:
-      'I speak the language of the process owners — LOS, LMS, disbursement, delinquency — so requirements arrive intact.',
-    points: [
-      'Loan origination, servicing, disbursement and closure',
-      'Collections, delinquency and NPA monitoring',
-      'KYC / eKYC / eSign, Account Aggregator, loan documentation',
-      'Banking operations and compliance workflows',
-    ],
-  },
-  {
-    id: 'reliability',
-    title: 'Production reliability',
-    description:
-      'A bot that fails quietly is worse than no bot. Mine are monitored, and failures are diagnosed at the root.',
-    points: [
-      'Daily monitoring of production bots',
-      'Root-cause and log analysis on incidents',
-      'Exception handling and retry logic by design',
-      'Secure movement and archival via Amazon S3 and SFTP/FTP',
-    ],
-  },
-];
+function slug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+}
 
+/** An id for every entry, unique in its list: kept if valid, else made from `fallback`. */
+function ider() {
+  const seen = new Set<string>();
+  return (value: unknown, fallback: string): string => {
+    const base = /^[a-z0-9-]{1,48}$/.test(str(value)) ? str(value) : slug(fallback) || 'item';
+    let id = base;
+    for (let n = 2; seen.has(id); n += 1) id = `${base}-${n}`;
+    seen.add(id);
+    return id;
+  };
+}
+
+function parseMetric(value: unknown, id: ReturnType<typeof ider>): ImpactMetric | null {
+  const r = rec(value);
+  const label = str(r.label, 80);
+  const number = typeof r.value === 'number' ? r.value : Number(r.value);
+  if (!label || !Number.isFinite(number) || number < 0) return null;
+  const outOf = typeof r.outOf === 'number' && r.outOf > 0 ? r.outOf : undefined;
+  return {
+    id: id(r.id, label),
+    value: number,
+    prefix: str(r.prefix, 4),
+    suffix: str(r.suffix, 4),
+    label,
+    detail: str(r.detail, 240),
+    ...(outOf ? { outOf } : {}),
+  };
+}
+
+function parsePillar(value: unknown, id: ReturnType<typeof ider>): ExpertisePillar | null {
+  const r = rec(value);
+  const title = str(r.title, 120);
+  if (!title) return null;
+  return { id: id(r.id, title), title, description: str(r.description), points: strings(r.points) };
+}
+
+function parseFlow(value: unknown, id: ReturnType<typeof ider>): ArchitectureFlow | null {
+  const r = rec(value);
+  const name = str(r.name, 120);
+  const stepId = ider();
+  const steps = list(r.steps)
+    .map((step) => {
+      const s = rec(step);
+      const label = str(s.label, 80);
+      return label ? { id: stepId(s.id, label), label, detail: str(s.detail, 300) } : null;
+    })
+    .filter((step): step is NonNullable<typeof step> => step !== null);
+  if (!name || steps.length === 0) return null;
+  return { id: id(r.id, name), name, verified: r.verified === true, caption: str(r.caption), steps };
+}
+
+export function parseImpact(value: unknown): ImpactContent {
+  const r = rec(value);
+  const metricId = ider();
+  const pillarId = ider();
+  const flowId = ider();
+  return {
+    metrics: list(r.metrics)
+      .map((m) => parseMetric(m, metricId))
+      .filter((m): m is ImpactMetric => m !== null),
+    narrative: str(r.narrative),
+    achievements: strings(r.achievements),
+    pillars: list(r.pillars)
+      .map((p) => parsePillar(p, pillarId))
+      .filter((p): p is ExpertisePillar => p !== null),
+    flows: list(r.flows)
+      .map((f) => parseFlow(f, flowId))
+      .filter((f): f is ArchitectureFlow => f !== null),
+  };
+}
+
+export const impact: ImpactContent = parseImpact(raw);
+
+export const impactMetrics: readonly ImpactMetric[] = impact.metrics;
+export const impactNarrative: string = impact.narrative;
+export const achievements: readonly string[] = impact.achievements;
+export const expertisePillars: readonly ExpertisePillar[] = impact.pillars;
 /**
- * Architecture flows. `verified: true` means the flow describes systems the
- * resume states were actually built. Anything conceptual is labelled
- * "Illustrative" in the UI and marked verified: false here.
+ * `verified: true` means the flow describes systems the resume states were
+ * actually built. Anything conceptual is labelled "Illustrative" in the UI.
  */
-export const architectureFlows: readonly ArchitectureFlow[] = [
-  {
-    id: 'delivery-lifecycle',
-    name: 'Delivery lifecycle',
-    verified: true,
-    caption:
-      'The cycle owned end to end for every automation, per the resume — requirement through to production support.',
-    steps: [
-      {
-        id: 'requirement',
-        label: 'Requirement discussion',
-        detail: 'Sit with the business users who own the process and understand it before designing anything.',
-      },
-      {
-        id: 'brd',
-        label: 'BRD & sign-off',
-        detail: 'Write the business requirement document and get formal agreement on scope.',
-      },
-      {
-        id: 'development',
-        label: 'Development',
-        detail: 'Build in TruBot / Automation Edge, with SQL, PL/SQL and Python where they fit better.',
-      },
-      {
-        id: 'testing',
-        label: 'Testing & UAT',
-        detail: 'Test the happy path and the exceptions, then run user acceptance testing with the business.',
-      },
-      {
-        id: 'deployment',
-        label: 'Deployment',
-        detail: 'Release the bot into the production schedule with its triggers and queues.',
-      },
-      {
-        id: 'support',
-        label: 'Production support',
-        detail: 'Daily monitoring, log and root-cause analysis, exception handling and retry logic.',
-      },
-    ],
-  },
-  {
-    id: 'automation-runtime',
-    name: 'Automation runtime',
-    verified: true,
-    caption:
-      'How a scheduled bot actually executes — the pattern behind the MIS, compliance and mailer automations.',
-    steps: [
-      {
-        id: 'trigger',
-        label: 'Trigger / schedule',
-        detail: 'Time-based schedule or queue trigger starts the run.',
-      },
-      {
-        id: 'extract',
-        label: 'Data extraction',
-        detail: 'SQL / PL-SQL against Oracle, MS SQL, MySQL, PostgreSQL or Redshift; front-end automation where there is no back-end.',
-      },
-      {
-        id: 'process',
-        label: 'Processing',
-        detail: 'Excel workflows, pivots and multi-step calculations; Python where the computation is heavy.',
-      },
-      {
-        id: 'validate',
-        label: 'Validation & exceptions',
-        detail: 'Rules evaluated, exceptions raised, retry logic applied instead of failing silently.',
-      },
-      {
-        id: 'deliver',
-        label: 'Delivery',
-        detail: 'HTML mail-body dashboards, Power BI refreshes, and secure archival via Amazon S3 / SFTP.',
-      },
-      {
-        id: 'notify',
-        label: 'Notification',
-        detail: 'Stakeholders and customers reached over email, SMS and WhatsApp APIs — timely and auditable.',
-      },
-    ],
-  },
-];
+export const architectureFlows: readonly ArchitectureFlow[] = impact.flows;

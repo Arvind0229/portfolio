@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { IconTile, type IconName } from '@/components/icons';
+import { Icon, IconTile, WhatsAppMark, type IconName } from '@/components/icons';
+import { BRAND_ICONS, BrandMark } from '@/components/brand-icons';
 import { PortraitAvatar } from '@/components/profile/portrait';
 import { Button, LinkButton, Reveal } from '@/components/ui';
 import { profile } from '@/data/profile';
@@ -73,6 +74,7 @@ export function ContactSection() {
               href={linkedin.href}
               action="Open profile"
               hint="The professional history, in the place recruiters already look."
+              tint="#0a66c2"
               external
             />
           </Reveal>
@@ -105,9 +107,14 @@ export function ContactSection() {
               so on a phone it would be a picture that does nothing while the
               button beside it already works.
 
-              `currentColor` on the code means it follows the theme, and the
-              file is a committed SVG — about a kilobyte, no script, and it
-              still scans off a printed page.
+              The code sits on its own white plate in every theme. It used to
+              rely on `currentColor` to follow the theme, but an SVG loaded
+              through `<img>` cannot see the page's colour — `currentColor`
+              there resolves to the file's own default, black — so on every
+              dark theme it was black modules on a dark card: invisible, and
+              reported as such. Dark-on-light is also the only polarity every
+              scanner reads; inverted codes fail on some phones. So the plate
+              is not a style choice, it is what makes the code a code.
             */}
             {/*
               Hidden when the committed code no longer matches the profile's
@@ -127,14 +134,22 @@ export function ContactSection() {
                 alt="Scan to open a WhatsApp chat"
                 width={96}
                 height={96}
-                className="h-24 w-24"
+                className="h-24 w-24 rounded-[6px] bg-white p-1.5"
               />
               <span className="mt-1.5 block text-center text-[0.66rem] text-[var(--text-muted)]">
                 Scan to chat
               </span>
             </a>
 
-            <LinkButton href={`mailto:${profile.email}?subject=${SUBJECT}`} size="lg">
+            <LinkButton
+              href={`mailto:${profile.email}?subject=${SUBJECT}`}
+              size="lg"
+              fx="hello"
+              magnetic
+              className="touch-cta"
+            >
+              <span aria-hidden="true" className="touch-glow" />
+              <Icon name="mail" size={18} aria-hidden="true" className="touch-envelope" />
               Get in touch
               <span
                 aria-hidden="true"
@@ -199,11 +214,19 @@ function ContactCard({
     <div className="surface-card card-reactive flex h-full flex-col justify-between gap-5 p-6">
       <div>
         <div className="flex items-center gap-3">
-          <IconTile
-            name={icon}
-            size="sm"
-            {...(tint ? { style: { ['--icon-tint' as string]: tint } } : {})}
-          />
+          {icon === 'whatsapp' ? (
+            <WhatsAppMark size={32} />
+          ) : icon === 'mail' ? (
+            <span className="icon-tile h-8 w-8">
+              <BrandMark brand={BRAND_ICONS.gmail} size={16} />
+            </span>
+          ) : (
+            <IconTile
+              name={icon}
+              size="sm"
+              {...(tint ? { style: { ['--icon-tint' as string]: tint } } : {})}
+            />
+          )}
           <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-muted)]">
             {label}
           </p>

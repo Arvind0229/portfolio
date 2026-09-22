@@ -1,0 +1,8 @@
+{
+  "$comment": "Written by the admin panel (Site tab). What a first-time visitor sees before choosing anything themselves. Validated by src/data/site-settings.ts.",
+  "defaultTheme": "engineering",
+  "defaultMode": "auto",
+  "defaultFont": "precision",
+  "robots": true,
+  "maintenance": false
+}

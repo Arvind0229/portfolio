@@ -197,6 +197,7 @@ export function parseProfileContent(value: unknown): EditableProfile {
     email: str(raw.email, 254) ?? '',
     phone: str(raw.phone, 40) ?? '',
     availability: str(raw.availability, 200) ?? '',
+    exploring: str(raw.exploring, 200) ?? '',
     focusAreas: strList(raw.focusAreas, 120, 12),
     socials,
   };

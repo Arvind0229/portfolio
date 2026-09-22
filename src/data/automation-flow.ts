@@ -69,7 +69,7 @@ export interface RunStep {
 
 export const runSteps: readonly RunStep[] = [
   { id: 'read', label: 'Reading data', detail: 'Queue, mailbox, source systems' },
-  { id: 'process', label: 'Processing', detail: 'Extract, transform, reconcile' },
+  { id: 'process', label: 'Processing', detail: 'Extract, transform, map' },
   { id: 'validate', label: 'Validating', detail: 'Business rules and exceptions' },
   { id: 'execute', label: 'Executing', detail: 'Writing back to LOS / LMS' },
   { id: 'report', label: 'Reporting', detail: 'MIS out, stakeholders notified' },

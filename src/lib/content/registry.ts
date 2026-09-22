@@ -5,6 +5,10 @@ import { parseProjects } from '@/data/projects';
 import { parsePhotoRegistry, photoRegistry } from '@/data/photo';
 import { parseResumeRegistry, resumeRegistry } from '@/data/resume-registry';
 import { parseSkillGroups } from '@/data/skills';
+import { parseScenes, scenes } from '@/data/scenes';
+import { parseSiteSettings, siteSettings } from '@/data/site-settings';
+import { impact, parseImpact } from '@/data/impact';
+import { parseSkillNotes, skillNotes } from '@/data/skill-notes';
 import bundledProfile from '@/data/profile.json';
 import bundledSkills from '@/data/skills.json';
 import bundledCompanies from '@/data/companies.json';
@@ -167,6 +171,64 @@ export const CONTENT: Record<string, ContentDefinition> = {
     serialize: (parsed) => parsed,
     message: 'Update photo registry',
     bundled: () => photoRegistry,
+  },
+  /*
+   * First-visit defaults: theme, mode and font. A visitor's own stored choice
+   * always wins; these only decide what someone new sees first.
+   */
+  settings: {
+    target: 'siteSettings',
+    label: 'Site defaults',
+    parse: parseSiteSettings,
+    serialize: (parsed) => ({
+      $comment:
+        'Written by the admin panel (Site tab). What a first-time visitor sees before choosing anything themselves. Validated by src/data/site-settings.ts.',
+      ...(parsed as object),
+    }),
+    message: 'Update site defaults',
+    bundled: () => siteSettings,
+  },
+  /*
+   * Every word and image choice in the cinematic sections. Images are picked
+   * from a closed list of files that exist, never typed as paths.
+   */
+  scenes: {
+    target: 'scenes',
+    label: 'Scenes',
+    parse: (value) => parseScenes(value),
+    serialize: (parsed) => ({
+      $comment:
+        'Written by the admin panel (Scenes tab). Validated by src/data/scenes.ts; anything missing falls back to the shipped text.',
+      ...(parsed as object),
+    }),
+    message: 'Update scenes',
+    bundled: () => scenes,
+  },
+  /* Impact figures, expertise pillars and architecture flows (CHANGE-011). */
+  impact: {
+    target: 'impact',
+    label: 'Impact',
+    parse: (value) => parseImpact(value),
+    serialize: (parsed) => ({
+      $comment:
+        'Written by the admin panel (Impact tab). Every figure must be one the resume supports. Validated by src/data/impact.ts.',
+      ...(parsed as object),
+    }),
+    message: 'Update impact',
+    bundled: () => impact,
+  },
+  /* What each tool is and why it is used (CHANGE-011). */
+  'skill-notes': {
+    target: 'skillNotes',
+    label: 'Skill notes',
+    parse: (value) => parseSkillNotes(value),
+    serialize: (parsed) => ({
+      $comment:
+        'Written by the admin panel (Skill notes tab). About each tool, never about Arvind — where he used it is derived from the projects. Validated by src/data/skill-notes.ts.',
+      notes: parsed,
+    }),
+    message: 'Update skill notes',
+    bundled: () => ({ notes: skillNotes }),
   },
 };
 

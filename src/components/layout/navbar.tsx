@@ -161,7 +161,11 @@ export function Navbar() {
         >
           <div
             className={cn(
-              'relative flex min-w-0 flex-1 items-center justify-between gap-3 rounded-[var(--radius-lg)] px-3 py-2 transition-[background,border-color,box-shadow] duration-[var(--motion-base)] sm:px-4',
+              'nav-pill relative flex min-w-0 flex-1 items-center justify-between gap-3 rounded-[var(--radius-lg)] px-3 py-2 transition-[background,border-color,box-shadow] duration-[var(--motion-base)] sm:px-4',
+              // On a page that opens on the dark landing frame the bar needs
+              // its own surface from the first pixel, or a light theme's dark
+              // text sits on a dark picture. `.nav-over-scene` does that in
+              // CSS (via :has), so no route logic is needed here.
               scrolled ? 'glass' : 'border border-transparent',
             )}
           >

@@ -1,3 +1,4 @@
+import { BRAND_ICONS, BrandMark } from '@/components/brand-icons';
 import type { SVGProps } from 'react';
 
 /**
@@ -220,6 +221,20 @@ export function IconTile({
   return (
     <span className={['icon-tile', box, className].filter(Boolean).join(' ')} style={style}>
       <Icon name={name} size={glyph} />
+    </span>
+  );
+}
+
+/**
+ * WhatsApp's own mark, in WhatsApp green.
+ *
+ * Arvind asked twice for the original logo. The path is WhatsApp's mark from
+ * Simple Icons (CC0), via `brand-icons.tsx`, not a drawing of our own.
+ */
+export function WhatsAppMark({ size = 32, className }: { size?: number; className?: string }) {
+  return (
+    <span className={['wa-mark', className].filter(Boolean).join(' ')} style={{ width: size, height: size }} aria-hidden="true">
+      <BrandMark brand={BRAND_ICONS.whatsapp} size={Math.round(size * 0.86)} />
     </span>
   );
 }

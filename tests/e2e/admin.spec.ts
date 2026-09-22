@@ -143,6 +143,32 @@ test.describe('admin', () => {
     await expect(page.getByTestId('admin-save')).toBeVisible();
   });
 
+  test('scenes and site defaults are editable, and images are chosen from real files', async ({
+    page,
+  }) => {
+    await page.goto('/admin');
+    await page.getByTestId('admin-code').fill(currentCode());
+    await page.getByTestId('admin-signin').click();
+    await expect(page.getByTestId('admin-panel')).toBeVisible();
+
+    await page.getByTestId('admin-section-scenes').click();
+    await expect(page.getByTestId('admin-scenes')).toBeVisible();
+    await expect(page.getByTestId('scene-build-title')).toHaveValue('From parts to production');
+    // The picker offers only files that exist, never a free-text path.
+    const options = await page
+      .getByTestId('scene-human-image')
+      .locator('option')
+      .evaluateAll((els) => els.map((el) => (el as HTMLOptionElement).value));
+    expect(options).toContain('human');
+    expect(options.every((value) => /^[a-z0-9-]+$/.test(value))).toBe(true);
+
+    await page.getByTestId('admin-section-site').click();
+    await expect(page.getByTestId('settings-theme')).toHaveValue('engineering');
+    await expect(page.getByTestId('settings-mode')).toHaveValue('auto');
+    await expect(page.getByTestId('settings-font')).toHaveValue('precision');
+    await expect(page.getByTestId('admin-signout')).toBeVisible();
+  });
+
   test('signing out really ends the session', async ({ page }) => {
     await page.goto('/admin');
     await page.getByTestId('admin-code').fill(currentCode());

@@ -93,6 +93,12 @@ export interface Profile {
   email: string;
   phone: string;
   availability: string;
+  /**
+   * What he is learning, as distinct from what he has shipped. Rendered with a
+   * label that says so, and handed to the assistant as self-learning — never as
+   * production experience. Empty hides it.
+   */
+  exploring: string;
   focusAreas: readonly string[];
   photo: ProfilePhoto;
   socials: readonly SocialLink[];

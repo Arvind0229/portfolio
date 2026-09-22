@@ -29,8 +29,10 @@ test.describe('portfolio journey', () => {
 
     // And the visible characters must carry the name — an earlier version
     // passed a text assertion while rendering nothing at all.
+    // The first name rises per character (`.char`); since G4 the surname is
+    // one `.surname-wipe` span revealed by a clip. Both are what is painted.
     const painted = await heading.evaluate((element) =>
-      Array.from(element.querySelectorAll('.char'))
+      Array.from(element.querySelectorAll('.char, .surname-wipe'))
         .map((node) => node.textContent)
         .join('')
         .replace(/ /g, ' ')
@@ -179,7 +181,9 @@ test.describe('portfolio journey', () => {
   }, testInfo) => {
     await page.goto('/');
     await openAppearance(page, testInfo.project.use.viewport?.width ?? 1440);
-    await page.getByTestId('theme-option-enterprise').click();
+    // A light-first theme, so the test starts in light. Since G4 that is
+    // `clay`; `enterprise` became Crimson and is dark-first.
+    await page.getByTestId('theme-option-clay').click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
 
     const bulb = page.getByTestId('bulb-switch');
@@ -411,7 +415,7 @@ test.describe('portfolio journey', () => {
   test('the profile page shows his portrait, actually decoded', async ({ page }) => {
     await page.goto('/#about');
 
-    const portrait = page.getByRole('img', { name: 'Arvind Gupta' });
+    const portrait = page.getByRole('img', { name: 'Arvind Gupta', exact: true });
     await expect(portrait).toBeVisible();
 
     // `toBeVisible` passes for a broken image — the element is laid out either
@@ -435,7 +439,7 @@ test.describe('portfolio journey', () => {
   }) => {
     await page.goto('/#about');
 
-    const portrait = page.getByRole('img', { name: 'Arvind Gupta' });
+    const portrait = page.getByRole('img', { name: 'Arvind Gupta', exact: true });
     // Matched without the figure. This test is about *where the portrait sits*,
     // and pinning it to "2+ years" made it fail the moment the resume figure
     // was corrected to 2.9 — a layout test breaking on a content edit is a
@@ -479,7 +483,7 @@ test.describe('portfolio journey', () => {
     await expect
       .poll(async () => avatar.evaluate((img: HTMLImageElement) => img.naturalWidth))
       .toBeGreaterThan(0);
-    await expect(panel.getByRole('img', { name: 'Arvind Gupta' })).toHaveCount(0);
+    await expect(panel.getByRole('img', { name: 'Arvind Gupta', exact: true })).toHaveCount(0);
   });
 
   test('the portrait frame is drawn and follows the theme', async ({ page }, testInfo) => {

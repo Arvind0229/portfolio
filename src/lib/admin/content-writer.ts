@@ -38,6 +38,10 @@ export const WRITABLE = {
   companies: 'src/data/companies.json',
   experience: 'src/data/experience.json',
   projects: 'src/data/projects.json',
+  siteSettings: 'src/data/site-settings.json',
+  scenes: 'src/data/scenes.json',
+  impact: 'src/data/impact.json',
+  skillNotes: 'src/data/skill-notes.json',
 } as const;
 
 export type WritableKey = keyof typeof WRITABLE;

@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
+import { IconTile, type IconName } from '@/components/icons';
 import { SkillChip, SkillExplainerProvider } from '@/components/skills/skill-explainer';
 import { Reveal } from '@/components/ui';
+import { EmptyState } from '@/components/states/empty-state';
 import { skillGroups } from '@/data/skills';
 import { clearHighlightTerm, useHighlightTerm } from '@/lib/search/highlight-store';
 import { cn } from '@/lib/utils/cn';
@@ -33,6 +35,34 @@ import { cn } from '@/lib/utils/cn';
  * control appears only when there is something to clear — an always-present
  * "clear" button implies a filter is always on.
  */
+/* Icons per group — moved here from expertise-section.tsx when the two
+   duplicate grids became one. */
+const GROUP_ICONS: Record<string, IconName> = {
+  rpa: 'bot',
+  automation: 'bot',
+  programming: 'code',
+  scripting: 'code',
+  data: 'database',
+  databases: 'database',
+  reporting: 'chart',
+  analytics: 'chart',
+  domain: 'shield',
+  platforms: 'layers',
+  tools: 'gear',
+};
+
+function groupIcon(id: string): IconName {
+  const key = Object.keys(GROUP_ICONS).find((candidate) => id.includes(candidate));
+  return (key ? GROUP_ICONS[key] : undefined) ?? 'sparkle';
+}
+
+/**
+ * Expertise.
+ *
+ * Four pillars that decide whether an automation programme delivers, each
+ * backed by the concrete practices behind it, then the stack grouped the way
+ * the work is organised.
+ */
 export function SkillsSection() {
   const term = useHighlightTerm();
   const needle = term.trim().toLowerCase();
@@ -51,7 +81,7 @@ export function SkillsSection() {
 
   return (
     <SkillExplainerProvider>
-      <section className="scroll-mt-24">
+      <section className="mt-10 scroll-mt-24">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-[var(--border-subtle)] pb-4">
           <h3 className="font-mono text-[0.68rem] uppercase tracking-[0.2em] text-[var(--text-muted)]">
             The stack, by group
@@ -83,20 +113,30 @@ export function SkillsSection() {
         </p>
 
         {groups.length === 0 ? (
-          <p
-            className="surface-card mt-10 p-10 text-center text-[0.95rem] text-[var(--text-secondary)]"
-            data-testid="skill-filter-empty"
-          >
-            Nothing in the stack matches “{term}”. That does not mean he could not learn
-            it — it means it is not something the resume can claim.
-          </p>
+          <div className="mt-10">
+            <EmptyState
+              testId="skill-filter-empty"
+              title={`Nothing in the stack matches “${term}”`}
+              action={
+                <button type="button" onClick={clearHighlightTerm} className="fx-btn empty-clear">
+                  Show the whole stack
+                </button>
+              }
+            >
+              That does not mean he could not learn it — it means it is not something the resume
+              can claim.
+            </EmptyState>
+          </div>
         ) : (
-          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="clay-rotate mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {groups.map(({ group, matches }, index) => (
               <Reveal key={group.id} delay={index * 60}>
-                <article className="surface-card h-full p-5">
-                  <h3 className="text-[1rem]">{group.name}</h3>
-                  <p className="mt-1.5 text-[0.8rem] leading-relaxed text-[var(--text-muted)]">
+                <article className="surface-card card-reactive skill-group h-full p-5">
+                  <div className="flex items-center gap-3">
+                    <IconTile name={groupIcon(group.id)} size="sm" />
+                    <h3 className="font-display text-[1rem]">{group.name}</h3>
+                  </div>
+                  <p className="mt-3 text-[0.8rem] leading-relaxed text-[var(--text-muted)]">
                     {group.description}
                   </p>
                   <ul className="mt-4 flex flex-wrap gap-1.5">

@@ -55,7 +55,7 @@ import { useAppearance } from '@/hooks/use-appearance';
  */
 const THEMES_WITH_ROBOT = new Set<string>(['engineering']);
 
-type RobotState = 'hidden' | 'peeking' | 'observing' | 'walking' | 'idle' | 'hiding';
+type RobotState = 'hidden' | 'peeking' | 'observing' | 'walking' | 'idle' | 'hopping' | 'hiding';
 
 /**
  * How long each state lasts, in milliseconds, as `[min, max]`.
@@ -74,11 +74,17 @@ const DURATION: Record<RobotState, readonly [number, number]> = {
    * `FIRST_APPEARANCE` below handles the opening; this range only governs the
    * gaps after the visitor has already met it.
    */
-  hidden: [22000, 46000],
-  peeking: [1800, 2400],
-  observing: [3000, 6000],
-  walking: [4000, 8000],
-  idle: [6000, 12000],
+  /*
+   * Shortened on 2026-09-21: Arvind asked for the robot to move around more.
+   * It now spends most of its time on stage, walking between spots and
+   * hopping, and only ducks away for a few seconds at a time.
+   */
+  hidden: [4000, 9000],
+  peeking: [1400, 2000],
+  observing: [2000, 3600],
+  walking: [3200, 5200],
+  idle: [2600, 4800],
+  hopping: [950, 1100],
   hiding: [1100, 1400],
 };
 
@@ -87,9 +93,10 @@ const NEXT: Record<RobotState, readonly (readonly [RobotState, number])[]> = {
   // Never hidden -> hidden. Every exit from off-stage is an entrance.
   hidden: [['peeking', 3], ['walking', 1]],
   peeking: [['observing', 3], ['hiding', 1]],
-  observing: [['walking', 2], ['idle', 2], ['hiding', 2]],
-  walking: [['observing', 2], ['idle', 1], ['hiding', 1]],
-  idle: [['walking', 2], ['observing', 1], ['hiding', 1]],
+  observing: [['walking', 4], ['hopping', 2], ['idle', 1], ['hiding', 1]],
+  walking: [['walking', 2], ['hopping', 2], ['observing', 2], ['idle', 1], ['hiding', 1]],
+  idle: [['walking', 3], ['hopping', 1], ['observing', 1], ['hiding', 1]],
+  hopping: [['walking', 3], ['observing', 1], ['idle', 1]],
   hiding: [['hidden', 1]],
 };
 
@@ -163,7 +170,7 @@ export function RobotStage() {
        * keyframes in globals.css carry the width table that explains it.
        */
       if (to === 'walking') {
-        host.style.setProperty('--robot-x', `${-40 - Math.random() * 90}px`);
+        host.style.setProperty('--robot-x', `${-40 - Math.random() * 380}px`);
       } else if (to === 'hidden' || to === 'hiding') {
         host.style.setProperty('--robot-x', '0px');
       }

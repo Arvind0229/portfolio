@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import siteSettingsRaw from '@/data/site-settings.json';
 import type { NextRequest } from 'next/server';
 
 /**
@@ -37,7 +38,30 @@ function bypassed(): boolean {
   return process.env.NODE_ENV !== 'production' && process.env.ADMIN_LOCAL_BYPASS === '1';
 }
 
+/**
+ * Maintenance mode (CHANGE-011), switched on from the admin panel's Site
+ * defaults tab. Every public page is answered with the maintenance scene and
+ * a real 503 plus Retry-After, so search engines treat it as temporary. The
+ * admin panel and the APIs stay reachable, because the switch has to be
+ * turned off from somewhere.
+ */
+const MAINTENANCE = (siteSettingsRaw as { maintenance?: unknown }).maintenance === true;
+
 export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const adminPath = path.startsWith('/admin') || path.startsWith('/api/admin');
+
+  if (!adminPath) {
+    if (MAINTENANCE && !path.startsWith('/status/')) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/status/maintenance';
+      const response = NextResponse.rewrite(url, { status: 503 });
+      response.headers.set('Retry-After', '1800');
+      return response;
+    }
+    return NextResponse.next();
+  }
+
   if (bypassed()) return NextResponse.next();
 
   // The login endpoint is how a session is obtained, so it cannot require one.
@@ -64,5 +88,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/api/admin/:path*'],
+  /*
+   * Admin paths always; every other page only so maintenance mode can answer
+   * it. Static files, Next internals and the public APIs are left out, so the
+   * common request costs nothing.
+   */
+  matcher: ['/admin/:path*', '/api/admin/:path*', '/((?!_next/|api/|.*\\..*).*)'],
 };

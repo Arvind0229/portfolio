@@ -1,5 +1,6 @@
 'use client';
 
+import { BrandMark, brandForSkill } from '@/components/brand-icons';
 import Link from 'next/link';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -228,11 +229,20 @@ export function SkillChip({
   highlighted?: boolean;
 }) {
   const context = useContext(Ctx);
+  // The tool's own logo in its own colour, where an openly licensed mark
+  // exists (see brand-icons.tsx for which do and why the rest do not).
+  const brand = brandForSkill(skill);
+  const mark = brand ? <BrandMark brand={brand} size={13} className="skill-mark" /> : null;
 
   // Without a provider the chip degrades to plain text rather than throwing.
   // Nothing on the page should break because a section forgot the wrapper.
   if (!context) {
-    return <span className={className}>{skill}</span>;
+    return (
+      <span className={className}>
+        {mark}
+        {skill}
+      </span>
+    );
   }
 
   return (
@@ -245,9 +255,11 @@ export function SkillChip({
         highlighted
           ? 'border-[var(--accent-primary)] bg-[color-mix(in_srgb,var(--accent-primary)_8%,transparent)] text-[var(--accent-primary)]'
           : 'hover:border-[var(--accent-primary)] hover:text-[var(--text-primary)]',
+        mark && 'inline-flex items-center gap-1.5',
         className,
       )}
     >
+      {mark}
       {skill}
     </button>
   );

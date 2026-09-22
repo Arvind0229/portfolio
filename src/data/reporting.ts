@@ -56,7 +56,7 @@ export const reportTemplates: readonly ReportTemplate[] = [
     name: 'Validation & exception report',
     cadence: 'Daily, plus on-exception',
     purpose:
-      'A pass/fail control report over a reconciliation. When a check breaches, the bot raises it in real time to the team that owns it rather than waiting for the next review.',
+      'A pass/fail control report over compliance data. When a check breaches, the bot raises it in real time to the team that owns it rather than waiting for the next review.',
     builtWith: ['TruBot (Datamatics)', 'SQL', 'SMS API', 'WhatsApp API'],
   },
   {

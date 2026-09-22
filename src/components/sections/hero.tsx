@@ -1,6 +1,7 @@
 'use client';
 
-import { Icon, type IconName } from '@/components/icons';
+import { Icon, WhatsAppMark, type IconName } from '@/components/icons';
+import { DownloadButton } from '@/components/ui/download-button';
 import { LinkButton, Reveal, SplitText } from '@/components/ui';
 import { AutomationFlow } from '@/components/visuals/automation-flow';
 import { whatsappLink } from '@/lib/contact/whatsapp';
@@ -200,7 +201,7 @@ export function Hero() {
 
           <Reveal delay={720}>
             <div className="mt-9 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-              <LinkButton href="#projects" size="lg" className="w-full sm:w-auto text-center justify-center">
+              <LinkButton href="#projects" size="lg" magnetic className="w-full sm:w-auto text-center justify-center">
                 Explore the work
                 <span
                   aria-hidden="true"
@@ -209,27 +210,19 @@ export function Hero() {
                   →
                 </span>
               </LinkButton>
-              <LinkButton href="/assistant" variant="secondary" size="lg" className="w-full sm:w-auto text-center justify-center">
+              <LinkButton href="/assistant" variant="secondary" size="lg" magnetic className="w-full sm:w-auto text-center justify-center">
                 Ask my AI assistant
               </LinkButton>
-              <LinkButton
+              {/* Real download with progress, done and failed states — see
+                  download-button.tsx. Still a plain <a download> underneath. */}
+              <DownloadButton
                 href={profile.resume.pdf}
                 variant="ghost"
-                size="lg"
-                download
                 aria-label="Download resume as PDF"
                 className="download-cta w-full sm:w-auto text-center justify-center"
               >
                 Download resume
-                {/* The tray the arrow drops into. Drawn rather than an icon so
-                    it can be two separate pieces — the arrow moves, the tray
-                    does not, which is what makes it read as *downloading*
-                    rather than as an arrow sliding. */}
-                <span aria-hidden="true" className="download-glyph">
-                  <span className="download-arrow" />
-                  <span className="download-tray" />
-                </span>
-              </LinkButton>
+              </DownloadButton>
 
               {/*
                 WhatsApp, next to the resume.
@@ -244,10 +237,11 @@ export function Hero() {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="hero-whatsapp"
+                data-fx="whatsapp"
                 aria-label="Message Arvind on WhatsApp"
                 className="wa-press clay-control group inline-flex h-[54px] w-[54px] shrink-0 items-center justify-center self-center rounded-[var(--r-button,var(--radius-md))] border border-[color-mix(in_srgb,var(--whatsapp)_38%,var(--border))] text-[var(--whatsapp)] transition-[border-color,box-shadow,transform] duration-[var(--motion-fast)] hover:border-[var(--whatsapp)] hover:shadow-[0_0_0_3px_color-mix(in_srgb,var(--whatsapp)_16%,transparent)]"
               >
-                <Icon name="whatsapp" size={22} aria-hidden="true" />
+                <WhatsAppMark size={34} />
               </a>
             </div>
           </Reveal>

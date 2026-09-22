@@ -1,4 +1,119 @@
 {
   "$comment": "Written by the admin panel, not by hand. See src/data/project-depth.ts for the shape and why this file is JSON rather than TypeScript. Keys are project ids from src/data/projects.ts.",
-  "projects": {}
+  "projects": {
+    "hr-process-automation": {
+      "visibility": "public",
+      "overview": "An RPA workflow that builds the manpower report. It tracks employees role-wise and branch-wise, applies the business rules and status filters the report needs, and sends each region its own summary by email.",
+      "businessProblem": "The business needed role-wise, branch-wise and region-wise visibility of manpower, which meant pulling the data, mapping it, applying the reporting rules and summarising it by region every cycle.",
+      "workflow": [
+        "Obtain the manpower source data",
+        "Run the reporting database query",
+        "Process the employee data",
+        "Apply lookup and mapping logic where the report needs it",
+        "Apply the business rules",
+        "Track employees role-wise",
+        "Track employees branch-wise",
+        "Filter on employee status where required",
+        "Generate the final Excel report",
+        "Build the region-wise summary",
+        "Distribute the summary by email"
+      ],
+      "systems": [
+        "Datamatics TruBot",
+        "Reporting database (SQL)",
+        "Excel",
+        "Email"
+      ]
+    },
+    "multi-product-mis": {
+      "visibility": "public",
+      "overview": "Several MIS reports, each automated against the sources it actually uses. Across the estate those sources include SFTP, FTP, Amazon S3, databases, email, Excel and CSV — no single report uses all of them. The steps below are the typical shape; each report runs the subset it needs.",
+      "workflow": [
+        "Pull the source data — file server, bucket, database or mailbox, depending on the report",
+        "Extract it with the RPA bot",
+        "Process it with SQL and Python",
+        "Apply the business logic",
+        "Validate and map the records",
+        "Produce the Excel / MIS output",
+        "Generate the summary",
+        "Distribute it by email"
+      ],
+      "systems": [
+        "Datamatics TruBot",
+        "SQL",
+        "Python",
+        "Excel",
+        "SFTP / FTP",
+        "Amazon S3",
+        "Email"
+      ],
+      "challenges": [
+        {
+          "challenge": "Many reports, many data sources, each with its own requirements.",
+          "resolution": "RPA combined with SQL, Python and Excel processing, and a standardised way of generating the reports."
+        },
+        {
+          "challenge": "Excel processing too complex for basic RPA activities.",
+          "resolution": "Python, VBA, Pivot Tables, VLOOKUP and business logic, used together rather than forcing everything through the bot."
+        }
+      ],
+      "decisions": [
+        {
+          "decision": "Use Python alongside RPA where data processing or Excel work becomes complex.",
+          "why": "Python gives flexibility for data transformation, calculation and Excel processing."
+        },
+        {
+          "decision": "Use SQL for extraction and filtering on the database side.",
+          "why": "It avoids moving data unnecessarily and prepares the business data before downstream processing."
+        },
+        {
+          "decision": "Use Excel, VBA, Pivot Tables and VLOOKUP where the output has to be Excel.",
+          "why": "Many business stakeholders consume and work with their reports in Excel."
+        },
+        {
+          "decision": "Integrate with whichever source each process actually uses — SFTP, FTP, S3, database or email.",
+          "why": "The automation should work with the real enterprise source rather than force every workflow into one integration pattern."
+        }
+      ],
+      "lessonsLearned": [
+        "Understand the business process before automating it.",
+        "RPA is stronger combined with SQL, Python and Excel than when the RPA tool is treated as the only technology.",
+        "Complex reporting needs business-rule understanding as much as technical processing.",
+        "Automation should handle exceptions rather than assume every input is perfect."
+      ]
+    },
+    "new-los-reporting": {
+      "visibility": "public",
+      "overview": "Reporting for a new loan origination system, set out as a report master and a field-level specification covering the loan lifecycle for LAP and Home Loan — lead and sourcing, application, documents, credit, legal and technical, sanction, documentation, disbursement, TAT and ageing, rejections, audit, API monitoring, management reporting, insurance and Account Aggregator.",
+      "scale": [
+        "36 reports",
+        "About 580 field definitions",
+        "Two products — LAP and Home Loan"
+      ]
+    },
+    "automationedge-migration": {
+      "visibility": "public",
+      "overview": "An evaluation of AutomationEdge as an enterprise RPA platform alongside the existing TruBot estate, followed by a planned migration. The figures below are the planned scope of the programme — not processing volumes and not measured impact. The migration is in progress.",
+      "scale": [
+        "144 processes planned for migration",
+        "72 on his migration track",
+        "3 developers working in parallel",
+        "13 shared enterprise dashboards"
+      ],
+      "challenges": [
+        {
+          "challenge": "A large migration programme with many processes to move.",
+          "resolution": "Parallel development tracks, reusable components and batch-wise testing."
+        },
+        {
+          "challenge": "Different vendor expectations during the POC.",
+          "resolution": "Aligning scope, evaluation criteria and acceptance requirements before proceeding."
+        }
+      ],
+      "lessonsLearned": [
+        "Reusable components matter more as the number of automations grows.",
+        "Testing should happen continuously, not only at the end of a large programme."
+      ]
+    }
+  }
 }

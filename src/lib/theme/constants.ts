@@ -1,3 +1,4 @@
+import { siteSettings } from '@/data/site-settings';
 import type { ColorMode, FontSetId, ThemeId } from '@/types';
 
 export const STORAGE_KEYS = {
@@ -16,9 +17,17 @@ export const STORAGE_KEYS = {
   motion: 'ag.motion',
 } as const;
 
-export const DEFAULT_THEME: ThemeId = 'engineering';
-export const DEFAULT_MODE: ColorMode = 'dark';
-export const DEFAULT_FONT: FontSetId = 'precision';
+/*
+ * The first-visit defaults come from `site-settings.json`, which the admin
+ * panel's Site tab writes. A visitor's own stored choice always wins.
+ */
+const FORCED_MODE: ColorMode | null =
+  siteSettings.defaultMode === 'auto' ? null : siteSettings.defaultMode;
+
+export const DEFAULT_THEME: ThemeId = siteSettings.defaultTheme;
+export const DEFAULT_MODE: ColorMode =
+  FORCED_MODE ?? (DEFAULT_THEME === 'clay' || DEFAULT_THEME === 'studio' ? 'light' : 'dark');
+export const DEFAULT_FONT: FontSetId = siteSettings.defaultFont;
 
 /*
  * `enterprise` is kept, and it is now Crimson Claymorphism.
@@ -68,6 +77,7 @@ if(themes.indexOf(t)===-1){t='${DEFAULT_THEME}';}
 if(modes.indexOf(m)===-1){
   m = (t==='engineering'||t==='enterprise') ? 'dark' : 'light';
   if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches&&t!=='studio'){m='dark';}
+  ${FORCED_MODE ? `m='${FORCED_MODE}';` : ''}
 }
 if(fonts.indexOf(f)===-1){f='${DEFAULT_FONT}';}
 d.setAttribute('data-theme',t);

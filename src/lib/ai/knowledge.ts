@@ -92,7 +92,11 @@ function buildChunks(): KnowledgeChunk[] {
       'profile-positioning',
       'profile',
       'What he does',
-      `${profile.positioningThirdPerson} Current focus areas: ${profile.focusAreas.join(', ')}. ${profile.availability}.`,
+      `${profile.positioningThirdPerson} Current focus areas: ${profile.focusAreas.join(', ')}. ${profile.availability}.${
+        // Learning is stated as learning. The assistant must never turn this
+        // into production experience, so the sentence says which it is.
+        profile.exploring ? ` Currently exploring, as self-learning rather than production work: ${profile.exploring}.` : ''
+      }`,
       ['focus', 'strength', 'strengths', 'specialisation', 'specialization', 'do', 'role', 'looking for', 'open to'],
       'Professional Summary',
     ),
@@ -203,6 +207,7 @@ function buildChunks(): KnowledgeChunk[] {
           .join(' '),
         [
           'role', 'responsibility', 'own', 'owned', 'alone', 'solo', 'team', 'timeline',
+          'involved', 'colleagues',
           'long', 'duration', 'delivered', 'steps', 'lifecycle', 'brd', 'uat',
           ...identity,
         ],

@@ -17,6 +17,10 @@ import './globals.css';
 
 import { AppearanceProvider } from '@/hooks/use-appearance';
 import { Backdrop } from '@/components/visuals/backdrop';
+import { MagneticField } from '@/components/visuals/magnetic-field';
+import { ClickEffects } from '@/components/visuals/click-effects';
+import { RobotBuddies } from '@/components/visuals/robot-buddies';
+import { Resilience } from '@/components/states/resilience';
 import { MotionNotice } from '@/components/layout/motion-notice';
 import { Navbar } from '@/components/layout/navbar';
 import { PageTransition } from '@/components/layout/page-transition';
@@ -120,6 +124,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AppearanceProvider>
           <Backdrop />
+          <MagneticField />
+          <ClickEffects />
+          <RobotBuddies />
+          <Resilience />
           <Navbar />
           {/* Pinned to the bottom edge, and rendering nothing at all unless
               the OS is actually asking for reduced motion — see the note in

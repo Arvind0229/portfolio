@@ -174,7 +174,7 @@ export function ReportingShowcase() {
             Validation &amp; exception flow
           </figcaption>
           <p className="mt-1.5 text-[0.85rem] text-[var(--text-muted)]">
-            The control path behind a reconciliation report — pass, and the summary goes out; breach,
+            The control path behind a compliance exception report — pass, and the summary goes out; breach,
             and the owning team is alerted over email, SMS and WhatsApp before the next review.
           </p>
           <ol className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-3">

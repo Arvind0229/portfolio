@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/components/states/empty-state';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Badge, Button, Reveal } from '@/components/ui';
@@ -104,13 +105,15 @@ export function ProjectsSection() {
       </p>
 
       {visible.length === 0 ? (
-        <div className="surface-card mt-8 p-10 text-center">
-          <p className="text-[0.95rem] text-[var(--text-secondary)]">
-            No projects in {category}.
-          </p>
-          <Button variant="ghost" className="mt-4" onClick={() => setCategory('All')}>
-            Show every project
-          </Button>
+        <div className="mt-8">
+          <EmptyState
+            title={`No projects in ${category}`}
+            action={
+              <Button variant="ghost" onClick={() => setCategory('All')}>
+                Show every project
+              </Button>
+            }
+          />
         </div>
       ) : (
         <div className="mt-8 grid gap-4 md:grid-cols-2" data-testid="project-grid">

@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
 import { useAppearance } from '@/hooks/use-appearance';
 
 /**
@@ -14,9 +16,15 @@ import { useAppearance } from '@/hooks/use-appearance';
  */
 export function Backdrop() {
   const { theme } = useAppearance();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  usePointerReaction(rootRef, theme);
 
   return (
-    <div aria-hidden="true" className="backdrop-root pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div
+      ref={rootRef}
+      aria-hidden="true"
+      className="backdrop-root pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+    >
       {/*
         Each theme owns its ground. Nothing is shared.
 
@@ -39,17 +47,113 @@ export function Backdrop() {
       {theme === 'studio' ? (
         <>
           <StudioField />
-          <MandalaLayer />
+          <StudioMandalas />
         </>
       ) : null}
       {theme === 'enterprise' ? (
         <>
           <CrimsonGround />
+          <CrimsonMandala />
           <CrimsonLayer />
         </>
       ) : null}
     </div>
   );
+}
+
+/**
+ * The background answering the mouse.
+ *
+ * Arvind asked for the background to react on hover. The layer is
+ * `pointer-events: none` (it must never steal a click), so "hover" is measured
+ * rather than received: one `pointermove` listener on the document, throttled
+ * to one pass per frame, that writes
+ *
+ * - `--px` / `--py` on the root: the pointer across the viewport, -1 to 1.
+ *   Every `[data-react]` item shifts by that times its own `--depth`, so near
+ *   and far items move by different amounts — parallax.
+ * - `--rx` / `--ry` / `--near` on each `[data-react="near"]` item within reach
+ *   of the pointer: it is nudged away from the cursor and grows slightly, as
+ *   if pushed. Out of reach, all three go back to zero.
+ *
+ * CSS does the moving, through the `translate` and `scale` properties, so it
+ * composes with each item's own drift animation (which uses `transform`) and
+ * eases in with a transition rather than snapping.
+ *
+ * Mouse only, and nothing under reduced motion: the same two-part check as
+ * the rest of the site. On touch there is no hover to answer.
+ */
+function usePointerReaction(rootRef: React.RefObject<HTMLDivElement | null>, theme: string) {
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
+    if (!fine.matches) return;
+    const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const REACH = 240;
+    const PUSH = 70;
+    let frame = 0;
+    let x = -1;
+    let y = -1;
+    // What each item has been pushed by, so its resting centre is measured
+    // rather than the pushed one — measuring the pushed rect feeds the push
+    // back into itself and the item shivers.
+    const pushed = new WeakMap<HTMLElement, { x: number; y: number }>();
+
+    const reset = () => {
+      root.style.setProperty('--px', '0');
+      root.style.setProperty('--py', '0');
+      root.querySelectorAll<HTMLElement>('[data-react="near"]').forEach((el) => {
+        el.style.removeProperty('--rx');
+        el.style.removeProperty('--ry');
+        el.style.removeProperty('--near');
+        pushed.delete(el);
+      });
+    };
+
+    const flush = () => {
+      frame = 0;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      root.style.setProperty('--px', ((x / w) * 2 - 1).toFixed(3));
+      root.style.setProperty('--py', ((y / h) * 2 - 1).toFixed(3));
+      root.querySelectorAll<HTMLElement>('[data-react="near"]').forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const prev = pushed.get(el) ?? { x: 0, y: 0 };
+        const dx = rect.left + rect.width / 2 - prev.x - x;
+        const dy = rect.top + rect.height / 2 - prev.y - y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const reach = REACH + rect.width / 2;
+        const near = distance < reach ? 1 - distance / reach : 0;
+        if (near === 0 && prev.x === 0 && prev.y === 0) return;
+        const next = { x: (dx / distance) * near * PUSH, y: (dy / distance) * near * PUSH };
+        el.style.setProperty('--rx', `${next.x.toFixed(1)}px`);
+        el.style.setProperty('--ry', `${next.y.toFixed(1)}px`);
+        el.style.setProperty('--near', near.toFixed(3));
+        pushed.set(el, next);
+      });
+    };
+
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse') return;
+      if (reducedQuery.matches && document.documentElement.dataset.motion !== 'full') return;
+      x = event.clientX;
+      y = event.clientY;
+      if (!frame) frame = requestAnimationFrame(flush);
+    };
+
+    document.addEventListener('pointermove', onMove, { passive: true });
+    document.documentElement.addEventListener('pointerleave', reset);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      document.documentElement.removeEventListener('pointerleave', reset);
+      if (frame) cancelAnimationFrame(frame);
+      reset();
+    };
+    // Re-run on theme change: each theme mounts a different set of items.
+  }, [rootRef, theme]);
 }
 
 /**
@@ -125,9 +229,11 @@ function NetworkLayer() {
          reading as one sheet — the eye separates them at once, and the traces
          sit behind the grid rather than being printed on it. */
       className="circuit-drift absolute inset-0 h-full w-full"
+      data-react="far"
       viewBox="0 0 100 70"
       preserveAspectRatio="xMidYMid slice"
       style={{
+        ['--depth' as string]: '-18px',
         opacity: 0.55,
         /* A horizontal fade rather than the radial one this had before. The
            radial confined the whole circuit to a blob behind the figure; a
@@ -251,141 +357,102 @@ function NetworkLayer() {
 }
 
 /**
- * Studio: a generative mandala.
+ * Studio's signature: Arvind's own mandalas, a dozen for each mode, drifting
+ * across the page, turning, and slowly changing into one another.
  *
- * Five nested rings on one shared centre, each a `<g>` with its own rotation
- * period and direction. What makes it read as a mandala rather than as a
- * spinning circle is radial *repetition*: the petal and tick layers are
- * generated by rotating one motif N times around the centre, so the eye finds
- * symmetry wherever it lands.
+ * ## What moves
  *
- * ## Why it costs almost nothing
+ * Seven slots spread over the viewport. Each slot holds two mandalas stacked
+ * on top of each other; the slot drifts on its own slow path, each mandala
+ * turns at its own speed (some clockwise, some not), and the two cross-fade
+ * on a long cycle — so a mandala is never quite where, nor quite *which*, it
+ * was a minute ago. The "random" is a fixed table rather than
+ * `Math.random()`: it is the same on the server and the client, and it can be
+ * tuned.
  *
- * One inline SVG, and every animation is a `transform: rotate` on a group.
- * The compositor handles those; layout never runs, nothing repaints, and
- * there is no canvas, no WebGL, no per-frame JavaScript and no library. The
- * two rings that were here before are kept, at their original radii and
- * periods, because they were already right — this adds the layers around them
- * rather than replacing them.
+ * ## Dark and light
  *
- * ## Centred, not cornered
+ * Arvind supplied a separate set for each mode — glowing line-work on dark,
+ * watercolour on light — and the colours are his, untouched. Each element
+ * names both files as CSS variables and the stylesheet picks one by
+ * `data-mode`, so only the active mode's set is ever downloaded. The images
+ * were cut from his sheets with the backgrounds turned into transparency and
+ * the baked-in labels cropped off. 280px each, never shown larger.
  *
- * The previous version was a 30rem box pinned to the top-right, which is an
- * ornament. A mandala is an environment, so this one is centred on the page
- * and sized in viewport units, with its opacity low enough that text crossing
- * it never loses contrast.
+ * ## Cost
  *
- * ## Mobile
- *
- * At ≤430px the outer layers are dropped and rotation stops — the starting
- * hypothesis from the motion spec. A phone renders the geometry, not the
- * movement.
+ * `transform` and `opacity` only — compositor work. At <=430px three slots
+ * remain and they only turn; under reduced motion nothing moves at all.
  */
-function MandalaLayer() {
-  /* One motif, repeated around the centre. Generated rather than hand-written
-     so the symmetry is exact — twelve hand-placed petals are twelve chances
-     to be half a degree out. */
-  const petals = Array.from({ length: 12 }, (_, index) => index * 30);
-  const ticks = Array.from({ length: 24 }, (_, index) => index * 15);
+const MANDALA_SLOTS = [
+  // left%, top%, size px, first image, second image, drift s, turn s, fade s, reverse
+  // Three are drawn larger than the 280px source (up to 1.45×) because Arvind
+  // asked for bigger ones. At 40% opacity, turning, the softening is not
+  // visible; the other four stay at or below native size.
+  [6, 10, 380, 1, 7, 34, 48, 22, false],
+  [72, 4, 220, 3, 9, 40, 60, 26, true],
+  [40, 38, 180, 5, 11, 30, 40, 19, false],
+  [86, 44, 340, 2, 8, 44, 70, 24, false],
+  [10, 62, 220, 4, 10, 36, 52, 21, true],
+  [60, 76, 400, 6, 12, 42, 66, 28, false],
+  [28, 90, 170, 9, 3, 32, 38, 18, true],
+] as const;
 
+/**
+ * Crimson's mandala: one of Arvind's designs, recoloured — burgundy, red glow
+ * and gold on dark; crimson, rose and gold on cream — turning slowly in two
+ * places. Deliberately *one* motif at rest, not Studio's drifting field, so the
+ * two themes stay distinguishable. Shown at its native 300px, never enlarged.
+ */
+function CrimsonMandala() {
   return (
-    <>
-      <svg
-        className="mandala"
-        viewBox="0 0 200 200"
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden="true"
-      >
-        {/* Layer 4 — outer tick ring, slowest, clockwise */}
-        <g className="mandala-l4" style={{ transformOrigin: '100px 100px' }}>
-          {ticks.map((angle) => (
-            <line
-              key={angle}
-              x1="100"
-              y1="6"
-              x2="100"
-              y2="14"
-              stroke="var(--accent-tertiary)"
-              strokeWidth="0.35"
-              transform={`rotate(${angle} 100 100)`}
+    <div className="crimson-mandalas">
+      <span className="crimson-mandala crimson-mandala-a" data-react="near" />
+      <span className="crimson-mandala crimson-mandala-b" data-react="near" />
+    </div>
+  );
+}
+
+function StudioMandalas() {
+  const file = (mode: 'dark' | 'light', n: number) =>
+    `url('/mandala/${mode}-${String(n).padStart(2, '0')}.webp')`;
+  return (
+    <div className="studio-mandalas">
+      {MANDALA_SLOTS.map(([left, top, size, a, b, drift, turn, fade, reverse], index) => (
+        <div
+          key={index}
+          className="studio-mandala-slot"
+          data-react="near"
+          style={
+            {
+              left: `${left}%`,
+              top: `${top}%`,
+              width: size,
+              height: size,
+              '--drift': `${drift}s`,
+              '--k': index,
+              '--depth': `${Math.round(size / 10)}px`,
+            } as React.CSSProperties
+          }
+        >
+          {[a, b].map((n, layer) => (
+            <span
+              key={layer}
+              className={`studio-mandala studio-mandala-${layer === 0 ? 'a' : 'b'}`}
+              style={
+                {
+                  '--md': file('dark', n),
+                  '--ml': file('light', n),
+                  '--turn': `${turn + layer * 17}s`,
+                  '--fade': `${fade}s`,
+                  '--dir': reverse !== (layer === 1) ? 'reverse' : 'normal',
+                } as React.CSSProperties
+              }
             />
           ))}
-        </g>
-
-        {/* Layer 3 — petals, counter-rotating */}
-        <g className="mandala-l3" style={{ transformOrigin: '100px 100px' }}>
-          {petals.map((angle) => (
-            <path
-              key={angle}
-              d="M100 26 C112 48, 112 66, 100 84 C88 66, 88 48, 100 26 Z"
-              fill="none"
-              stroke="var(--accent-secondary)"
-              strokeWidth="0.3"
-              transform={`rotate(${angle} 100 100)`}
-            />
-          ))}
-        </g>
-
-        {/* Layer 2 — the original dashed ring, kept at r=86 and 90s */}
-        <g className="mandala-l2" style={{ transformOrigin: '100px 100px' }}>
-          <circle
-            cx="100"
-            cy="100"
-            r="86"
-            fill="none"
-            stroke="var(--accent-primary)"
-            strokeWidth="0.4"
-            strokeDasharray="18 10"
-          />
-        </g>
-
-        {/* Layer 1 — the original inner ring, kept at r=58, reversed */}
-        <g className="mandala-l1" style={{ transformOrigin: '100px 100px' }}>
-          <circle
-            cx="100"
-            cy="100"
-            r="58"
-            fill="none"
-            stroke="var(--accent-secondary)"
-            strokeWidth="0.4"
-            strokeDasharray="9 14"
-          />
-          <circle
-            cx="100"
-            cy="100"
-            r="34"
-            fill="none"
-            stroke="var(--accent-tertiary)"
-            strokeWidth="0.3"
-            strokeDasharray="4 8"
-          />
-        </g>
-
-        {/* Layer 0 — the centre mark. Breathes rather than turns: a rotating
-            centre has no feature to track and reads as stillness anyway. */}
-        <g className="mandala-l0" style={{ transformOrigin: '100px 100px' }}>
-          <circle
-            cx="100"
-            cy="100"
-            r="12"
-            fill="none"
-            stroke="var(--accent-primary)"
-            strokeWidth="0.5"
-          />
-          <path d="M88 100 H112 M100 88 V112" stroke="var(--accent-primary)" strokeWidth="0.35" />
-        </g>
-      </svg>
-
-      {/* The paper grain that gave Studio its character. Unchanged. */}
-      <div
-        className="absolute inset-0 mix-blend-multiply"
-        style={{
-          opacity: 'var(--noise-opacity)',
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E\")",
-        }}
-      />
-    </>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -487,6 +554,10 @@ function StudioField() {
  */
 function CrimsonGround() {
   return (
+    <>
+    {/* Arvind's crimson backgrounds — burgundy on dark, cream-and-red on
+        light. The stylesheet picks one by mode, so only one downloads. */}
+    <div className="crimson-bg" />
     <div
       className="crimson-rise absolute inset-x-0 bottom-0 h-[70vh]"
       style={{
@@ -494,6 +565,7 @@ function CrimsonGround() {
           'radial-gradient(60% 100% at 50% 100%, color-mix(in srgb, var(--crimson) 42%, transparent) 0%, transparent 72%)',
       }}
     />
+    </>
   );
 }
 
@@ -505,6 +577,60 @@ function CrimsonGround() {
  * the *surfaces*, and a busy ground behind soft white cards makes them look
  * dirty rather than dimensional.
  */
+/**
+ * Marbles from Arvind's sheet — mint, pearl, gold, swirled — floating around
+ * the page at different sizes on their own slow paths. The sheet's
+ * "transparency" was a painted checkerboard; each marble was cut out with a
+ * mask that removes it. Clear-glass bubbles were left out, because the painted
+ * checkerboard shows through them. Displayed smaller than their source, so
+ * they stay sharp. Positions come from a fixed table (same on server and
+ * client), and the paths differ per marble so they never move in step.
+ */
+const MARBLES = [
+  // file, left%, top%, size px, dx vw, dy vh, seconds — kept to the margins,
+  // out of the reading column, so they never sit under a paragraph. Sizes
+  // never exceed the file's own pixels (marble-01 and -04 are 216px).
+  [1, 1, 12, 180, 6, -12, 26],
+  [2, 92, 8, 90, -6, 14, 30],
+  [7, 95, 30, 48, -4, 10, 22],
+  [4, 2, 40, 200, 6, 14, 34],
+  [6, 93, 50, 170, -6, -9, 31],
+  [11, 6, 26, 40, 4, -10, 20],
+  [9, 90, 72, 160, -6, -14, 28],
+  [14, 4, 70, 60, 6, -12, 24],
+  [12, 96, 90, 90, -4, -14, 32],
+  [17, 1, 88, 150, 6, -10, 36],
+  [5, 88, 4, 70, -6, 12, 23],
+  [15, 3, 56, 110, 4, 12, 30]] as const;
+
+function ClayMarbles() {
+  return (
+    <div className="clay-marbles">
+      {MARBLES.map(([file, left, top, size, dx, dy, dur], index) => (
+        <span
+          key={index}
+          className="clay-marble"
+          data-react="near"
+          style={
+            {
+              left: `${left}%`,
+              top: `${top}%`,
+              width: size,
+              height: size,
+              backgroundImage: `url('/clay/marble-${String(file).padStart(2, '0')}.webp')`,
+              '--dx': `${dx}vw`,
+              '--dy': `${dy}vh`,
+              '--dur': `${dur}s`,
+              '--k': index,
+              '--depth': `${Math.round(size / 6)}px`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
 function ClayLayer() {
   /*
    * Six soft objects, each with its own hue, size, position and period.
@@ -522,19 +648,24 @@ function ClayLayer() {
      * of the opacity, and pushed to the page margins and the deep background
      * where they read as atmosphere.
      */
-    { cls: 'bubble-1', h: 'var(--h-lavender)', style: { left: '-9%', top: '4%', width: '13rem', height: '13rem' } },
+    { cls: 'bubble-1', h: 'var(--h-lavender)', style: { left: '-9%', top: '4%', width: '22rem', height: '22rem' } },
     { cls: 'bubble-2', h: 'var(--h-sky)', style: { right: '-7%', top: '2%', width: '11rem', height: '11rem' } },
-    { cls: 'bubble-3', h: 'var(--h-peach)', style: { right: '-5%', top: '58%', width: '12rem', height: '12rem' } },
+    { cls: 'bubble-3', h: 'var(--h-peach)', style: { right: '-8%', top: '56%', width: '19rem', height: '19rem' } },
     { cls: 'bubble-4', h: 'var(--h-mint)', style: { left: '-4%', top: '66%', width: '7rem', height: '7rem' } },
-    { cls: 'bubble-5', h: 'var(--h-pink)', style: { right: '12%', top: '90%', width: '9rem', height: '9rem' } },
+    { cls: 'bubble-5', h: 'var(--h-pink)', style: { right: '10%', top: '86%', width: '15rem', height: '15rem' } },
     { cls: 'bubble-6', h: 'var(--h-lemon)', style: { left: '4%', top: '88%', width: '5rem', height: '5rem' } },
   ] as const;
 
   return (
     <>
+      {/* Arvind's mint backgrounds, light mode only, slowly cross-fading. */}
+      <div className="clay-bg clay-bg-a" />
+      <div className="clay-bg clay-bg-b" />
+      <ClayMarbles />
       {bubbles.map((bubble) => (
         <div
           key={bubble.cls}
+          data-react="near"
           className={`clay-bubble ${bubble.cls}`}
           style={{ ...bubble.style, ['--h' as string]: bubble.h }}
         />
@@ -566,7 +697,7 @@ function CrimsonLayer() {
     }).join(' ');
 
   return (
-    <svg className="crimson-web" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <svg className="crimson-web" data-react="far" style={{ ['--depth' as string]: '-14px' }} viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <g stroke="var(--crimson-light)" fill="none" strokeWidth="0.4" opacity="0.5">
         {spokes.map((angle) => (
           <line key={angle} x1="100" y1="100" x2="100" y2="2" transform={`rotate(${angle} 100 100)`} />

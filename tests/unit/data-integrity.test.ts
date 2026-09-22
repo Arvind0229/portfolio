@@ -137,6 +137,7 @@ describe('projects are complete and grounded', () => {
       'html mail-body automation': 'html mail-body / mailer automation',
       'sms api': 'sms api integration',
       'whatsapp api': 'whatsapp api integration',
+      'id creation / deactivation api': 'id creation / deactivation api integration',
     };
 
     for (const project of projects) {

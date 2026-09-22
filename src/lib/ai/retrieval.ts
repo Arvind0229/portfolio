@@ -117,6 +117,15 @@ const SYNONYMS: Record<string, string[]> = {
   monitoring: ['failure', 'support', 'production', 'alert'],
   chose: ['decision', 'why', 'approach', 'alternative'],
   decision: ['chose', 'why', 'approach', 'alternative', 'tradeoff'],
+  /* "Who else worked on it" is a team question, and before a project had any
+     depth it reached the delivery facet only because there were so few chunks
+     that everything named after the project made the top five. Once depth
+     added challenge and decision chunks, it fell out. "else" and "involved"
+     are rare in the corpus, so mapping them to the team vocabulary is the
+     specific-to-specific kind of synonym the rule above allows; "worked" is
+     not, for the reason the Kubernetes note gives. */
+  else: ['team', 'role'],
+  involved: ['team', 'role'],
 };
 
 export function tokenize(input: string): string[] {

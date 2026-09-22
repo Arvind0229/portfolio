@@ -24,8 +24,30 @@ import { useEffect, useRef, useState } from 'react';
  *     which is the failure that makes these look broken rather than absent.
  */
 export function useCountUp(target: number, start: boolean, delayMs = 0): number {
-  const [value, setValue] = useState(0);
+  /*
+   * Starts at the REAL figure, not 0.
+   *
+   * It used to start at 0, which is what the server rendered — so the HTML
+   * that search engines, link previews and every visitor before JavaScript
+   * runs see said "0+ production automations" and "0%+ manual effort
+   * reduced". Arvind saw exactly that on the live site. Now the server
+   * renders the true value, and only a client that is going to animate drops
+   * it to 0 (below) so it can count up when it scrolls into view.
+   */
+  const [value, setValue] = useState(target);
   const frameRef = useRef<number | null>(null);
+
+  // Arm the count-up: motion allowed and not yet started → hold at 0 until
+  // `start`. Reduced motion (without the site's opt-back-in) keeps the value.
+  useEffect(() => {
+    if (start) return;
+    const reduced =
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      document.documentElement.dataset.motion !== 'full';
+    if (!reduced) setValue(0);
+    // Only on mount: once armed, the effect below takes over.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /*
    * Reduced motion resolves immediately, and — this is the part that was

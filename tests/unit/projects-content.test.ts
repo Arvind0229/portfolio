@@ -24,18 +24,52 @@ const BEFORE = JSON.parse(
 ) as Array<Record<string, unknown>>;
 
 describe('the migration lost nothing', () => {
-  it('produces exactly the array the literal produced', () => {
+  /*
+   * These two used to assert that `projects` *equals* the frozen fixture. That
+   * was right on the day of the migration and wrong on every day after it: the
+   * whole point of moving projects into JSON was so the admin panel could
+   * change them, and an equality check fails the build on the first legitimate
+   * edit. The first content change after the migration (G6, 2026-09-21 — a new
+   * project, a retitle, a technology added) is what surfaced it.
+   *
+   * What the fixture was protecting is still protected, stated as the two
+   * invariants that actually matter:
+   */
+  it('drops no field the JSON holds — the parser is lossless', () => {
     /*
      * The assertion that matters. Every consumer — the sections, the project
      * page, and the whole AI knowledge layer — reads `projects`, and a field
-     * quietly dropped during the move to JSON would not fail anything else:
-     * the page still renders, it just says less about the work.
+     * quietly dropped by the parser would not fail anything else: the page
+     * still renders, it just says less about the work. So every public field
+     * of every visible record must come through exactly as stored.
      */
-    expect(JSON.parse(JSON.stringify(projects))).toEqual(BEFORE);
+    const stored = (rawProjects as { projects: Array<Record<string, unknown>> }).projects.filter(
+      (record) => record.visible !== false,
+    );
+    const publicKeys = Object.keys(BEFORE[0] ?? {});
+    expect(publicKeys.length).toBeGreaterThan(5);
+
+    for (const record of stored) {
+      const parsed = projects.find((project) => project.id === record.id);
+      expect(parsed, `visible project ${String(record.id)} did not survive parsing`).toBeDefined();
+      for (const key of publicKeys) {
+        if (!(key in record)) continue;
+        expect(
+          JSON.parse(JSON.stringify((parsed as unknown as Record<string, unknown>)[key])),
+          `${String(record.id)}.${key}`,
+        ).toEqual(record[key]);
+      }
+    }
   });
 
-  it('keeps every project id, which is every live URL', () => {
-    expect(projects.map((project) => project.id)).toEqual(BEFORE.map((project) => project.id));
+  it('keeps every project id that existed at the migration, which is every live URL', () => {
+    /* A superset, not an equality: adding a project is fine, losing one is a
+       link somebody shared that now 404s. Removing a project on purpose should
+       fail here, so that it is a decision rather than an accident. */
+    const ids = new Set(projects.map((project) => project.id));
+    for (const project of BEFORE) {
+      expect(ids.has(String(project.id)), `lost ${String(project.id)}`).toBe(true);
+    }
   });
 });
 

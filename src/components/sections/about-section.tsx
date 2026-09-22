@@ -73,6 +73,9 @@ export function AboutSection() {
             <Row label="Databases" value="Oracle, MS SQL, MySQL, PostgreSQL, Redshift" />
             <Row label="Reporting" value="Power BI, Advanced Excel, HTML mailers" />
             <Row label="Open to" value={profile.availability} />
+            {profile.exploring ? (
+              <Row label="Currently exploring" value={profile.exploring} />
+            ) : null}
           </dl>
 
           <div className="hairline my-6" />

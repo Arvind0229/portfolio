@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Icon } from '@/components/icons';
+import { WhatsAppMark } from '@/components/icons';
+import { DownloadButton } from '@/components/ui/download-button';
 import { LinkButton, Reveal } from '@/components/ui';
 import { profile } from '@/data/profile';
 import { impactMetrics } from '@/data/impact';
@@ -39,16 +40,22 @@ export function ResumeSection() {
 
           {hasResume ? (
             <div className="flex flex-wrap gap-3" data-testid="resume-downloads">
-              <LinkButton href={pdf} download size="lg">
+              <DownloadButton href={pdf} className="download-cta">
                 Download PDF
-              </LinkButton>
+              </DownloadButton>
               {docx ? (
-                <LinkButton href={docx} download variant="secondary" size="lg">
+                <DownloadButton href={docx} variant="secondary" className="download-cta">
                   Download DOCX
-                </LinkButton>
+                </DownloadButton>
               ) : null}
-              <LinkButton href={pdf} target="_blank" variant="ghost" size="lg">
+              <LinkButton href={pdf} target="_blank" variant="ghost" size="lg" fx="browser" className="browser-cta">
+                <span aria-hidden="true" className="browser-glyph">
+                  <span />
+                </span>
                 View in browser
+                <span aria-hidden="true" className="browser-arrow">
+                  ↗
+                </span>
               </LinkButton>
             </div>
           ) : (
@@ -100,9 +107,10 @@ export function ResumeSection() {
                 site accent, which would have made a WhatsApp button turn blue
                 under the cursor.
               */
+              data-fx="whatsapp"
               className="wa-press inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--whatsapp)_38%,var(--border))] text-[var(--whatsapp)] transition-[border-color,box-shadow] duration-[var(--motion-fast)] hover:border-[var(--whatsapp)] hover:shadow-[0_0_0_3px_color-mix(in_srgb,var(--whatsapp)_16%,transparent)]"
             >
-              <Icon name="whatsapp" size={20} aria-hidden="true" />
+              <WhatsAppMark size={30} />
             </a>
             <p className="text-[0.86rem] text-[var(--text-muted)]">
               Read it and have a question? Message me.

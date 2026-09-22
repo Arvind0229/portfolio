@@ -122,7 +122,7 @@
       "title": "User ID Creation & Deactivation Automation",
       "category": "IT & Access Management",
       "businessView": "A new joiner gets their access on day one, and a leaver loses it on the right day — automatically, every time.",
-      "technicalView": "Front-end and SQL driven automation of employee ID provisioning and de-provisioning across applications, aligned to IT and compliance policy.",
+      "technicalView": "Front-end automation and API integration — the ID creation and ID deactivation APIs — driven by SQL, provisioning and de-provisioning employee IDs in line with IT and compliance policy.",
       "problem": "Employee ID creation and deactivation for onboarding and offboarding was manual, which risked slow provisioning for joiners and, more seriously, delayed de-provisioning for leavers.",
       "solution": "A bot that creates and deactivates employee IDs as part of the onboarding/offboarding flow, ensuring accurate and timely access provisioning and de-provisioning in line with IT and compliance policies.",
       "role": "Sole developer — including front-end automation for applications with no back-end access.",
@@ -141,7 +141,8 @@
       "technologies": [
         "TruBot (Datamatics)",
         "SQL",
-        "Front-End / Recorder Automation"
+        "Front-End / Recorder Automation",
+        "ID Creation / Deactivation API"
       ],
       "featured": false,
       "companyId": "sbfc",
@@ -157,10 +158,10 @@
     },
     {
       "id": "hr-process-automation",
-      "title": "HR Process Automation",
+      "title": "Manpower Tracking & HR Reporting Automation",
       "category": "Operations Automation",
-      "businessView": "Recurring HR reporting happens on its own and lands correctly formatted, so the HR team spends its time on people rather than on spreadsheets.",
-      "technicalView": "Automated data processing, report generation and mailer delivery for recurring HR operations and MIS using TruBot, SQL and advanced Excel workflows.",
+      "businessView": "Every region gets its own manpower summary in the inbox — employees tracked role-wise and branch-wise, without anyone assembling it.",
+      "technicalView": "TruBot workflow over a reporting-database query: lookup and mapping, business rules and status filtering, Excel output, and a region-wise summary distributed by email.",
       "problem": "Recurring HR operations and MIS involved repetitive data processing and report preparation each cycle, which cost hours and left room for manual error.",
       "solution": "Automated the recurring HR operations and MIS end to end — data processing, report generation and formatted mailers — cutting manual effort and ensuring timely, error-free HR reporting.",
       "role": "Sole developer — requirement gathering through to production support.",
@@ -192,6 +193,82 @@
       "links": {},
       "visible": true,
       "order": 5
+    },
+    {
+      "id": "new-los-reporting",
+      "title": "New LOS Reporting & Dashboard Suite",
+      "category": "Reporting & BI",
+      "businessView": "The reporting for a new loan origination system, specified report by report and field by field across the LAP and Home Loan lifecycle.",
+      "technicalView": "A BRD-driven report master and field-level specification — data type, mandatory flag, frequency, export format, audience, timing and email distribution for every report.",
+      "problem": "The new LOS needed a structured reporting framework covering the loan lifecycle for LAP and Home Loan.",
+      "solution": "A report master that defines each report by ID, category, product and purpose, and each field by business meaning, example, data type and mandatory flag — one reference shared by business, development, testing, UAT and sign-off.",
+      "role": "Report requirement definition, report master preparation, field-level specification, frequency and distribution definition, and reporting and dashboard design.",
+      "process": [
+        "Discussed the reporting requirements with the business",
+        "Built the report master — report ID, name, category, product and purpose",
+        "Specified every field — business meaning, example, data type and mandatory flag",
+        "Defined frequency, export format, audience, generation timing and email distribution",
+        "Designed the reporting and dashboard views"
+      ],
+      "impact": [
+        "One document that business, development, testing and UAT all work from",
+        "Reporting defined across the lifecycle — sourcing, credit, sanction, disbursement, TAT, audit and management reporting"
+      ],
+      "technologies": [
+        "LOS",
+        "Power BI"
+      ],
+      "featured": false,
+      "companyId": "sbfc",
+      "experienceIds": [
+        "sbfc-rpa-developer"
+      ],
+      "skillIds": [],
+      "year": "",
+      "status": "",
+      "links": {},
+      "visible": true,
+      "order": 6
+    },
+    {
+      "id": "automationedge-migration",
+      "title": "AutomationEdge Platform Evaluation & Migration",
+      "category": "Operations Automation",
+      "businessView": "The organisation evaluated AutomationEdge alongside its TruBot estate and planned a move of 144 processes — 72 of them on his track. In progress.",
+      "technicalView": "POC against agreed evaluation criteria, migration planning, and rebuilding processes in AutomationEdge Process Studio with reusable components — three developers in parallel, tested batch-wise.",
+      "problem": "The organisation was evaluating AutomationEdge as an enterprise RPA platform alongside the existing Datamatics TruBot automation estate.",
+      "solution": "A POC against agreed evaluation criteria, followed by a planned migration run as parallel development tracks, built on reusable components and tested batch-wise instead of at the end.",
+      "role": "Took part in the POC and its evaluation criteria, contributed to migration planning, and is migrating the processes on his own track — including environment and workflow setup and troubleshooting.",
+      "process": [
+        "Took part in the AutomationEdge POC and its evaluation criteria",
+        "Contributed to the migration plan",
+        "Migrating processes in AutomationEdge Process Studio",
+        "Supporting environment and workflow setup and troubleshooting",
+        "Building and reusing shared automation components",
+        "Testing batch-wise rather than waiting for the end"
+      ],
+      "impact": [
+        "Scope, evaluation criteria and acceptance requirements agreed before proceeding",
+        "Still in progress — not presented as a completed migration"
+      ],
+      "technologies": [
+        "Automation Edge",
+        "TruBot (Datamatics)",
+        "SQL",
+        "SFTP / FTP",
+        "Amazon S3"
+      ],
+      "featured": false,
+      "companyId": "sbfc",
+      "experienceIds": [
+        "sbfc-rpa-developer"
+      ],
+      "skillIds": [],
+      "year": "2026",
+      "status": "In progress",
+      "links": {},
+      "visible": true,
+      "order": 7
     }
   ]
 }

@@ -152,10 +152,21 @@ export function BulbSwitch({ compact = false }: { compact?: boolean }) {
   const bulbH = compact ? 42 : 55;
   const cordLength = (compact ? 20 : 28) + pull;
 
+  /*
+   * Flicker, third round (2026-09-21). The glows used to be `filter: blur()`
+   * boxes and the filament a `drop-shadow`. Filters are re-rasterised whenever
+   * the layer under them changes, and on this page something always does —
+   * the theme backdrops now move continuously and the landing is
+   * scroll-linked. Each re-raster lands on slightly different pixels, which
+   * reads as a shimmer at the lamp. The glows are now plain radial gradients
+   * (already soft, so the blur added nothing), and `.bulb-layer` keeps the
+   * lamp on its own compositor layer so the page moving under it cannot make
+   * it repaint.
+   */
   return (
     <div
       className={cn(
-        'pointer-events-none relative flex justify-center',
+        'bulb-layer pointer-events-none relative flex justify-center',
         compact ? 'h-[4.6rem] w-14' : 'h-[6.2rem] w-16',
       )}
     >
@@ -307,12 +318,7 @@ export function BulbSwitch({ compact = false }: { compact?: boolean }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               className="transition-[stroke] duration-[var(--theme-transition)]"
-              style={
-                isDark
-                  ? undefined
-                  : { filter: 'drop-shadow(0 0 3px rgba(255,176,60,0.95))' }
-              }
-            >
+>
               <path d="M16.8 31V20.6" />
               <path d="M23.2 31V20.6" />
               <path d="M16.8 20.6c0-2.4 1-3.6 1.7-3.6.8 0 .7 2.1 1.5 2.1s.7-2.1 1.5-2.1c.7 0 1.7 1.2 1.7 3.6" />
@@ -337,37 +343,37 @@ export function BulbSwitch({ compact = false }: { compact?: boolean }) {
               lamp actually lighting the corner of the page. */}
           <span
             className={cn(
-              'pointer-events-none absolute left-1/2 top-[32%] block -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl transition-opacity duration-[var(--theme-transition)]',
+              'pointer-events-none absolute left-1/2 top-[32%] block -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-[var(--theme-transition)]',
               compact ? 'h-28 w-28' : 'h-36 w-36',
               isDark ? 'opacity-0' : 'opacity-100',
             )}
             style={{
               background:
-                'radial-gradient(circle, rgba(255,196,88,0.95) 0%, rgba(255,158,44,0.55) 38%, rgba(255,140,20,0.18) 60%, transparent 76%)',
+                'radial-gradient(circle closest-side, rgba(255,196,88,0.85) 0%, rgba(255,158,44,0.45) 34%, rgba(255,140,20,0.14) 62%, transparent 100%)',
             }}
           />
           {/* Cold rim when off, so the bulb still reads as an object in a dark
               room instead of disappearing into the header. */}
           <span
             className={cn(
-              'pointer-events-none absolute left-1/2 top-[28%] block -translate-x-1/2 -translate-y-1/2 rounded-full blur-xl transition-opacity duration-[var(--theme-transition)]',
+              'pointer-events-none absolute left-1/2 top-[28%] block -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-[var(--theme-transition)]',
               compact ? 'h-16 w-16' : 'h-24 w-24',
               isDark ? 'opacity-75' : 'opacity-0',
             )}
             style={{
               background:
-                'radial-gradient(circle, color-mix(in srgb, var(--accent-primary) 48%, transparent) 0%, transparent 70%)',
+                'radial-gradient(circle closest-side, color-mix(in srgb, var(--accent-primary) 40%, transparent) 0%, transparent 100%)',
             }}
           />
           {/* A hint of ember on hover, so the affordance answers the pointer
               before the click lands. */}
           <span
             className={cn(
-              'pointer-events-none absolute left-1/2 top-[32%] block h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 blur-xl transition-opacity duration-[var(--motion-base)]',
+              'pointer-events-none absolute left-1/2 top-[32%] block h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 transition-opacity duration-[var(--motion-base)]',
               isDark ? 'group-hover:opacity-70 group-focus-visible:opacity-70' : '',
             )}
             style={{
-              background: 'radial-gradient(circle, rgba(255,186,80,0.75) 0%, transparent 70%)',
+              background: 'radial-gradient(circle closest-side, rgba(255,186,80,0.6) 0%, transparent 100%)',
             }}
           />
         </span>

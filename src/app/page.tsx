@@ -1,14 +1,20 @@
 import Link from 'next/link';
 import { AboutSection } from '@/components/sections/about-section';
+import { AssemblySequence } from '@/components/sections/assembly-sequence';
+import { HumanAutomation } from '@/components/sections/human-automation';
+import { NextChapter } from '@/components/sections/next-chapter';
 import { ContactSection } from '@/components/sections/contact-section';
 import { ExperienceSection } from '@/components/sections/experience-section';
 import { ExpertiseSection } from '@/components/sections/expertise-section';
 import { Hero } from '@/components/sections/hero';
 import { ImpactSection } from '@/components/sections/impact-section';
 import { JourneySection } from '@/components/sections/journey-section';
+import { LandingScene } from '@/components/sections/landing-scene';
+import { MissionJourney } from '@/components/sections/mission-journey';
 import { ProjectsSection } from '@/components/sections/projects-section';
 import { ReportingShowcase } from '@/components/sections/reporting-showcase';
 import { ResumeSection } from '@/components/sections/resume-section';
+import { RunStoryboard } from '@/components/sections/run-storyboard';
 import { SkillsSection } from '@/components/sections/skills-section';
 import { SkillExplainerProvider } from '@/components/skills/skill-explainer';
 import { SectionHeading } from '@/components/ui';
@@ -54,9 +60,21 @@ import { SectionHeading } from '@/components/ui';
 export default function HomePage() {
   return (
     <SkillExplainerProvider>
+      <LandingScene />
       <Hero />
+      <MissionJourney />
+      <AssemblySequence />
+      <HumanAutomation />
+      <NextChapter />
 
-      <div className="mx-auto w-full max-w-[76rem] px-5 pb-24 sm:px-8">
+      <div className="relative mx-auto w-full max-w-[76rem] px-5 pb-24 sm:px-8">
+        {/* The journey spine: one line down the left gutter joining every
+            section, filling as the page is read. Decorative, so hidden from
+            assistive tech; the nav bar and the headings carry the structure.
+            Only drawn where there is a gutter for it (xl and up). */}
+        <div aria-hidden="true" className="journey-spine">
+          <span className="journey-fill" />
+        </div>
         <Section
           id="about"
           eyebrow="Profile"
@@ -100,6 +118,7 @@ export default function HomePage() {
           description="Each one states the problem, the solution, his role and what changed. Filter or search, then open the full study."
         >
           <ProjectsSection />
+          <RunStoryboard />
         </Section>
 
         <Section
@@ -181,7 +200,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-heading`} className="mt-24 scroll-mt-28">
+    <section
+      id={id}
+      aria-labelledby={`${id}-heading`}
+      className="journey-node relative mt-24 scroll-mt-28"
+    >
       <div id={`${id}-heading`}>
         <SectionHeading eyebrow={eyebrow} title={title} description={description} />
       </div>

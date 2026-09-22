@@ -60,8 +60,18 @@ export function parseSkillGroups(value: unknown): readonly SkillGroup[] {
   for (const entry of source) {
     if (!isRecord(entry)) continue;
 
-    const groupId = id(entry.id);
     const name = str(entry.name, 80);
+    // A group added in the admin panel arrives without an id; it gets one
+    // from its name (CHANGE-011).
+    const groupId =
+      entry.id !== undefined
+        ? id(entry.id)
+        : id(
+        (name ?? '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, ''),
+      );
     if (!groupId || !name || seen.has(groupId)) continue;
 
     const skills = strList(entry.skills, 80, 40);

@@ -1,39 +1,12 @@
 import { IconTile, type IconName } from '@/components/icons';
 import { Reveal } from '@/components/ui';
 import { expertisePillars } from '@/data/impact';
-import { skillGroups } from '@/data/skills';
 
 /* Presentation-only lookups — see the note in impact-section.tsx for why
    these live beside the components rather than in the data modules. The
    fallbacks matter: adding a pillar or a skill group to the data must never
    be able to crash a page just because nobody picked an icon for it. */
 const PILLAR_ICONS: readonly IconName[] = ['layers', 'gear', 'shield', 'chart'];
-const GROUP_ICONS: Record<string, IconName> = {
-  rpa: 'bot',
-  automation: 'bot',
-  programming: 'code',
-  scripting: 'code',
-  data: 'database',
-  databases: 'database',
-  reporting: 'chart',
-  analytics: 'chart',
-  domain: 'shield',
-  platforms: 'layers',
-  tools: 'gear',
-};
-
-function groupIcon(id: string): IconName {
-  const key = Object.keys(GROUP_ICONS).find((candidate) => id.includes(candidate));
-  return (key ? GROUP_ICONS[key] : undefined) ?? 'sparkle';
-}
-
-/**
- * Expertise.
- *
- * Four pillars that decide whether an automation programme delivers, each
- * backed by the concrete practices behind it, then the stack grouped the way
- * the work is organised.
- */
 export function ExpertiseSection() {
   return (
     <>
@@ -83,31 +56,11 @@ export function ExpertiseSection() {
           </p>
         </Reveal>
 
-        <div className="clay-rotate mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {skillGroups.map((group, index) => (
-            <Reveal key={group.id} delay={index * 60}>
-              <article className="surface-card h-full p-5 transition-[border-color] duration-[var(--motion-base)] hover:border-[var(--accent-primary)]">
-                <div className="flex items-center gap-3">
-                  <IconTile name={groupIcon(group.id)} size="sm" />
-                  <h3 className="font-display text-[1rem]">{group.name}</h3>
-                </div>
-                <p className="mt-3 text-[0.8rem] leading-relaxed text-[var(--text-muted)]">
-                  {group.description}
-                </p>
-                <ul className="mt-4 flex flex-wrap gap-1.5">
-                  {group.skills.map((skill) => (
-                    <li
-                      key={skill}
-                      className="rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2.5 py-1 text-[0.76rem] text-[var(--text-secondary)]"
-                    >
-                      {skill}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            </Reveal>
-          ))}
-        </div>
+        {/* The grouped stack itself is `SkillsSection`, directly below: one
+            list, theme-coloured, and every tool opens its explainer. It used
+            to be drawn twice — here as coloured cards whose chips did
+            nothing, and again below as plain cards whose chips opened the
+            popup. Arvind spotted the duplicate on 2026-09-21. */}
       </div>
     </>
   );

@@ -1,21 +1,41 @@
 import Link from 'next/link';
 import { navigation, secondaryNavigation } from '@/data/site';
 import { profile } from '@/data/profile';
+import { SplitWords } from '@/components/ui';
 
 export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="no-print border-t border-[var(--border-subtle)]">
+    <footer className="site-footer no-print border-t border-[var(--border-subtle)]">
+      {/* A run passing along the top edge: three pulses travelling a line,
+          the site's automation motif, drawn in CSS. Decoration only. */}
+      <div className="footer-flow" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
       <div className="mx-auto w-full max-w-[76rem] px-5 pb-2 pt-16 sm:px-8">
         <p className="font-display text-[clamp(1.6rem,4.4vw,2.6rem)] leading-[1.1]">
-          Same processes.{' '}
-          <span className="text-[var(--accent-primary)]">Bigger possibilities.</span>
+          <SplitWords text="Same processes." />{' '}
+          <span className="footer-shimmer">Bigger possibilities.</span>
         </p>
         <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-[var(--text-secondary)]">
           Building automated, efficient and scalable operations for banking, NBFC and retail
           lending. Open to new opportunities and impactful collaborations.
         </p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <span className="footer-status">
+            <span aria-hidden="true" className="footer-status-dot" />
+            Open to new opportunities
+          </span>
+          <a href="#main" className="footer-top fx-btn" data-fx="ripple">
+            Back to top
+            <span aria-hidden="true" className="footer-top-arrow">
+              ↑
+            </span>
+          </a>
+        </div>
       </div>
 
       <div className="mx-auto grid w-full max-w-[76rem] gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
@@ -35,7 +55,7 @@ export function Footer() {
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className="text-[0.85rem] text-[var(--text-muted)] transition-colors duration-[var(--motion-fast)] hover:text-[var(--text-primary)]"
+                  className="footer-link text-[0.85rem] text-[var(--text-muted)] transition-colors duration-[var(--motion-fast)] hover:text-[var(--text-primary)]"
                 >
                   {item.label}
                 </Link>
@@ -60,10 +80,11 @@ export function Footer() {
                 <li key={social.id}>
                   <a
                     href={social.href}
+                    {...(/^mailto:/i.test(social.href) ? { 'data-fx': 'mail' } : {})}
                     {...(external
                       ? { target: '_blank', rel: 'noopener noreferrer' }
                       : {})}
-                    className="break-all text-[0.85rem] text-[var(--text-muted)] transition-colors duration-[var(--motion-fast)] hover:text-[var(--text-primary)]"
+                    className="footer-link break-all text-[0.85rem] text-[var(--text-muted)] transition-colors duration-[var(--motion-fast)] hover:text-[var(--text-primary)]"
                   >
                     {social.handle}
                     {external ? <span className="sr-only"> (opens in a new tab)</span> : null}
@@ -75,7 +96,8 @@ export function Footer() {
               <a
                 href={profile.resume.pdf}
                 download
-                className="text-[0.85rem] text-[var(--text-muted)] transition-colors duration-[var(--motion-fast)] hover:text-[var(--text-primary)]"
+                data-fx="download"
+                className="footer-link text-[0.85rem] text-[var(--text-muted)] transition-colors duration-[var(--motion-fast)] hover:text-[var(--text-primary)]"
               >
                 Resume (PDF)
               </a>

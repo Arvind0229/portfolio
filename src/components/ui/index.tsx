@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, Fragment, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { useInView } from '@/hooks/use-in-view';
 import { cn } from '@/lib/utils/cn';
 
@@ -28,6 +28,19 @@ const SIZES: Record<ButtonSize, string> = {
   lg: 'text-[0.95rem] px-5 py-3 gap-2',
 };
 
+/** The classes a LinkButton of this variant and size carries — for the few
+ *  buttons (the download button) that need their own component. */
+export function buttonClass(variant: ButtonVariant = 'primary', size: ButtonSize = 'md'): string {
+  return cn(
+    'fx-btn group clay-control inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium',
+    'transition-[background-color,border-color,color,transform,filter,box-shadow] duration-[var(--motion-fast)]',
+    'active:translate-y-px',
+    variant === 'primary' && 'clay-control-primary',
+    VARIANTS[variant],
+    SIZES[size],
+  );
+}
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -42,7 +55,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={type}
       className={cn(
-        'inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium',
+        'fx-btn inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium',
         'transition-[background-color,border-color,color,transform,filter] duration-[var(--motion-fast)]',
         'active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0',
         VARIANTS[variant],
@@ -69,9 +82,19 @@ export function LinkButton({
   download,
   target,
   rel,
+  magnetic,
+  fx,
   'aria-label': ariaLabel,
 }: {
   href: string;
+  /** A slight pull towards the cursor. For the few primary calls to action only. */
+  magnetic?: boolean;
+  /**
+   * The click animation (see click-effects.tsx). Worked out from the link when
+   * left out: a download gets `download`, `mailto:` gets `mail`, `tel:` gets
+   * `call`, a WhatsApp link gets `whatsapp`, and anything else gets the ripple.
+   */
+  fx?: 'download' | 'mail' | 'call' | 'whatsapp' | 'hello' | 'browser' | 'ripple';
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
@@ -81,10 +104,25 @@ export function LinkButton({
   rel?: string;
   'aria-label'?: string;
 }) {
+  const effect =
+    fx ??
+    (download !== undefined
+      ? 'download'
+      : /^mailto:/i.test(href)
+        ? 'mail'
+        : /^tel:/i.test(href)
+          ? 'call'
+          : /wa\.me|whatsapp/i.test(href)
+            ? 'whatsapp'
+            : target === '_blank'
+              ? 'browser'
+              : 'ripple');
   return (
     <a
       href={href}
       aria-label={ariaLabel}
+      data-fx={effect}
+      {...(magnetic ? { 'data-magnetic': '' } : {})}
       {...(download !== undefined ? { download } : {})}
       {...(target ? { target } : {})}
       {...(rel ? { rel } : target === '_blank' ? { rel: 'noopener noreferrer' } : {})}
@@ -93,7 +131,7 @@ export function LinkButton({
            matches nothing. It is what lets the Clay theme give this button a
            54px height, an 18px radius and coral-keyed depth without a second
            button component or a theme prop threaded through every call site. */
-        'group clay-control inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium',
+        'fx-btn group clay-control inline-flex items-center justify-center rounded-[var(--radius-md)] font-medium',
         'transition-[background-color,border-color,color,transform,filter,box-shadow] duration-[var(--motion-fast)]',
         'active:translate-y-px',
         variant === 'primary' && 'clay-control-primary',
@@ -268,6 +306,31 @@ export function Section({
   );
 }
 
+/**
+ * Words that rise into place one after another as the line scrolls into view.
+ *
+ * Each word is its own inline-block span, driven by a CSS view timeline (see
+ * SPLIT WORDS in globals.css). There is no JavaScript. The spaces are real
+ * text nodes between the spans, so the accessible name and copy-paste read
+ * exactly like the plain string. Without scroll timelines, or under reduced
+ * motion, the words are simply there.
+ */
+export function SplitWords({ text, className }: { text: string; className?: string }) {
+  const words = text.split(/\s+/).filter(Boolean);
+  return (
+    <span className={cn('split-words', className)}>
+      {words.map((word, index) => (
+        <Fragment key={`${word}-${index}`}>
+          <span className="split-word" style={{ ['--w' as string]: index }}>
+            {word}
+          </span>
+          {index < words.length - 1 ? ' ' : null}
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
 export function SectionHeading({
   eyebrow,
   title,
@@ -284,7 +347,9 @@ export function SectionHeading({
       <p className="font-mono text-[0.7rem] uppercase tracking-[0.22em] text-[var(--accent-primary)]">
         {eyebrow}
       </p>
-      <h2 className="mt-3 text-[clamp(1.65rem,4.2vw,2.6rem)]">{title}</h2>
+      <h2 className="mt-3 text-[clamp(1.65rem,4.2vw,2.6rem)]">
+        <SplitWords text={title} />
+      </h2>
       {description ? (
         <p className="mt-4 text-[0.98rem] leading-relaxed text-[var(--text-secondary)]">
           {description}
