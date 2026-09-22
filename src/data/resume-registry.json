@@ -1,5 +1,4 @@
 {
-  "$comment": "Which resume the site serves. Written by the admin panel; validated by src/data/resume-registry.ts. 'active' is the only field that decides what visitors download.",
   "active": "arvind-gupta-rpa-developer",
   "versions": [
     {
@@ -9,6 +8,14 @@
       "docx": "/resume/Arvind-Gupta-RPA-Developer.docx",
       "uploadedAt": "2026-09-11T18:16:00.000Z",
       "bytes": 62303
+    },
+    {
+      "id": "20260922-arvind-gupta-rpa-developer",
+      "label": "Arvind Gupta — RPA Developer",
+      "pdf": "",
+      "docx": "/resume/20260922-arvind-gupta-rpa-developer.docx",
+      "uploadedAt": "2026-09-22T09:55:28.197Z",
+      "bytes": 18042
     }
   ]
 }
