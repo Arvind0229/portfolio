@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/admin/guard';
-import { ConflictError, getContentWriter } from '@/lib/admin/content-writer';
+import { ConflictError, describeWriteFailure, getContentWriter } from '@/lib/admin/content-writer';
 import { contentDefinition } from '@/lib/content/registry';
 import { clientKeyFromHeaders, createRateLimiter } from '@/lib/security/rate-limit';
 
@@ -247,9 +247,7 @@ export async function PUT(
       {
         ok: false,
         error:
-          writer.mode === 'github'
-            ? 'Could not save to GitHub. Check that the token is still valid and has contents write access.'
-            : 'Could not write the file. Check that the project folder is not read-only.',
+          describeWriteFailure(error, writer.mode),
       },
       502,
     );

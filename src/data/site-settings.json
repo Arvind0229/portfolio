@@ -4,5 +4,6 @@
   "defaultMode": "auto",
   "defaultFont": "precision",
   "robots": true,
-  "maintenance": false
+  "maintenance": false,
+  "smoothScroll": true
 }

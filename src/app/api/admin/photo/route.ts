@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/admin/guard';
 import {
   ConflictError,
+  GitHubWriteError,
+  describeWriteFailure,
   type ContentWriter,
   getContentWriter,
   photoFileTarget,
@@ -82,7 +84,8 @@ function json(body: PhotoResponse, status: number, headers?: HeadersInit) {
   return NextResponse.json(body, { status, headers });
 }
 
-function writeFailure(mode: ContentWriter['mode']): string {
+function writeFailure(mode: ContentWriter['mode'], error?: unknown): string {
+  if (error instanceof GitHubWriteError) return describeWriteFailure(error, mode);
   return mode === 'github'
     ? 'The photo could not be saved to the repository. Nothing changed — try again.'
     : 'The photo could not be written to your project files. Nothing changed — try again.';
@@ -229,8 +232,8 @@ export async function POST(request: Request): Promise<NextResponse<PhotoResponse
    */
   try {
     await writer.write(target, content, `Upload portrait ${id}.jpg`);
-  } catch {
-    return json({ ok: false, error: writeFailure(writer.mode) }, 502);
+  } catch (error) {
+    return json({ ok: false, error: writeFailure(writer.mode, error) }, 502);
   }
 
   const version: PhotoVersion = {
@@ -350,7 +353,7 @@ export async function PATCH(request: Request): Promise<NextResponse<PhotoRespons
         409,
       );
     }
-    return json({ ok: false, error: writeFailure(writer.mode) }, 502);
+    return json({ ok: false, error: writeFailure(writer.mode, error) }, 502);
   }
 
   return json(

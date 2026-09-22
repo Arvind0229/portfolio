@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { checkAdminAccess } from '@/lib/admin/guard';
 import {
   ConflictError,
+  GitHubWriteError,
+  describeWriteFailure,
   type ContentWriter,
   getContentWriter,
   resumeFileTarget,
@@ -95,7 +97,8 @@ async function readRegistry(
   }
 }
 
-function writeFailure(mode: 'local' | 'github'): string {
+function writeFailure(mode: 'local' | 'github', error?: unknown): string {
+  if (error instanceof GitHubWriteError) return describeWriteFailure(error, mode);
   return mode === 'github'
     ? 'Could not save to GitHub. Check that the token is still valid and has contents write access.'
     : 'Could not write the file. Check that the project folder is not read-only.';
@@ -238,8 +241,8 @@ export async function POST(request: Request): Promise<NextResponse<UploadRespons
    */
   try {
     await writer.write(target, content, `Upload resume ${id}.${format}`);
-  } catch {
-    return json({ ok: false, error: writeFailure(writer.mode) }, 502);
+  } catch (error) {
+    return json({ ok: false, error: writeFailure(writer.mode, error) }, 502);
   }
 
   const next = applyUpload(registry, { id, label, format, url: resumeFileUrl(target), bytes: content.length });
@@ -382,7 +385,7 @@ export async function PATCH(request: Request): Promise<NextResponse<UploadRespon
         409,
       );
     }
-    return json({ ok: false, error: writeFailure(writer.mode) }, 502);
+    return json({ ok: false, error: writeFailure(writer.mode, error) }, 502);
   }
 
   return json(

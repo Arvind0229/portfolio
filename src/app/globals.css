@@ -4997,6 +4997,28 @@ img[data-failed='true'] {
   animation: orb-shake 380ms ease-in-out;
 }
 
+/* =========================== SMOOTH SCROLL ========================= *
+ * Lenis's own required rules (from lenis/dist/lenis.css), active only while
+ * it runs — it adds the `lenis` class to <html>. See smooth-scroll.tsx.
+ * ------------------------------------------------------------------ */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+html.lenis.lenis-smooth {
+  /* The site's own `scroll-behavior: smooth` would fight Lenis's easing. */
+  scroll-behavior: auto !important;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
 /* ========================== ROBOT BUDDIES ========================== *
  * Three small robots that play across the page — see robot-buddies.tsx for
  * the cast and the rules. JavaScript only writes attributes and `--x`; every

@@ -598,6 +598,7 @@ interface SiteSettingsContent {
   defaultFont: string;
   robots: boolean;
   maintenance: boolean;
+  smoothScroll: boolean;
 }
 
 const THEME_LABELS: Record<string, string> = {
@@ -695,6 +696,15 @@ export function SiteSettingsEditor() {
           onChange={(event) => patch({ robots: event.target.checked })}
         />
         Robot buddies — the small robots that peek from the corners and play along the bottom
+      </label>
+      <label className="flex items-center gap-2.5 text-[0.85rem] text-[var(--text-primary)]">
+        <input
+          type="checkbox"
+          checked={data.smoothScroll !== false}
+          data-testid="settings-smooth-scroll"
+          onChange={(event) => patch({ smoothScroll: event.target.checked })}
+        />
+        Smooth scrolling — eases mouse-wheel scrolling on desktop (phones keep their own)
       </label>
       <label className="flex items-center gap-2.5 text-[0.85rem] text-[var(--text-primary)]">
         <input

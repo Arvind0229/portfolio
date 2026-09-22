@@ -21,6 +21,7 @@ import { MagneticField } from '@/components/visuals/magnetic-field';
 import { ClickEffects } from '@/components/visuals/click-effects';
 import { RobotBuddies } from '@/components/visuals/robot-buddies';
 import { Resilience } from '@/components/states/resilience';
+import { SmoothScroll } from '@/components/visuals/smooth-scroll';
 import { MotionNotice } from '@/components/layout/motion-notice';
 import { Navbar } from '@/components/layout/navbar';
 import { PageTransition } from '@/components/layout/page-transition';
@@ -128,6 +129,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ClickEffects />
           <RobotBuddies />
           <Resilience />
+          <SmoothScroll />
           <Navbar />
           {/* Pinned to the bottom edge, and rendering nothing at all unless
               the OS is actually asking for reduced motion — see the note in

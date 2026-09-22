@@ -26,6 +26,8 @@ export interface SiteSettings {
   robots: boolean;
   /** Every public page answers with the maintenance scene (503) while true. */
   maintenance: boolean;
+  /** Lenis smooth wheel scrolling on desktop. On unless turned off. */
+  smoothScroll: boolean;
 }
 
 export const THEME_CHOICES: readonly ThemeId[] = ['clay', 'engineering', 'studio', 'enterprise'];
@@ -38,6 +40,7 @@ const FALLBACK: SiteSettings = {
   defaultFont: 'precision',
   robots: true,
   maintenance: false,
+  smoothScroll: true,
 };
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
@@ -54,6 +57,8 @@ export function parseSiteSettings(value: unknown): SiteSettings {
     defaultFont: pick(record.defaultFont, FONT_CHOICES, FALLBACK.defaultFont),
     robots: typeof record.robots === 'boolean' ? record.robots : FALLBACK.robots,
     maintenance: record.maintenance === true,
+    smoothScroll:
+      typeof record.smoothScroll === 'boolean' ? record.smoothScroll : FALLBACK.smoothScroll,
   };
 }
 

@@ -155,6 +155,47 @@ export class ConflictError extends Error {
   }
 }
 
+/**
+ * Raised when GitHub refuses a write for a reason other than a lost update:
+ * a bad or expired token, a token without access to the repository, a wrong
+ * repository or branch name, or a branch rule that blocks direct commits.
+ *
+ * Only the status and a category travel with it, never GitHub's response
+ * body, which can echo the request. `describeWriteFailure` turns it into a
+ * sentence that says what to fix.
+ */
+export class GitHubWriteError extends Error {
+  constructor(
+    readonly status: number,
+    readonly kind: 'auth' | 'forbidden' | 'not-found' | 'rule' | 'other',
+  ) {
+    super(`GitHub write failed (${status})`);
+    this.name = 'GitHubWriteError';
+  }
+}
+
+/** The message the admin sees when a save fails for a reason other than a conflict. */
+export function describeWriteFailure(error: unknown, mode: 'local' | 'github'): string {
+  if (mode === 'local') {
+    return 'Could not write the file. Check that the project folder is not read-only.';
+  }
+  if (error instanceof GitHubWriteError) {
+    switch (error.kind) {
+      case 'auth':
+        return 'GitHub did not accept the token (401). It may be wrong or expired: make a new one, update ADMIN_GITHUB_TOKEN in Vercel, then redeploy.';
+      case 'forbidden':
+        return 'The token cannot write to this repository (403). Create it while signed in to the account that owns the repository, select that repository, and give it Contents: Read and write. Then update ADMIN_GITHUB_TOKEN in Vercel and redeploy.';
+      case 'not-found':
+        return 'GitHub could not find the repository or branch (404). Check ADMIN_GITHUB_REPO (owner/name) and ADMIN_GITHUB_BRANCH in Vercel. A token without access to the repository gets this answer too.';
+      case 'rule':
+        return `A rule on the branch blocks direct commits (${error.status}). Remove the rule in the repository settings, or point ADMIN_GITHUB_BRANCH at a branch without it.`;
+      default:
+        return `Could not save to GitHub (GitHub answered ${error.status}). Try again in a minute.`;
+    }
+  }
+  return 'Could not save to GitHub. Check that the token is still valid and has contents write access.';
+}
+
 export interface ContentWriter {
   readonly mode: 'local' | 'github';
   read(target: WriteTarget): Promise<ContentRead | null>;
@@ -345,15 +386,31 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
        * both must reach the person as that rather than as a generic failure —
        * the whole point of the change above.
        */
-      if (response.status === 409 || response.status === 422) {
-        throw new ConflictError();
-      }
-
       if (!response.ok) {
-        // The body can carry the token in an echoed request under some error
-        // shapes, so only the status is surfaced. The route turns this into a
-        // user-facing message that says what to do, not what broke internally.
-        throw new Error(`GitHub write failed (${response.status})`);
+        // Only GitHub's short `message` is looked at, to tell a lost update from
+        // a refused commit. It is matched, never passed on: the body can echo
+        // the request under some error shapes.
+        const detail = (await response
+          .json()
+          .then((body: { message?: unknown }) => (typeof body?.message === 'string' ? body.message : ''))
+          .catch(() => '')) as string;
+        const blockedByRule = /rule|protected branch|branch protection/i.test(detail);
+        const missingBranch = /branch .*not found|no commit found|not found/i.test(detail);
+
+        if ((response.status === 409 || response.status === 422) && !blockedByRule && !missingBranch) {
+          throw new ConflictError();
+        }
+        const kind =
+          response.status === 401
+            ? 'auth'
+            : blockedByRule
+              ? 'rule'
+              : response.status === 404 || missingBranch
+                ? 'not-found'
+                : response.status === 403
+                  ? 'forbidden'
+                  : 'other';
+        throw new GitHubWriteError(response.status, kind);
       }
 
       /*

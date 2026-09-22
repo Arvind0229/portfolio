@@ -45,6 +45,7 @@ describe('site settings', () => {
       defaultFont: 'editorial',
       robots: true,
       maintenance: false,
+      smoothScroll: true,
     });
     expect(parseSiteSettings({ defaultTheme: 'neon', defaultMode: 'purple', defaultFont: 1 })).toEqual({
       defaultTheme: 'engineering',
@@ -52,6 +53,7 @@ describe('site settings', () => {
       defaultFont: 'precision',
       robots: true,
       maintenance: false,
+      smoothScroll: true,
     });
     expect(parseSiteSettings({ robots: false }).robots).toBe(false);
     expect(parseSiteSettings({ robots: 'no' }).robots).toBe(true);
