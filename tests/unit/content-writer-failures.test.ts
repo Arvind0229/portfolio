@@ -84,3 +84,40 @@ describe('GitHub refusals', () => {
     expect(text).not.toContain(config.token);
   });
 });
+
+describe('the GitHub configuration', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('forgives a pasted URL, a .git suffix and stray whitespace', async () => {
+    const { gitHubConfigFromEnv } = await import('@/lib/admin/content-writer');
+    vi.stubEnv('ADMIN_GITHUB_REPO', ' https://github.com/Arvind0229/portfolio.git\n');
+    vi.stubEnv('ADMIN_GITHUB_TOKEN', 'tok\n');
+    vi.stubEnv('ADMIN_GITHUB_BRANCH', 'main ');
+    const config = gitHubConfigFromEnv();
+    expect(config?.repository).toBe('Arvind0229/portfolio');
+    expect(config?.token).toBe('tok');
+    expect(config?.branch).toBe('main');
+  });
+
+  it('lets GitHub credit the token owner unless an email is configured', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      body = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      return new Response(JSON.stringify({ content: { sha: 'new' } }), { status: 200 });
+    });
+    const { authorEmail: _unused, ...withoutEmail } = { ...config, authorEmail: undefined };
+    await createGitHubWriter(withoutEmail).write('projectDepth', Buffer.from('{}'), 'msg', 'sha');
+    expect(body.committer).toBeUndefined();
+
+    await createGitHubWriter({ ...config, authorEmail: 'me@example.com' }).write(
+      'projectDepth',
+      Buffer.from('{}'),
+      'msg',
+      'sha',
+    );
+    expect(body.committer).toEqual({ name: 'Arvind Gupta', email: 'me@example.com' });
+  });
+});

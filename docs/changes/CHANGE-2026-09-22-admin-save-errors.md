@@ -47,3 +47,24 @@ Implemented and tested in the cloud copy and applied to the laptop. Not deployed
 
 ### Rollback
 Revert to tag `pre-change-015`.
+
+## Follow-up: CHANGE-016 (same day)
+
+### Findings
+- GitHub `main` has **no commit from the admin at all**. Every live save and upload so far was refused by GitHub, and nothing reached the repository. So nothing could redeploy.
+- The code's storage path is correct:
+  - Text content is stored under `src/data/*.json` (the WRITABLE list).
+  - Resumes go to `public/resume/<id>.pdf|docx` and the registry to `src/data/resume-registry.json`.
+  - Photos go to `public/profile/<hash>.jpg` and `src/data/photo.json`.
+  - A save is a commit to `main`; Vercel then rebuilds, and the change is live in 1–2 minutes.
+
+### Changes
+- The commit author is no longer a hard-coded `arvind@users.noreply.github.com`, which is the noreply address of whoever owns the GitHub username "arvind". With no ADMIN_GITHUB_AUTHOR_EMAIL set, GitHub credits the token's owner.
+- `ADMIN_GITHUB_REPO`, `ADMIN_GITHUB_TOKEN` and `ADMIN_GITHUB_BRANCH` are trimmed. The repo value also accepts a pasted `https://github.com/…` URL or a `.git` suffix.
+
+### Testing
+- `tsc` clean and ESLint clean.
+- Vitest: 36 files, 492 tests passed.
+
+### Rollback
+Revert to tag `pre-change-016`.

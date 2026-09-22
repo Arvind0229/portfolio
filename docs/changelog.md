@@ -21,6 +21,7 @@ project's history without opening five documents.
 | CHANGE-013 | 2026-09-22 | Lenis smooth scrolling on desktop mouse wheels (off on phones, under reduced motion, on /admin, and by admin switch); nothing else changed | [`CHANGE-2026-09-22-smooth-scroll.md`](changes/CHANGE-2026-09-22-smooth-scroll.md) |
 | CHANGE-014 | 2026-09-22 | Admin save errors say why: a GitHub refusal (bad token, no repo access, wrong repo/branch, branch rule) is no longer reported as "changed somewhere else, reload" | [`CHANGE-2026-09-22-admin-save-errors.md`](changes/CHANGE-2026-09-22-admin-save-errors.md) |
 | CHANGE-015 | 2026-09-22 | Stale-sha conflicts only when GitHub says so; any other refusal shows GitHub's reason (token-scrubbed) and is logged to Vercel; resume upload shows its result on the Resume tab and adds the new version to the list | [`CHANGE-2026-09-22-admin-save-errors.md`](changes/CHANGE-2026-09-22-admin-save-errors.md) |
+| CHANGE-016 | 2026-09-22 | Admin commits are credited to the token owner (no hard-coded noreply email); GitHub env values are trimmed and a pasted repo URL is accepted | [`CHANGE-2026-09-22-admin-save-errors.md`](changes/CHANGE-2026-09-22-admin-save-errors.md) |
 
 ## Architecture decisions
 

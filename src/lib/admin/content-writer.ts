@@ -288,20 +288,32 @@ export interface GitHubConfig {
   token: string;
   /** Shown as the commit author. */
   authorName: string;
-  authorEmail: string;
+  /**
+   * Optional. Left unset, GitHub records the token's owner as the author, which
+   * is the right answer: the commit then belongs to Arvind's own account.
+   * A made-up noreply address would belong to whoever owns that username.
+   */
+  authorEmail?: string;
 }
 
 export function gitHubConfigFromEnv(): GitHubConfig | null {
-  const repository = process.env.ADMIN_GITHUB_REPO;
-  const token = process.env.ADMIN_GITHUB_TOKEN;
+  // Trimmed: a value pasted into Vercel with a trailing space or newline would
+  // otherwise break every request URL in a way that is hard to see.
+  const repository = process.env.ADMIN_GITHUB_REPO?.trim()
+    .replace(/^https?:\/\/github\.com\//, '')
+    .replace(/\.git$/, '')
+    .replace(/\/+$/, '');
+  const token = process.env.ADMIN_GITHUB_TOKEN?.trim();
   if (!repository || !token) return null;
 
   return {
     repository,
     token,
-    branch: process.env.ADMIN_GITHUB_BRANCH ?? 'main',
+    branch: process.env.ADMIN_GITHUB_BRANCH?.trim() || 'main',
     authorName: process.env.ADMIN_GITHUB_AUTHOR_NAME ?? 'Arvind Gupta',
-    authorEmail: process.env.ADMIN_GITHUB_AUTHOR_EMAIL ?? 'arvind@users.noreply.github.com',
+    ...(process.env.ADMIN_GITHUB_AUTHOR_EMAIL?.trim()
+      ? { authorEmail: process.env.ADMIN_GITHUB_AUTHOR_EMAIL.trim() }
+      : {}),
   };
 }
 
@@ -377,7 +389,9 @@ export function createGitHubWriter(config: GitHubConfig): ContentWriter {
           message,
           content: content.toString('base64'),
           branch: config.branch,
-          committer: { name: config.authorName, email: config.authorEmail },
+          ...(config.authorEmail
+            ? { committer: { name: config.authorName, email: config.authorEmail } }
+            : {}),
           ...(sha ? { sha } : {}),
         }),
       });
